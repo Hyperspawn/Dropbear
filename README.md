@@ -1,6 +1,6 @@
 # Dropbear Humanoid Robot
 
-![Dropbear Humanoid Logo](/images/dropbear.png)
+<img src="https://github.com/Hyperspawn/Dropbear/blob/main/images/Dropbear%20(2).png" width="200">
 
 Welcome to the official repository of the Dropbear Humanoid Robot! Developed by Hyperspawn & Pointblank. Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
 
@@ -9,8 +9,7 @@ Dropbear Humanoid is a cutting-edge robot featuring advanced AI and superior har
 
 ## Technical Specifications
 - **Height:** 6 feet and 2.02 inches (1880 mm)
-- **Weight:** 45 kg, 
-- **Power Supply:** 
+- **Weight:** 45 kg
 - **Actuators:** Brushless Lightweight DC Servo Motor - Precise Planetary Rotation MCX500 Driver 
 - **Sensors:** Vision, Audio, IMU, Pressure.
 

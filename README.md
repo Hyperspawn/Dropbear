@@ -1,6 +1,6 @@
 <img src="https://github.com/Hyperspawn/Dropbear/blob/main/images/dropbear.svg" width="1024">
 
-Welcome to the official repository of the Dropbear Humanoid Robot! Developed by Hyperspawn & Pointblank. Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
+Welcome to the official repository of the Dropbear Humanoid Robot! Developed by Hyperspawn & [Pointblank](https://www.pointblankllc.com/). Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
 
 ## Overview
 Dropbear Humanoid is a cutting-edge robot featuring advanced AI and superior hardware, designed for seamless human interaction, exploration, and task execution in extreme conditions. This project encapsulates our vision at Hyperspawn Robotics for the future of humanoid robots.
@@ -13,31 +13,40 @@ Dropbear Humanoid is a cutting-edge robot featuring advanced AI and superior har
 
 ## Hardware Components
 Detailed specifications, CAD models, and schematics of the hardware components can be found here:
-- Motors [MyActuator RMD-X8, X-10](https://www.myactuator.com/product-page/rmd-x8-pro)
+- Actuator [MyActuator RMD-X8, X-10](https://www.myactuator.com/product-page/rmd-x8-pro)
 - Sensors
-- - Vision Sensors: Cameras: For visual perception, object recognition, and navigation.
-- - IMU (Inertial Measurement Unit): Combining accelerometers and gyroscopes for orientation and balance.
-- - Pressure Sensors: To detect the force exerted on the robot, aiding in gripping and interaction with objects.
-- - Audio Sensors - Microphones: For voice recognition and environmental sound detection.
+  - Vision Sensors: Cameras: For visual perception, object recognition, and navigation.
+  - IMU (Inertial Measurement Unit): Combining accelerometers and gyroscopes for orientation and balance.
+  - Pressure Sensors: To detect the force exerted on the robot, aiding in gripping and interaction with objects.
+  - Audio Sensors - Microphones: For voice recognition and environmental sound detection.
 - Control Units
-- - [Nvidia Jetson Orin](https://www.nvidia.com/en-in/autonomous-machines/embedded-systems/jetson-orin/)
-- - Custom FPGAs
-- Body Frame Material: ABS, Extruded Aluminium
+  - [Nvidia Jetson Orin](https://www.nvidia.com/en-in/autonomous-machines/embedded-systems/jetson-orin/)
+  - Custom FPGAs
+- Body Frame Material: 3D-printed ABS, Extruded Aluminium
 
 ## Software Components
-This section houses the software, algorithms, and AI models that empower Dropbear's functionalities.
 
-### Motion Control
-- **Description:** Algorithms and control systems enabling fluid movement and agility.
-- **Documentation:** [Link](URL)
+### Autonomous mode
+#### Vision Large Language Models (VLLMs)
+Dropbear uses Large Language Models for it's ability to process and understand human language. Vision LLMs extend the capabilities of traditional LLMs by integrating visual data processing, enabling dropbear to not just "see" but understand and interpret visual information in a contextually relevant manner.
+![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/d34ad4ca-2385-4377-8852-23f5e13de1cf)
 
-### Object Recognition
-- **Description:** Computer vision algorithms for real-time object detection and recognition.
-- **Documentation:** [Link](URL)
+- **Natural Language Understanding**: Dropbear understands spoken or written instructions.
+- **Object Recognition**: Dropbear can identify and categorize objects within it's visual field.
+- **Navigation**: Dropbear can navigate complex environments by recognizing landmarks and obstacles.
+- **Interaction**: Dropbear can engage in conversational AI, providing responses and acting on user commands.
+- **Learning**: Continuously improves through interactions, adapting to new phrases and contexts.
 
-### Conversational AI
-- **Description:** NLP models for understanding and responding to human language.
-- **Documentation:** [Link](URL)
+##### Dropbear utilizes a pre-trained model (LLaVA-1.6 8B), finetuned for robotic applications, enhanced by continuous learning from interactions.
+
+#### Utilization of Open X-Embodiment Data
+Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transformed into powerful vision-language-action (VLA) models, which can directly control a robot by combining VLM pre-training with robotic data.
+![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/1c9407b2-da29-4758-a568-7aa9bf914ed4)
+
+### Teleoperation mode
+#### Dropbear can be used as a proxy avatar by controlling the robot using VR gear like a motion-tracking suit, etc. The robot precisely mimics your actions. While interacting with physical objects, VR gloves give you sensation feedback for an immersive teleportation-like experience.
+![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/c10953ef-935c-45c4-8f8a-a1805f13ac3e)
+
 
 ## Assembly Instructions
 For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide](URL).

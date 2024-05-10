@@ -1,0 +1,422 @@
+dict_value {
+  fields {
+    key: "collect_data_spec"
+    value {
+      named_tuple_value {
+        name: "Trajectory"
+        values {
+          key: "step_type"
+          value {
+            tensor_spec_value {
+              name: "step_type"
+              shape {
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+        values {
+          key: "observation"
+          value {
+            dict_value {
+              fields {
+                key: "image"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "image"
+                    shape {
+                      dim {
+                        size: 256
+                      }
+                      dim {
+                        size: 320
+                      }
+                      dim {
+                        size: 3
+                      }
+                    }
+                    dtype: DT_UINT8
+                    minimum {
+                      dtype: DT_UINT8
+                      tensor_shape {
+                      }
+                      int_val: 0
+                    }
+                    maximum {
+                      dtype: DT_UINT8
+                      tensor_shape {
+                      }
+                      int_val: 1
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "natural_language_embedding"
+                value {
+                  tensor_spec_value {
+                    name: "natural_language_embedding"
+                    shape {
+                      dim {
+                        size: 512
+                      }
+                    }
+                    dtype: DT_FLOAT
+                  }
+                }
+              }
+              fields {
+                key: "natural_language_instruction"
+                value {
+                  tensor_spec_value {
+                    name: "natural_language_instruction"
+                    shape {
+                    }
+                    dtype: DT_STRING
+                  }
+                }
+              }
+            }
+          }
+        }
+        values {
+          key: "action"
+          value {
+            dict_value {
+              fields {
+                key: "base_displacement_vector"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "base_displacement_vector"
+                    shape {
+                      dim {
+                        size: 2
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: -1.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 1.0
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "base_displacement_vertical_rotation"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "base_displacement_vertical_rotation"
+                    shape {
+                      dim {
+                        size: 1
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: -3.1415927
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 3.1415927
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "gripper_closedness_action"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "gripper_closedness_action"
+                    shape {
+                      dim {
+                        size: 1
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: -1.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 1.0
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "rotation_delta"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "rotation_delta"
+                    shape {
+                      dim {
+                        size: 3
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: -1.5707964
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 1.5707964
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "terminate_episode"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "terminate_episode"
+                    shape {
+                      dim {
+                        size: 3
+                      }
+                    }
+                    dtype: DT_INT32
+                    minimum {
+                      dtype: DT_INT32
+                      tensor_shape {
+                      }
+                      int_val: 0
+                    }
+                    maximum {
+                      dtype: DT_INT32
+                      tensor_shape {
+                      }
+                      int_val: 1
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "world_vector"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "world_vector"
+                    shape {
+                      dim {
+                        size: 3
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: -2.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 2.0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        values {
+          key: "policy_info"
+          value {
+            dict_value {
+              fields {
+                key: "discounted_return"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "discounted_return"
+                    shape {
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 0.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 1.0
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "return"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "return"
+                    shape {
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 0.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 1.0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        values {
+          key: "next_step_type"
+          value {
+            tensor_spec_value {
+              name: "step_type"
+              shape {
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+        values {
+          key: "reward"
+          value {
+            tensor_spec_value {
+              name: "reward"
+              shape {
+              }
+              dtype: DT_FLOAT
+            }
+          }
+        }
+        values {
+          key: "discount"
+          value {
+            bounded_tensor_spec_value {
+              name: "discount"
+              shape {
+              }
+              dtype: DT_FLOAT
+              minimum {
+                dtype: DT_FLOAT
+                tensor_shape {
+                }
+                float_val: 0.0
+              }
+              maximum {
+                dtype: DT_FLOAT
+                tensor_shape {
+                }
+                float_val: 1.0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  fields {
+    key: "policy_state_spec"
+    value {
+      dict_value {
+        fields {
+          key: "action_tokens"
+          value {
+            tensor_spec_value {
+              name: "action_tokens"
+              shape {
+                dim {
+                  size: 15
+                }
+                dim {
+                  size: 11
+                }
+                dim {
+                  size: 1
+                }
+                dim {
+                  size: 1
+                }
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+        fields {
+          key: "context_image_tokens"
+          value {
+            tensor_spec_value {
+              name: "context_image_tokens"
+              shape {
+                dim {
+                  size: 15
+                }
+                dim {
+                  size: 81
+                }
+                dim {
+                  size: 1
+                }
+                dim {
+                  size: 512
+                }
+              }
+              dtype: DT_FLOAT
+            }
+          }
+        }
+        fields {
+          key: "seq_idx"
+          value {
+            tensor_spec_value {
+              name: "seq_idx"
+              shape {
+                dim {
+                  size: 1
+                }
+                dim {
+                  size: 1
+                }
+                dim {
+                  size: 1
+                }
+                dim {
+                  size: 1
+                }
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+      }
+    }
+  }
+}

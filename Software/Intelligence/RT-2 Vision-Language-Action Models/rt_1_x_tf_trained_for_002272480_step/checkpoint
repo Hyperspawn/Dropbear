@@ -1,0 +1,2 @@
+model_checkpoint_path: "/cns/ib-d/home/quanhovuong-brain/quanhovuong/rs=6.3:sl=48M/ttl=12w:gc=0/xm_fractal_experiment_59470521/1/train/policy/002272480/ckpt-2272480"
+all_model_checkpoint_paths: "/cns/ib-d/home/quanhovuong-brain/quanhovuong/rs=6.3:sl=48M/ttl=12w:gc=0/xm_fractal_experiment_59470521/1/train/policy/002272480/ckpt-2272480"

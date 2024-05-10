@@ -10,3 +10,10 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.exe filter=lfs diff=lfs merge=lfs -text
 *.data-00000-of-00001 filter=lfs diff=lfs merge=lfs -text
+*.ipt filter=lfs diff=lfs merge=lfs -text
+*.iam filter=lfs diff=lfs merge=lfs -text
+*.x_b filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.fmesh filter=lfs diff=lfs merge=lfs -text
+*.fres filter=lfs diff=lfs merge=lfs -text
+*.fmsh filter=lfs diff=lfs merge=lfs -text

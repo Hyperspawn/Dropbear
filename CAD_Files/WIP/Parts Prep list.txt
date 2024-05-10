@@ -1,0 +1,30 @@
+One single solid part:
+Calf-Actuator-Cap.step x4
+Knee-L-Bracket.step x4
+KneeStrap.step x4
+
+Subassembly:
+Foot x2
+2020_150mm2;2.step-1
+
+
+
+
+RFoot-ExtrudedAluminium150mm2020Right
+RFoot-ExtrudedAluminium150mm2020Left
+RFoot-TopCap
+RFoot-Toes-Rside
+RFoot-Toes-Lside
+RFoot-Toe-rotor
+RFoot-Tie-rod-ankle-bracket_left
+RFoot-Heel-cap
+RFoot-Ankle-motor-driver-bracket-right
+RFoot-Ankle-motor-driver-bracketleft
+RFoot-Heel-rotor
+RFoot-Tie-rod-ankle-bracket_right
+RFoot-Heel-rotor-center
+RFoot-Heel-motor-driver-bracket-right
+RFoot-Heel-motor-driver-bracket-left
+
+
+

@@ -1,0 +1,28 @@
+BOLTS - HEX:
+
+M4:
+
+6x - 50mm
+2x - 40mm
+2x - 30mm
+4x - 20mm
+5x - 12mm
+2x - 10mm
+
+M2.5:
+
+2x - 10mm
+
+M1.5:
+
+4x - 16mm
+
+
+
+NUTS - HEX:
+
+27x - M4 
+
+2x - M2.5
+
+4x - M1.5

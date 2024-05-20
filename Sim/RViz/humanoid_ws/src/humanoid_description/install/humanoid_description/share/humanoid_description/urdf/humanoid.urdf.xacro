@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<robot name= "humanoid" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Constants -->
+    <xacro:property name = "PI" value = "3.141593"/>
+    
+    <!-- Torso xacro -->
+    <xacro:include filename="$(find humanoid_description)/urdf/torso.xacro"/>
+
+    <!-- Waist xacro -->
+    <xacro:include filename="$(find humanoid_description)/urdf/waist.xacro"/>
+
+    <!-- World Link -->
+    <link name="sim_world"/>
+
+    <!-- base_link to world joint -->
+    <joint name="base_link_sim_world_joint" type="fixed">
+        <origin xyz="0.0 0.0 0.0" rpy="${PI/2} 0.0 0.0"/>
+        <parent link="sim_world"/>
+        <child link="torso"/>
+    </joint>
+
+    <!-- waist -->
+    <xacro:waist_macro  parent = "torso">
+        <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/>
+    </xacro:waist_macro>
+
+</robot>

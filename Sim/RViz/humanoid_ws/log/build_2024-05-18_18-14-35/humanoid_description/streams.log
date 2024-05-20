@@ -1,0 +1,62 @@
+[0.006s] Invoking command in '/home/gateway/humanoid_ws/build/humanoid_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake /home/gateway/humanoid_ws/src/humanoid_description -DCMAKE_INSTALL_PREFIX=/home/gateway/humanoid_ws/install/humanoid_description
+[0.200s] -- The C compiler identification is GNU 11.4.0
+[1.080s] -- The CXX compiler identification is GNU 11.4.0
+[1.741s] -- Detecting C compiler ABI info
+[1.961s] -- Detecting C compiler ABI info - done
+[1.965s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.965s] -- Detecting C compile features
+[1.965s] -- Detecting C compile features - done
+[1.967s] -- Detecting CXX compiler ABI info
+[2.188s] -- Detecting CXX compiler ABI info - done
+[2.192s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[2.192s] -- Detecting CXX compile features
+[2.192s] -- Detecting CXX compile features - done
+[2.194s] -- Found ament_cmake: 1.3.8 (/opt/ros/humble/share/ament_cmake/cmake)
+[2.389s] -- Found Python3: /home/gateway/miniconda3/bin/python3 (found version "3.12.1") found components: Interpreter 
+[2.508s] -- Configuring done
+[2.511s] -- Generating done
+[2.511s] -- Build files have been written to: /home/gateway/humanoid_ws/build/humanoid_description
+[2.515s] Invoked command in '/home/gateway/humanoid_ws/build/humanoid_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake /home/gateway/humanoid_ws/src/humanoid_description -DCMAKE_INSTALL_PREFIX=/home/gateway/humanoid_ws/install/humanoid_description
+[2.517s] Invoking command in '/home/gateway/humanoid_ws/build/humanoid_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --build /home/gateway/humanoid_ws/build/humanoid_description -- -j32 -l32
+[2.535s] Invoked command in '/home/gateway/humanoid_ws/build/humanoid_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --build /home/gateway/humanoid_ws/build/humanoid_description -- -j32 -l32
+[2.551s] Invoking command in '/home/gateway/humanoid_ws/build/humanoid_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --install /home/gateway/humanoid_ws/build/humanoid_description
+[2.555s] -- Install configuration: ""
+[2.555s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/launch
+[2.556s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/launch/humanoid_rviz.launch.py
+[2.556s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes
+[2.556s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist
+[2.556s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/Rotate-left-leg_1.stl
+[2.559s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/Buttocks_1.stl
+[2.564s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/base_link.stl
+[2.564s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/DumRightLeg_1.stl
+[2.564s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/Rotate-right-leg_1.stl
+[2.566s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/Right-femur-top_1.stl
+[2.568s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/DumLeftLeg_1.stl
+[2.568s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/waist/Left-femur-top_1.stl
+[2.569s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/torso
+[2.569s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/torso/DumHead_1.stl
+[2.570s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/torso/base_link.stl
+[2.617s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/torso/DumLArm_1.stl
+[2.617s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/meshes/torso/DumRArm_1.stl
+[2.617s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/rviz
+[2.617s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/urdf
+[2.617s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/urdf/materials.xacro
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/urdf/humanoid.urdf.xacro
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/urdf/waist.xacro
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/urdf/torso.xacro
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/ament_index/resource_index/package_run_dependencies/humanoid_description
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/ament_index/resource_index/parent_prefix_path/humanoid_description
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/environment/ament_prefix_path.sh
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/environment/ament_prefix_path.dsv
+[2.618s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/environment/path.sh
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/environment/path.dsv
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/local_setup.bash
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/local_setup.sh
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/local_setup.zsh
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/local_setup.dsv
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/package.dsv
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/ament_index/resource_index/packages/humanoid_description
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/cmake/humanoid_descriptionConfig.cmake
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/cmake/humanoid_descriptionConfig-version.cmake
+[2.619s] -- Installing: /home/gateway/humanoid_ws/install/humanoid_description/share/humanoid_description/package.xml
+[2.620s] Invoked command in '/home/gateway/humanoid_ws/build/humanoid_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --install /home/gateway/humanoid_ws/build/humanoid_description

@@ -87,7 +87,7 @@
     </collision>
   </link>
   
-  <link name="DumRightLeg_1">
+  <!-- <link name="DumRightLeg_1">
     <inertial>
       <origin xyz="-2.719365716774558e-07 -0.00043367314179110217 0.002461581106896815" rpy="0 0 0"/>
       <mass value="0.06889197528787226"/>
@@ -106,9 +106,9 @@
         <mesh filename="package://humanoid_description/meshes/waist/DumRightLeg_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
-  </link>
+  </link> -->
   
-  <link name="DumLeftLeg_1">
+  <!-- <link name="DumLeftLeg_1">
     <inertial>
       <origin xyz="6.474975373111508e-07 -0.00043367314397685375 -0.0024621363755123714" rpy="0 0 0"/>
       <mass value="0.06889197549127557"/>
@@ -127,7 +127,7 @@
         <mesh filename="package://humanoid_description/meshes/waist/DumLeftLeg_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
-  </link>
+  </link> -->
   
   <link name="Buttocks_1">
     <inertial>
@@ -178,17 +178,17 @@
     <axis xyz="1.4e-05 -0.984808 -0.173648"/>
   </joint>
   
-  <joint name="Connection_to_R_leg" type="fixed">
+  <!-- <joint name="Connection_to_R_leg" type="fixed">
     <origin xyz="-7e-06 -0.074639 0.017302" rpy="0 0 0"/>
     <parent link="Right-femur-top_1"/>
     <child link="DumRightLeg_1"/>
-  </joint>
+  </joint> -->
   
-  <joint name="Connection_to_L_leg" type="fixed">
+  <!-- <joint name="Connection_to_L_leg" type="fixed">
     <origin xyz="2e-06 -0.074639 -0.017302" rpy="0 0 0"/>
     <parent link="Left-femur-top_1"/>
     <child link="DumLeftLeg_1"/>
-  </joint>
+  </joint> -->
   
   <joint name="torso_connection" type="fixed">
     <!-- <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/> -->

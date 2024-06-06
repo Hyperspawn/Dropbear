@@ -4,7 +4,7 @@
   <name>humanoid_description</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="newtonkaris45@gmail.com">newtonjeri</maintainer>
+  <maintainer email="ppareek85@gmail.com">priyanshu</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

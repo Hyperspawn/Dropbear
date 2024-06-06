@@ -39,7 +39,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    rviz_config = os.path.join("/home/gateway/humanoid_ws/src/humanoid_description", "rviz", "dropbear.rviz")
+    rviz_config = os.path.join(get_package_share_directory("humanoid_description"), "rviz", "humanoid_rviz.rviz")
 
     rviz2 = Node(
         package="rviz2",

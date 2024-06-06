@@ -1,21 +1,31 @@
 <?xml version="1.0"?>
-<robot name= "humanoid" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name= "humanoid"
+    xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <!-- Constants -->
     <xacro:property name = "PI" value = "3.141593"/>
-    
+
     <!-- Torso xacro -->
     <xacro:include filename="$(find humanoid_description)/urdf/torso.xacro"/>
 
     <!-- Waist xacro -->
     <xacro:include filename="$(find humanoid_description)/urdf/waist.xacro"/>
 
+    <!-- Legs  xacro -->
+    <xacro:include filename="$(find humanoid_description)/urdf/humanoidrightleg.xacro"/>
+    <xacro:include filename="$(find humanoid_description)/urdf/humanoidleftleg.xacro"/>
+
+    <!-- Arm xacro -->
+    <xacro:include filename="$(find humanoid_description)/urdf/humanoidrightarm.xacro"/>
+
+    <!-- <xacro:include filename="$(find humanoid_description)/urdf/leg.xacro"/> -->
+
     <!-- World Link -->
     <link name="sim_world"/>
 
     <!-- base_link to world joint -->
     <joint name="base_link_sim_world_joint" type="fixed">
-        <origin xyz="0.0 0.0 0.0" rpy="${PI/2} 0.0 0.0"/>
+        <origin xyz="0.0 0.0 1.2" rpy="${PI/2} 0.0 0.0"/>
         <parent link="sim_world"/>
         <child link="torso"/>
     </joint>
@@ -24,5 +34,34 @@
     <xacro:waist_macro  parent = "torso">
         <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/>
     </xacro:waist_macro>
+
+    <!-- Right Leg -->
+    <xacro:rightleg_macro prefix = "RL" parent = "Right-femur-top_1">
+        <origin xyz="0.0 -0.074639 0.017302" rpy="0 0 0"/>
+    </xacro:rightleg_macro>
+
+    <!-- Left Leg -->
+    <xacro:leftleg_macro prefix = "LL" parent = "Left-femur-top_1">
+        <origin xyz="2e-06 -0.074639 -0.017302" rpy="0 0 0"/>
+    </xacro:leftleg_macro>
+
+    <!-- Right Arm-->
+    <xacro:arm_xacro prefix="RH" parent = "torso" sign = "1">
+        <origin xyz="-0.054627 0.160416 0.234212" rpy="0 0 ${-PI/2}"/>        
+    </xacro:arm_xacro>
+
+    <!-- <xacro:arm_xacro prefix="LH" parent = "torso" sign = "1">
+        <origin xyz="-0.054536 0.160416 -0.114788" rpy="${PI} 0 0"/>        
+    </xacro:arm_xacro> -->
+
+    <!-- Right Leg -->
+    <!-- <xacro:leg_macro prefix = "R" parent = "Right-femur-top_1" sign = "1">
+        <origin xyz="0.0 -0.074639 0.017302" rpy="0 0 0"/>
+    </xacro:leg_macro> -->
+
+    <!-- Left Leg -->
+    <!-- <xacro:leg_macro prefix = "L" parent = "Right-femur-top_1" sign = "-1">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:leg_macro> -->
 
 </robot>

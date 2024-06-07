@@ -1,0 +1,111 @@
+<?xml version="1.0" ?>
+<robot name="torso" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find dropbear_urdf)/urdf/materials.xacro" />
+
+<link name="torso">
+  <inertial>
+    <origin xyz="-0.03675640917673825 0.10469671997794947 0.060052559811593326" rpy="0 0 0"/>
+    <mass value="3.2595669741313733"/>
+    <inertia ixx="0.075048" iyy="0.064931" izz="0.077575" ixy="0.004011" iyz="0.00017" ixz="3.6e-05"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="opaque727161"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<!-- <link name="DumRArm_1">
+  <inertial>
+    <origin xyz="-2.461714795343184e-07 0.0007833561344568751 0.002499928901631726" rpy="0 0 0"/>
+    <mass value="0.06632365842510589"/>
+    <inertia ixx="9e-06" iyy="1e-05" izz="1.9e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.054627 -0.160416 -0.234212" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumRArm_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="opaque2550255"/>
+  </visual>
+  <collision>
+    <origin xyz="0.054627 -0.160416 -0.234212" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumRArm_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link> -->
+
+<!-- <link name="DumLArm_1">
+  <inertial>
+    <origin xyz="1.038923126056579e-06 0.0007833561272285461 -0.002500059100601068" rpy="0 0 0"/>
+    <mass value="0.06632365842510589"/>
+    <inertia ixx="9e-06" iyy="1e-05" izz="1.9e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.054536 -0.160416 0.114788" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumLArm_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="opaque2550255"/>
+  </visual>
+  <collision>
+    <origin xyz="0.054536 -0.160416 0.114788" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumLArm_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link> -->
+
+<link name="DumHead_1">
+  <inertial>
+    <origin xyz="-3.751708517185648e-07 0.0024995864992679723 -3.670208372427708e-07" rpy="0 0 0"/>
+    <mass value="0.01082462598101003"/>
+    <inertia ixx="0.0" iyy="1e-06" izz="1e-06" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.078519 -0.116226 -0.059747" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumHead_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="opaque2550255"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.078519 -0.116226 -0.059747" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://dropbear_urdf/meshes/torso/DumHead_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<!-- <joint name="Revolute 5" type="continuous">
+  <origin xyz="-0.054627 0.160416 0.234212" rpy="0 0 0"/>
+  <parent link="torso"/>
+  <child link="DumRArm_1"/>
+  <axis xyz="-0.000261 0.0 1.0"/>
+</joint> -->
+
+<!-- <joint name="Revolute 6" type="continuous">
+  <origin xyz="-0.054536 0.160416 -0.114788" rpy="0 0 0"/>
+  <parent link="torso"/>
+  <child link="DumLArm_1"/>
+  <axis xyz="0.000261 -0.0 -1.0"/>
+</joint> -->
+
+<joint name="Rigid 7" type="fixed">
+  <origin xyz="0.078519 0.116226 0.059747" rpy="0 0 0"/>
+  <parent link="torso"/>
+  <child link="DumHead_1"/>
+</joint>
+
+
+</robot>

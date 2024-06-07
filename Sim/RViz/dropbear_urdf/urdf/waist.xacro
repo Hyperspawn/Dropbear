@@ -1,0 +1,202 @@
+<?xml version="1.0" ?>
+<robot name="waist" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name = "waist_macro" params = "parent *origin">
+
+  <link name="Rotate-right-leg_1">
+    <inertial>
+      <origin xyz="0.06120754854285463 -0.0029503876001564233 0.014756359444244638" rpy="0 0 0"/>
+      <mass value="0.5634737106043444"/>
+      <inertia ixx="0.001013" iyy="0.002795" izz="0.002177" ixy="-2.1e-05" iyz="0.000121" ixz="0.000246"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.10502 0.263369 -0.120699" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Rotate-right-leg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque245245245"/>
+    </visual>
+    <collision>
+      <origin xyz="0.10502 0.263369 -0.120699" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Rotate-right-leg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="Rotate-left-leg_1">
+    <inertial>
+      <origin xyz="0.06120127554004958 -0.0029502323515913087 -0.014767579628205085" rpy="0 0 0"/>
+      <mass value="0.563679151820761"/>
+      <inertia ixx="0.001016" iyy="0.002797" izz="0.002177" ixy="-2.1e-05" iyz="-0.000121" ixz="-0.000248"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.104988 0.263369 0.001301" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Rotate-left-leg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque245245245"/>
+    </visual>
+    <collision>
+      <origin xyz="0.104988 0.263369 0.001301" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Rotate-left-leg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="Left-femur-top_1">
+    <inertial>
+      <origin xyz="-4.097892786209326e-06 -0.04138743736457201 0.004860837445485772" rpy="0 0 0"/>
+      <mass value="0.17034196336973478"/>
+      <inertia ixx="0.000221" iyy="6.8e-05" izz="0.000227" ixy="0.0" iyz="1.6e-05" ixz="0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.007913 0.284631 0.006662" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Left-femur-top_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque2551530"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.007913 0.284631 0.006662" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Left-femur-top_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="Right-femur-top_1">
+    <inertial>
+      <origin xyz="-1.1875230248842295e-05 -0.04016954723293298 -0.005717104429115966" rpy="0 0 0"/>
+      <mass value="0.17742927672123618"/>
+      <inertia ixx="0.000232" iyy="7.2e-05" izz="0.000233" ixy="0.0" iyz="-1.2e-05" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.007878 0.284631 -0.126119" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Right-femur-top_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque2551530"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.007878 0.284631 -0.126119" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Right-femur-top_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="DumRightLeg_1">
+    <inertial>
+      <origin xyz="-2.719365716774558e-07 -0.00043367314179110217 0.002461581106896815" rpy="0 0 0"/>
+      <mass value="0.06889197528787226"/>
+      <inertia ixx="8e-06" iyy="1.4e-05" izz="2.2e-05" ixy="0.0" iyz="-1e-06" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.007871 0.35927 -0.143421" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/DumRightLeg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque2550255"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.007871 0.35927 -0.143421" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/DumRightLeg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="DumLeftLeg_1">
+    <inertial>
+      <origin xyz="6.474975373111508e-07 -0.00043367314397685375 -0.0024621363755123714" rpy="0 0 0"/>
+      <mass value="0.06889197549127557"/>
+      <inertia ixx="8e-06" iyy="1.4e-05" izz="2.2e-05" ixy="0.0" iyz="1e-06" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.007915 0.35927 0.023964" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/DumLeftLeg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque2550255"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.007915 0.35927 0.023964" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/DumLeftLeg_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="Buttocks_1">
+    <inertial>
+      <origin xyz="0.07123027976226544 -0.05736392763598394 1.174722519241278e-05" rpy="0 0 0"/>
+      <mass value="0.9540709404154066"/>
+      <inertia ixx="0.004292" iyy="0.012882" izz="0.011871" ixy="-0.000113" iyz="0.0" ixz="-1e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.140001 0.171194 -0.05969" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Buttocks_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="opaque20400"/>
+    </visual>
+    <collision>
+      <origin xyz="0.140001 0.171194 -0.05969" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dropbear_urdf/meshes/waist/Buttocks_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="right_leg_pitch" type="continuous">
+    <origin xyz="0.034981 -0.092175 0.061009" rpy="0 0 0"/>
+    <parent link="Buttocks_1"/>
+    <child link="Rotate-right-leg_1"/>
+    <axis xyz="1.0 -3.2e-05 0.000261"/>
+  </joint>
+  
+  <joint name="left_leg_pitch" type="continuous">
+    <origin xyz="0.035013 -0.092175 -0.060991" rpy="0 0 0"/>
+    <parent link="Buttocks_1"/>
+    <child link="Rotate-left-leg_1"/>
+    <axis xyz="1.0 -3.2e-05 0.000261"/>
+  </joint>
+  
+  <joint name="left_leg_yaw" type="continuous">
+    <origin xyz="0.112901 -0.021262 -0.005361" rpy="0 0 0"/>
+    <parent link="Rotate-left-leg_1"/>
+    <child link="Left-femur-top_1"/>
+    <axis xyz="-7.7e-05 -0.984808 0.173648"/>
+  </joint>
+  
+  <joint name="right_leg_yaw" type="continuous">
+    <origin xyz="0.112898 -0.021262 0.00542" rpy="0 0 0"/>
+    <parent link="Rotate-right-leg_1"/>
+    <child link="Right-femur-top_1"/>
+    <axis xyz="1.4e-05 -0.984808 -0.173648"/>
+  </joint>
+  
+  <joint name="Connection_to_R_leg" type="fixed">
+    <origin xyz="-7e-06 -0.074639 0.017302" rpy="0 0 0"/>
+    <parent link="Right-femur-top_1"/>
+    <child link="DumRightLeg_1"/>
+  </joint>
+  
+  <joint name="Connection_to_L_leg" type="fixed">
+    <origin xyz="2e-06 -0.074639 -0.017302" rpy="0 0 0"/>
+    <parent link="Left-femur-top_1"/>
+    <child link="DumLeftLeg_1"/>
+  </joint>
+  
+  <joint name="torso_connection" type="fixed">
+    <!-- <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/> -->
+    <xacro:insert_block name = "origin"/>
+    <parent link="${parent}"/>
+    <child link="Buttocks_1"/>
+  </joint>
+  
+</xacro:macro>
+
+</robot>

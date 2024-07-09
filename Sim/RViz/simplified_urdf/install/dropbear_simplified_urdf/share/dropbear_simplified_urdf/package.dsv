@@ -1,0 +1,8 @@
+source;share/dropbear_simplified_urdf/hook/cmake_prefix_path.ps1
+source;share/dropbear_simplified_urdf/hook/cmake_prefix_path.dsv
+source;share/dropbear_simplified_urdf/hook/cmake_prefix_path.sh
+source;share/dropbear_simplified_urdf/local_setup.bash
+source;share/dropbear_simplified_urdf/local_setup.dsv
+source;share/dropbear_simplified_urdf/local_setup.ps1
+source;share/dropbear_simplified_urdf/local_setup.sh
+source;share/dropbear_simplified_urdf/local_setup.zsh

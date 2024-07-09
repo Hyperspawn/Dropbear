@@ -1,0 +1,177 @@
+[0.008s] Invoking command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake /home/gateway/dropbear_simplified_urdf/src -DCMAKE_INSTALL_PREFIX=/home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf
+[0.272s] -- The C compiler identification is GNU 11.4.0
+[1.086s] -- The CXX compiler identification is GNU 11.4.0
+[1.685s] -- Detecting C compiler ABI info
+[1.874s] -- Detecting C compiler ABI info - done
+[1.877s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.879s] -- Detecting C compile features
+[1.880s] -- Detecting C compile features - done
+[1.882s] -- Detecting CXX compiler ABI info
+[2.068s] -- Detecting CXX compiler ABI info - done
+[2.072s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[2.072s] -- Detecting CXX compile features
+[2.072s] -- Detecting CXX compile features - done
+[2.086s] -- Found ament_cmake: 1.3.8 (/opt/ros/humble/share/ament_cmake/cmake)
+[2.253s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[2.316s] -- Found ament_lint_auto: 0.12.10 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[2.361s] -- Added test 'flake8' to check Python code syntax and style conventions
+[2.362s] -- Added test 'lint_cmake' to check CMake code style
+[2.363s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[2.365s] -- Added test 'xmllint' to check XML markup files
+[2.366s] -- Configuring done
+[2.369s] -- Generating done
+[2.369s] -- Build files have been written to: /home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf
+[2.371s] Invoked command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake /home/gateway/dropbear_simplified_urdf/src -DCMAKE_INSTALL_PREFIX=/home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf
+[2.373s] Invoking command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --build /home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf -- -j32 -l32
+[2.387s] Invoked command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --build /home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf -- -j32 -l32
+[2.398s] Invoking command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --install /home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf
+[2.402s] -- Install configuration: ""
+[2.402s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/launch
+[2.403s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/launch/dropbear_rviz.launch.py
+[2.403s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf
+[2.403s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/arm.xacro
+[2.403s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/leg.xacro
+[2.404s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/materials.xacro
+[2.404s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/dropbear_simplified.urdf.xacro
+[2.404s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/waist.xacro
+[2.404s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/head.xacro
+[2.405s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/urdf/torso.xacro
+[2.405s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes
+[2.405s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm
+[2.405s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl
+[2.409s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/skateboard-bearing__7__1.stl
+[2.409s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/shoulder-ex-al-interface_1.stl
+[2.417s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/base_link.stl
+[2.418s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl
+[2.423s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/bicep-motor-mate_1.stl
+[2.424s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/bicep_1.stl
+[2.425s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/elbow-rear-hanger_1.stl
+[2.427s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/2020_100mm__9__1.stl
+[2.429s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl
+[2.433s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightarm/straight-tendon_1.stl
+[2.435s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg
+[2.435s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/210mm-tie-rod_v1_1.stl
+[2.436s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/DumX290mm_1.stl
+[2.436s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/DumX210mm_1.stl
+[2.436s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/conjstraint-knee-test-oute_1.stl
+[2.438s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext_1.stl
+[2.440s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/double-bracket-10deg_MIR_MIR_MIR_1.stl
+[2.450s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/heel-bracket_left_1.stl
+[2.456s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/basis_left_1.stl
+[2.457s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/base_link.stl
+[2.457s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Rotor_1.stl
+[2.458s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext__1__1.stl
+[2.459s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/knee-strap-second-test_1.stl
+[2.460s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4Rotor_1.stl
+[2.465s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Stator_1.stl
+[2.471s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/double-bracket_1.stl
+[2.477s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftleg/290mm-tie-rod_v1_1.stl
+[2.477s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm
+[2.478s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl
+[2.481s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/skateboard-bearing__7__1.stl
+[2.482s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/shoulder-ex-al-interface_1.stl
+[2.490s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/base_link.stl
+[2.490s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl
+[2.497s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/bicep-motor-mate_1.stl
+[2.498s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/bicep_1.stl
+[2.498s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/elbow-rear-hanger_1.stl
+[2.501s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/2020_100mm__9__1.stl
+[2.503s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl
+[2.508s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/leftarm/straight-tendon_1.stl
+[2.510s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist
+[2.510s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/Rotate-left-leg_1.stl
+[2.513s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/Buttocks_1.stl
+[2.518s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/base_link.stl
+[2.519s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/DumRightLeg_1.stl
+[2.519s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/Rotate-right-leg_1.stl
+[2.523s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/Right-femur-top_1.stl
+[2.525s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/DumLeftLeg_1.stl
+[2.526s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/waist/Left-femur-top_1.stl
+[2.528s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/torso
+[2.528s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/torso/DumHead_1.stl
+[2.528s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/torso/base_link.stl
+[2.568s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/torso/DumLArm_1.stl
+[2.568s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/torso/DumRArm_1.stl
+[2.568s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg
+[2.568s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/210mm-tie-rod_v1_1.stl
+[2.569s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/conjstraint-knee-test-oute_1.stl
+[2.571s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext_1.stl
+[2.572s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/double-bracket-10deg_MIR_MIR_MIR_1.stl
+[2.582s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/heel-bracket_left_1.stl
+[2.589s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/basis_left_1.stl
+[2.590s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/base_link.stl
+[2.591s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Rotor_1.stl
+[2.591s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext__1__1.stl
+[2.592s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/knee-strap-second-test_1.stl
+[2.593s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4Rotor_1.stl
+[2.598s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Stator_1.stl
+[2.604s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/double-bracket_1.stl
+[2.610s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/rightleg/290mm-tie-rod_v1_1.stl
+[2.611s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head
+[2.611s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum4__1__1.stl
+[2.612s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__3___1__1.stl
+[2.612s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__3__1.stl
+[2.613s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever__1__1.stl
+[2.615s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__9__1.stl
+[2.616s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever_1.stl
+[2.617s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum2_1.stl
+[2.617s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__4__1.stl
+[2.618s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever__5__1.stl
+[2.619s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum2__1__1.stl
+[2.620s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__3__1.stl
+[2.620s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__6__1.stl
+[2.621s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever__4__1.stl
+[2.622s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/Head_1.stl
+[2.726s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/base_link.stl
+[2.726s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum5_1.stl
+[2.726s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__4___1.stl
+[2.727s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum4_1.stl
+[2.728s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__1__1.stl
+[2.729s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__5___1__1.stl
+[2.729s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__1__1.stl
+[2.730s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__8__1.stl
+[2.730s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center_1.stl
+[2.731s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum3_1.stl
+[2.731s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__5__1.stl
+[2.732s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__5__1.stl
+[2.732s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__2__1.stl
+[2.733s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/center-bracket2_1.stl
+[2.753s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum1_1.stl
+[2.753s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__0__1.stl
+[2.754s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__10__1.stl
+[2.755s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__1___1__1.stl
+[2.755s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__5__1.stl
+[2.756s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum1__1__1.stl
+[2.757s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__1__1.stl
+[2.758s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__4__1.stl
+[2.758s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/leadscrew__2___1__1.stl
+[2.759s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__7__1.stl
+[2.760s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever__3__1.stl
+[2.761s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__2__1.stl
+[2.762s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/screw-reciever__2__1.stl
+[2.763s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum3__1__1.stl
+[2.763s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__2__1.stl
+[2.763s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__11__1.stl
+[2.764s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/5mm-ujoint-base_1.stl
+[2.765s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/dum5__1__1.stl
+[2.765s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/10mm-ujoint-base_1.stl
+[2.766s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__4__1.stl
+[2.767s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/meshes/head/u-joint-center__3__1.stl
+[2.767s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/rviz
+[2.767s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/rviz/dropbear_simplified_rviz.rviz
+[2.768s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/ament_index/resource_index/package_run_dependencies/dropbear_simplified_urdf
+[2.768s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/ament_index/resource_index/parent_prefix_path/dropbear_simplified_urdf
+[2.768s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/environment/ament_prefix_path.sh
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/environment/ament_prefix_path.dsv
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/environment/path.sh
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/environment/path.dsv
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/local_setup.bash
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/local_setup.sh
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/local_setup.zsh
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/local_setup.dsv
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/package.dsv
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/ament_index/resource_index/packages/dropbear_simplified_urdf
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/cmake/dropbear_simplified_urdfConfig.cmake
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/cmake/dropbear_simplified_urdfConfig-version.cmake
+[2.769s] -- Installing: /home/gateway/dropbear_simplified_urdf/install/dropbear_simplified_urdf/share/dropbear_simplified_urdf/package.xml
+[2.770s] Invoked command in '/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --install /home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf

@@ -1,0 +1,9 @@
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/uninstall.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/dropbear_simplified_urdf_uninstall.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/test.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/edit_cache.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/rebuild_cache.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/list_install_components.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/install.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/install/local.dir
+/home/gateway/dropbear_simplified_urdf/build/dropbear_simplified_urdf/CMakeFiles/install/strip.dir

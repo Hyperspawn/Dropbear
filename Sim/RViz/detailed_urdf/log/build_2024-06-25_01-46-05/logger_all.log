@@ -1,0 +1,145 @@
+[0.243s] [34mcolcon[0m [1;30mDEBUG[0m [32mCommand line arguments: ['/usr/bin/colcon', 'build'][0m
+[0.243s] [34mcolcon[0m [1;30mDEBUG[0m [32mParsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=32, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7fdaffb40a90>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7fdaffb40520>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7fdaffb40520>>)[0m
+[0.261s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(colcon_meta) check parameters
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(recursive) check parameters
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(ignore) check parameters
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(path) check parameters
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(colcon_meta) discover
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(recursive) discover
+[0.262s] [34mcolcon.colcon_core.package_discovery[0m [1;30mINFO[0m Crawling recursively for packages in '/home/gateway/ros_ws'
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'ignore'
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'ignore_ament_install'
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['colcon_pkg']
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'colcon_pkg'
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['colcon_meta']
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'colcon_meta'
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['ros']
+[0.262s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'ros'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['cmake', 'python']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'cmake'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'python'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extensions ['python_setup_py']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(.) by extension 'python_setup_py'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(build) by extension 'ignore'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(build) ignored
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(install) by extension 'ignore'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(install) ignored
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(log) by extension 'ignore'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(log) ignored
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['ignore', 'ignore_ament_install']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'ignore'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'ignore_ament_install'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['colcon_pkg']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'colcon_pkg'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['colcon_meta']
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'colcon_meta'
+[0.269s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['ros']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'ros'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['cmake', 'python']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'cmake'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'python'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extensions ['python_setup_py']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src) by extension 'python_setup_py'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extensions ['ignore', 'ignore_ament_install']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extension 'ignore'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extension 'ignore_ament_install'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extensions ['colcon_pkg']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extension 'colcon_pkg'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extensions ['colcon_meta']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extension 'colcon_meta'
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extensions ['ros']
+[0.270s] [34mcolcon.colcon_core.package_identification[0m [1;30mLevel 1[0m _identify(src/dropbear_detailed_urdf) by extension 'ros'
+[0.271s] [34mcolcon.colcon_core.package_identification[0m [1;30mDEBUG[0m [32mPackage 'src/dropbear_detailed_urdf' with type 'ros.ament_cmake' and name 'dropbear_detailed_urdf'[0m
+[0.271s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(recursive) using defaults
+[0.271s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(ignore) discover
+[0.271s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(ignore) using defaults
+[0.271s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(path) discover
+[0.271s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(path) using defaults
+[0.279s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(prefix_path) check parameters
+[0.279s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(prefix_path) discover
+[0.279s] [34mcolcon.colcon_core.prefix_path.colcon[0m [1;30mWARNING[0m [33mThe path '/home/gateway/ros_ws/dropbear_detailed_urdf/install' in the environment variable COLCON_PREFIX_PATH doesn't exist[0m
+[0.279s] [34mcolcon.colcon_ros.prefix_path.ament[0m [1;30mWARNING[0m [33mThe path '/home/gateway/ros_ws/dropbear_detailed_urdf/install/dropbear_detailed_urdf' in the environment variable AMENT_PREFIX_PATH doesn't exist[0m
+[0.279s] [34mcolcon.colcon_ros.prefix_path.catkin[0m [1;30mWARNING[0m [33mThe path '/home/gateway/ros_ws/dropbear_detailed_urdf/install/dropbear_detailed_urdf' in the environment variable CMAKE_PREFIX_PATH doesn't exist[0m
+[0.280s] [34mcolcon.colcon_installed_package_information.package_discovery[0m [1;30mDEBUG[0m [32mFound 317 installed packages in /opt/ros/humble[0m
+[0.281s] [34mcolcon.colcon_core.package_discovery[0m [1;30mLevel 1[0m discover_packages(prefix_path) using defaults
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_args' from command line to 'None'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_target' from command line to 'None'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_clean_cache' from command line to 'False'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_clean_first' from command line to 'False'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'cmake_force_configure' from command line to 'False'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'ament_cmake_args' from command line to 'None'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'catkin_cmake_args' from command line to 'None'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mLevel 5[0m set package 'dropbear_detailed_urdf' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.300s] [34mcolcon.colcon_core.verb[0m [1;30mDEBUG[0m [32mBuilding package 'dropbear_detailed_urdf' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gateway/ros_ws/build/dropbear_detailed_urdf', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gateway/ros_ws/install/dropbear_detailed_urdf', 'merge_install': False, 'path': '/home/gateway/ros_ws/src/dropbear_detailed_urdf', 'symlink_install': False, 'test_result_base': None}[0m
+[0.300s] [34mcolcon.colcon_core.executor[0m [1;30mINFO[0m Executing jobs using 'parallel' executor
+[0.301s] [34mcolcon.colcon_parallel_executor.executor.parallel[0m [1;30mDEBUG[0m [32mrun_until_complete[0m
+[0.301s] [34mcolcon.colcon_ros.task.ament_cmake.build[0m [1;30mINFO[0m Building ROS package in '/home/gateway/ros_ws/src/dropbear_detailed_urdf' with build type 'ament_cmake'
+[0.301s] [34mcolcon.colcon_cmake.task.cmake.build[0m [1;30mINFO[0m Building CMake package in '/home/gateway/ros_ws/src/dropbear_detailed_urdf'
+[0.302s] [34mcolcon.colcon_core.plugin_system[0m [1;30mINFO[0m Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.302s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.302s] [34mcolcon.colcon_core.shell[0m [1;30mDEBUG[0m [32mSkip shell extension 'dsv' for command environment[0m
+[0.307s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoking command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake /home/gateway/ros_ws/src/dropbear_detailed_urdf -DCMAKE_INSTALL_PREFIX=/home/gateway/ros_ws/install/dropbear_detailed_urdf[0m
+[3.526s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoked command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake /home/gateway/ros_ws/src/dropbear_detailed_urdf -DCMAKE_INSTALL_PREFIX=/home/gateway/ros_ws/install/dropbear_detailed_urdf[0m
+[3.526s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoking command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --build /home/gateway/ros_ws/build/dropbear_detailed_urdf -- -j32 -l32[0m
+[3.540s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoked command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --build /home/gateway/ros_ws/build/dropbear_detailed_urdf -- -j32 -l32[0m
+[3.555s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoking command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --install /home/gateway/ros_ws/build/dropbear_detailed_urdf[0m
+[3.793s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m create_environment_scripts_only(dropbear_detailed_urdf)
+[3.793s] [34mcolcon.colcon_core.event_handler.log_command[0m [1;30mDEBUG[0m [32mInvoked command in '/home/gateway/ros_ws/build/dropbear_detailed_urdf' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble CONDA_PROMPT_MODIFIER=(ros) /usr/bin/cmake --install /home/gateway/ros_ws/build/dropbear_detailed_urdf[0m
+[3.794s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf' for CMake module files
+[3.794s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf' for CMake config files
+[3.795s] [34mcolcon.colcon_core.shell[0m [1;30mLevel 1[0m create_environment_hook('dropbear_detailed_urdf', 'cmake_prefix_path')
+[3.795s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment hook '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.ps1'
+[3.795s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment descriptor '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.dsv'
+[3.795s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment hook '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.sh'
+[3.796s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/bin'
+[3.796s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/lib/pkgconfig/dropbear_detailed_urdf.pc'
+[3.796s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/lib/python3.10/site-packages'
+[3.796s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/bin'
+[3.796s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.ps1'
+[3.796s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package descriptor '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.dsv'
+[3.797s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.sh'
+[3.797s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.bash'
+[3.797s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.zsh'
+[3.798s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m create_file_with_runtime_dependencies(/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/colcon-core/packages/dropbear_detailed_urdf)
+[3.808s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m create_environment_scripts_only(dropbear_detailed_urdf)
+[3.808s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf' for CMake module files
+[3.808s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf' for CMake config files
+[3.809s] [34mcolcon.colcon_core.shell[0m [1;30mLevel 1[0m create_environment_hook('dropbear_detailed_urdf', 'cmake_prefix_path')
+[3.809s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment hook '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.ps1'
+[3.809s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment descriptor '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.dsv'
+[3.809s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating environment hook '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/hook/cmake_prefix_path.sh'
+[3.809s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/bin'
+[3.809s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/lib/pkgconfig/dropbear_detailed_urdf.pc'
+[3.809s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/lib/python3.10/site-packages'
+[3.809s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m checking '/home/gateway/ros_ws/install/dropbear_detailed_urdf/bin'
+[3.810s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.ps1'
+[3.810s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package descriptor '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.dsv'
+[3.810s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.sh'
+[3.810s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.bash'
+[3.810s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating package script '/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/dropbear_detailed_urdf/package.zsh'
+[3.810s] [34mcolcon.colcon_core.environment[0m [1;30mLevel 1[0m create_file_with_runtime_dependencies(/home/gateway/ros_ws/install/dropbear_detailed_urdf/share/colcon-core/packages/dropbear_detailed_urdf)
+[3.811s] [34mcolcon.colcon_parallel_executor.executor.parallel[0m [1;30mDEBUG[0m [32mclosing loop[0m
+[3.811s] [34mcolcon.colcon_parallel_executor.executor.parallel[0m [1;30mDEBUG[0m [32mloop closed[0m
+[3.812s] [34mcolcon.colcon_parallel_executor.executor.parallel[0m [1;30mDEBUG[0m [32mrun_until_complete finished with '0'[0m
+[3.812s] [34mcolcon.colcon_core.event_reactor[0m [1;30mDEBUG[0m [32mjoining thread[0m
+[3.935s] [34mcolcon.colcon_core.plugin_system[0m [1;30mINFO[0m Skipping extension 'colcon_notification.desktop_notification.notify_send': Could not find 'notify-send'
+[3.935s] [34mcolcon.colcon_core.plugin_system[0m [1;30mINFO[0m Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[3.935s] [34mcolcon.colcon_core.plugin_system[0m [1;30mINFO[0m Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[3.935s] [34mcolcon.colcon_notification.desktop_notification[0m [1;30mINFO[0m Sending desktop notification using 'notify2'
+[3.936s] [34mcolcon.colcon_notification.desktop_notification.notify2[0m [1;30mDEBUG[0m [32mFailed to initialize notify2: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.Notifications was not provided by any .service files[0m
+[3.936s] [34mcolcon.colcon_core.event_reactor[0m [1;30mDEBUG[0m [32mjoined thread[0m
+[3.936s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix script '/home/gateway/ros_ws/install/local_setup.ps1'
+[3.936s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix util module '/home/gateway/ros_ws/install/_local_setup_util_ps1.py'
+[3.937s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix chain script '/home/gateway/ros_ws/install/setup.ps1'
+[3.937s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix script '/home/gateway/ros_ws/install/local_setup.sh'
+[3.937s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix util module '/home/gateway/ros_ws/install/_local_setup_util_sh.py'
+[3.938s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix chain script '/home/gateway/ros_ws/install/setup.sh'
+[3.938s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix script '/home/gateway/ros_ws/install/local_setup.bash'
+[3.938s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix chain script '/home/gateway/ros_ws/install/setup.bash'
+[3.938s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix script '/home/gateway/ros_ws/install/local_setup.zsh'
+[3.939s] [34mcolcon.colcon_core.shell[0m [1;30mINFO[0m Creating prefix chain script '/home/gateway/ros_ws/install/setup.zsh'

@@ -1,0 +1,467 @@
+<?xml version="1.0"?>
+
+<robot name="dropbear_leg" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="leg_macro" params="prefix folder parent sign *origin">
+          
+    <link name="${prefix}_RMD-X10-S2_MIR4__3_Rotor_1">
+      <inertial>
+        <origin xyz="-4.2114800383186157e-07 1.6545859007732755e-05 ${sign*0.011165715023864597}" rpy="0 0 0"/>
+        <mass value="0.030077996769097937"/>
+        <inertia ixx="7e-06" iyy="7e-06" izz="1e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.191553 -0.380845 ${sign*0.16988}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4__3_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0.191553 -0.380845 ${sign*0.16988}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4__3_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_RMD-X10-S2_MIR4__3_Stator_1">
+      <inertial>
+        <origin xyz="-0.036718214168607155 -0.05423872836967342 ${sign*0.033683692448425506}" rpy="0 0 0"/>
+        <mass value="0.5483656288061021"/>
+        <inertia ixx="0.002044" iyy="0.001828" izz="0.002663" ixy="-0.000494" iyz="0.000171" ixz="0.000142"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.191553 -0.380845 ${sign*0.16988}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4__3_Stator_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0.191553 -0.380845 ${sign*0.16988}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4__3_Stator_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_RMD-X10-S2_MIR4Rotor_1">
+      <inertial>
+        <origin xyz="0.004336745411893661 -0.10083451364614476 ${sign*0.02279900080800254}" rpy="0 0 0"/>
+        <mass value="0.618391872847042"/>
+        <inertia ixx="0.006212" iyy="0.000506" izz="0.00633" ixy="0.000357" iyz="0.000167" ixz="-2e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.263279 -0.282145 ${sign*0.106399}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4Rotor_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0.263279 -0.282145 ${sign*0.106399}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X10-S2_MIR4Rotor_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_double-bracket_1">
+      <inertial>
+        <origin xyz="-0.0024174004635344193 -0.17065516771979955 ${sign*-0.026188805978005034}" rpy="0 0 0"/>
+        <mass value="0.5941741295649757"/>
+        <inertia ixx="0.006967" iyy="0.001718" izz="0.006134" ixy="-0.000485" iyz="0.001043" ixz="-4.1e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.141302 -0.364392 ${sign*0.089867}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/double-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.141302 -0.364392 ${sign*0.089867}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/double-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_conjstraint-knee-test-oute_1">
+      <inertial>
+        <origin xyz="0.0388201387802167 0.0020245681514819616 ${sign*-0.009921514877255011}" rpy="0 0 0"/>
+        <mass value="0.17273623323347898"/>
+        <inertia ixx="0.000316" iyy="0.000318" izz="0.000394" ixy="-0.000137" iyz="0.0" ixz="-0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.243318 0.012178 ${sign*0.069894}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/conjstraint-knee-test-oute_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.243318 0.012178 ${sign*0.069894}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/conjstraint-knee-test-oute_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_knee-strap-second-test_1">
+      <inertial>
+        <origin xyz="0.02289817601670563 -0.05000799500593258 ${sign*-0.009994439699335583}" rpy="0 0 0"/>
+        <mass value="0.06382003552060014"/>
+        <inertia ixx="9.8e-05" iyy="3.7e-05" izz="0.000101" ixy="3.6e-05" iyz="-2e-06" ixz="1e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.20361 -0.034819 ${sign*0.069883}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/knee-strap-second-test_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.20361 -0.034819 ${sign*0.069883}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/knee-strap-second-test_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_double-bracket-10deg_MIR_MIR_MIR_1">
+      <inertial>
+        <origin xyz="-0.023030853980666094 -0.20870609984957944 ${sign*0.04394857851730673}" rpy="0 0 0"/>
+        <mass value="0.972328284996074"/>
+        <inertia ixx="0.01683" iyy="0.002068" izz="0.017418" ixy="0.001098" iyz="0.002791" ixz="-0.000198"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.157814 0.065197 ${sign*0.089871}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/double-bracket-10deg_MIR_MIR_MIR_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.157814 0.065197 ${sign*0.089871}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/double-bracket-10deg_MIR_MIR_MIR_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_calf-motor-driver-ext_1">
+      <inertial>
+        <origin xyz="0.01018087483375632 -0.006406414275960254 ${sign*-0.010824350415873277}" rpy="0 0 0"/>
+        <mass value="0.03904654588774605"/>
+        <inertia ixx="7e-06" iyy="1.4e-05" izz="1.8e-05" ixy="4e-06" iyz="-0.0" ixz="1e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.212594 0.236458 ${sign*0.073139}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/calf-motor-driver-ext_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque2552550"/>
+      </visual>
+      <collision>
+        <origin xyz="0.212594 0.236458 ${sign*0.073139}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/calf-motor-driver-ext_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_290mm-tie-rod_v1_1">
+      <inertial>
+        <origin xyz="-0.008618850844608478 -0.1441043639671668 ${sign*0.01627466914432321}" rpy="0 0 0"/>
+        <mass value="0.31671295572679664"/>
+        <inertia ixx="0.00297" iyy="0.000108" izz="0.002894" ixy="-0.000175" iyz="0.000506" ixz="3.1e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.175826 0.256902 ${sign*0.096784}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/290mm-tie-rod_v1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.175826 0.256902 ${sign*0.096784}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/290mm-tie-rod_v1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_calf-motor-driver-ext__1__1">
+      <inertial>
+        <origin xyz="0.010997941306614883 0.002322003619584123 ${sign*0.011641556204172841}" rpy="0 0 0"/>
+        <mass value="0.03904654588774605"/>
+        <inertia ixx="5e-06" iyy="1.6e-05" izz="1.8e-05" ixy="-1e-06" iyz="0.0" ixz="-2e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.210465 0.325998 ${sign*0.016729}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/calf-motor-driver-ext__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque2552550"/>
+      </visual>
+      <collision>
+        <origin xyz="0.210465 0.325998 ${sign*0.016729}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/calf-motor-driver-ext__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_210mm-tie-rod_v1_1">
+      <inertial>
+        <origin xyz="-0.011696719594497779 -0.10121354316624126 ${sign*0.026926339548267383}" rpy="0 0 0"/>
+        <mass value="0.24352587221730845"/>
+        <inertia ixx="0.001287" iyy="6.1e-05" izz="0.001267" ixy="-0.000141" iyz="0.000219" ixz="2.5e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.170599 0.320333 ${sign*-0.009872}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/210mm-tie-rod_v1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.170599 0.320333 ${sign*-0.009872}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/210mm-tie-rod_v1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_basis_left_1">
+      <inertial>
+        <origin xyz="-0.00029764813988561456 -0.020222597886624838 ${sign*0.013552063748571314}" rpy="0 0 0"/>
+        <mass value="0.09371675054362279"/>
+        <inertia ixx="6.4e-05" iyy="3.3e-05" izz="5.6e-05" ixy="-0.0" iyz="4e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.146891 0.512935 ${sign*0.013949}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/basis_left_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.146891 0.512935 ${sign*0.013949}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/basis_left_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+  
+    <link name="${prefix}_heel-bracket_left_1">
+      <inertial>
+        <origin xyz="0.012688445147171948 -0.00771159949391742 ${sign*0.0016067039154728817}" rpy="0 0 0"/>
+        <mass value="0.7069787408674384"/>
+        <inertia ixx="0.000698" iyy="0.005471" izz="0.005014" ixy="0.000121" iyz="-8.5e-05" ixz="-4.2e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.127372 0.550788 ${sign*-0.002967}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/heel-bracket_left_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.127372 0.550788 ${sign*-0.002967}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/heel-bracket_left_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}_leg_connection" type="fixed">
+      <xacro:insert_block name = "origin"/>
+      <parent link ="${parent}"/>
+     <child link="${prefix}_RMD-X10-S2_MIR4__3_Rotor_1"/>
+   </joint>
+  
+    <joint name="${prefix}_hip_joint" type="continuous">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X10-S2_MIR4__3_Rotor_1"/>
+      <child link="${prefix}_RMD-X10-S2_MIR4__3_Stator_1"/>
+      <axis xyz="0.000261 -0.0 -1.0"/>
+    </joint>
+  
+    <joint name="${prefix}_knee_joint" type="continuous">
+      <origin xyz="-0.071726 -0.0987 ${sign*0.063481}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X10-S2_MIR4__3_Stator_1"/>
+      <child link="${prefix}_RMD-X10-S2_MIR4Rotor_1"/>
+      <axis xyz="-0.000261 0.0 1.0"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 4" type="continuous">
+      <origin xyz="0.050251 -0.016453 ${sign*0.080013}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X10-S2_MIR4__3_Stator_1"/>
+      <child link="${prefix}_double-bracket_1"/>
+      <axis xyz="-0.000261 0.0 1.0"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 5" type="continuous">
+      <origin xyz="0.02018 -0.294308 ${sign*0.036505}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X10-S2_MIR4Rotor_1"/>
+      <child link="${prefix}_conjstraint-knee-test-oute_1"/>
+      <axis xyz="-0.000261 0.0 1.0"/>
+    </joint>
+  
+  
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+  
+      <joint name="${prefix}_Revolute 6 gz" type="revolute">
+        <pose relative_to="${prefix}_double-bracket_1">-0.002137 -0.329993 ${sign*0.019999} 0 0 0</pose>
+        <parent>${prefix}_double-bracket_1</parent>
+        <child>${prefix}_conjstraint-knee-test-oute_1</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+  
+        <limit>
+          <lower>-3.142</lower>
+          <upper>3.142</upper>
+          <effort>10.0</effort>
+          <velocity>10.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+    </gazebo>
+  
+    <joint name="${prefix}_Revolute 7" type="continuous">
+      <origin xyz="-0.062308 -0.329573 ${sign*0.019984}" rpy="0 0 0"/>
+      <parent link="${prefix}_double-bracket_1"/>
+      <child link="${prefix}_knee-strap-second-test_1"/>
+      <axis xyz="-0.000261 0.0 1.0"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 8" type="continuous">
+      <origin xyz="0.045796 -0.100016 ${sign*-0.019988}" rpy="0 0 0"/>
+      <parent link="${prefix}_knee-strap-second-test_1"/>
+      <child link="${prefix}_double-bracket-10deg_MIR_MIR_MIR_1"/>
+      <axis xyz="-0.000261 0.0 1.0"/>
+    </joint>
+  
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      <joint name="${prefix}_Revolute 9 gz" type="revolute">
+        <pose relative_to="${prefix}_conjstraint-knee-test-oute_1">0.025403 -0.05436 ${sign*-0.019993} 0 0 0</pose>
+        <parent>${prefix}_conjstraint-knee-test-oute_1</parent>
+        <child>${prefix}_double-bracket-10deg_MIR_MIR_MIR_1</child>
+  
+        <axis>
+          <xyz> 0 0 1</xyz>
+        </axis>
+        <limit>
+          <lower>-3.142</lower>
+          <upper>3.142</upper>
+          <effort>10.0</effort>
+          <velocity>10.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+  
+      </joint>
+    </gazebo>
+  
+    <joint name="${prefix}_Revolute 10" type="continuous">
+      <origin xyz="-0.05478 -0.171261 ${sign*0.016732}" rpy="0 0 0"/>
+      <parent link="${prefix}_double-bracket-10deg_MIR_MIR_MIR_1"/>
+      <child link="${prefix}_calf-motor-driver-ext_1"/>
+      <axis xyz="0.004499 -0.173596 -0.984807"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 11" type="continuous">
+      <origin xyz="0.036768 -0.020444 ${sign*-0.023645}" rpy="0 0 0"/>
+      <parent link="${prefix}_calf-motor-driver-ext_1"/>
+      <child link="${prefix}_290mm-tie-rod_v1_1"/>
+      <axis xyz="0.004499 -0.173596 -0.984807"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 12" type="continuous">
+      <origin xyz="-0.052651 -0.260801 ${sign*0.073142}" rpy="0 0 0"/>
+      <parent link="${prefix}_double-bracket-10deg_MIR_MIR_MIR_1"/>
+      <child link="${prefix}_calf-motor-driver-ext__1__1"/>
+      <axis xyz="-0.004499 0.173596 0.984807"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 13" type="continuous">
+      <origin xyz="0.039866 0.005665 ${sign*0.026601}" rpy="0 0 0"/>
+      <parent link="${prefix}_calf-motor-driver-ext__1__1"/>
+      <child link="${prefix}_210mm-tie-rod_v1_1"/>
+      <axis xyz="-0.004499 0.173596 0.984807"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 14" type="continuous">
+      <origin xyz="0.010923 -0.447738 ${sign*0.075922}" rpy="0 0 0"/>
+      <parent link="${prefix}_double-bracket-10deg_MIR_MIR_MIR_1"/>
+      <child link="${prefix}_basis_left_1"/>
+      <axis xyz="0.004499 -0.173596 -0.984807"/>
+    </joint>
+  
+    <joint name="${prefix}_Revolute 15" type="continuous">
+      <origin xyz="0.019519 -0.037853 ${sign*0.016916}" rpy="0 0 0"/>
+      <parent link="${prefix}_basis_left_1"/>
+      <child link="${prefix}_heel-bracket_left_1"/>
+      <axis xyz="0.999931 -0.00994 0.006321"/>
+    </joint>
+  
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      <joint name="${prefix}_Revolute 16 gz" type="revolute">
+        <pose relative_to="${prefix}_heel-bracket_left_1">-0.067753 0.029044 ${sign*0.045342} 0 0 0</pose>
+        <parent>${prefix}_heel-bracket_left_1</parent>
+        <child>${prefix}_210mm-tie-rod_v1_1</child>
+  
+        <axis>
+          <xyz> 0 0 1</xyz>
+        </axis>
+        <limit>
+          <lower>-3.142</lower>
+          <upper>3.142</upper>
+          <effort>10.0</effort>
+          <velocity>10.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+  
+      </joint>
+    </gazebo>
+  
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      <joint name="${prefix}_Revolute 17 gz" type="revolute">
+        <pose relative_to="${prefix}_heel-bracket_left_1">-0.067303 0.011689 ${sign*-0.05314} 0 0 0</pose>
+        <parent>${prefix}_heel-bracket_left_1</parent>
+        <child>${prefix}_290mm-tie-rod_v1_1</child>
+  
+        <axis>
+          <xyz> 0 0 1</xyz>
+        </axis>
+        <limit>
+          <lower>-3.142</lower>
+          <upper>3.142</upper>
+          <effort>10.0</effort>
+          <velocity>10.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+  
+      </joint>
+    </gazebo>
+  
+    </xacro:macro>
+</robot>

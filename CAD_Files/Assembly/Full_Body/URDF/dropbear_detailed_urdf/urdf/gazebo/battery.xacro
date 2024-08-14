@@ -1,0 +1,680 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name = "battery"
+    xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name = "battery_macro" params = "parent *origin">
+            <link name="battery_base_link">
+            <inertial>
+              <origin xyz="0.022590484802305813 0.018960174760726197 -0.006132157669211555" rpy="0 0 0"/>
+              <mass value="0.0004932300466136188"/>
+              <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/base_link.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="powder_coat_pink"/>
+            </visual>
+            <collision>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/base_link.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="battery-frame-top_1">
+            <inertial>
+              <origin xyz="-0.029487392574973965 0.009472165252299464 0.0899922901445806" rpy="0 0 0"/>
+              <mass value="0.3738403268892177"/>
+              <inertia ixx="0.001888" iyy="0.001962" izz="0.00093" ixy="-1e-06" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.02259 -0.01896 0.003632" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-frame-top_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque245245245"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.02259 -0.01896 0.003632" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-frame-top_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="24ah-adapter_1">
+            <inertial>
+              <origin xyz="-2.3628207273966584e-05 -0.0099850280312349 0.09000001842179056" rpy="0 0 0"/>
+              <mass value="0.10861118554877086"/>
+              <inertia ixx="0.000447" iyy="0.000572" izz="0.000132" ixy="0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.00741 0.02204 0.00364" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/24ah-adapter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.00741 0.02204 0.00364" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/24ah-adapter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="battery-board-adapter_1">
+            <inertial>
+              <origin xyz="0.004971785695739639 -0.06132209778721101 0.07850739418054586" rpy="0 0 0"/>
+              <mass value="0.11472903799170742"/>
+              <inertia ixx="0.000547" iyy="0.000305" izz="0.000244" ixy="0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.042587 -0.07896 -0.007865" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-board-adapter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.042587 -0.07896 -0.007865" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-board-adapter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__5__1">
+            <inertial>
+              <origin xyz="0.019492606770232672 -0.0359995552578323 0.02400503065313052" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000287" izz="0.000176" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.052587 -0.098679 -0.007374" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__5__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.052587 -0.098679 -0.007374" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__5__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__7__1">
+            <inertial>
+              <origin xyz="0.019504930628009474 -0.03599955525784347 -0.023994973084695226" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000287" izz="0.000176" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.052546 -0.098679 -0.165374" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__7__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.052546 -0.098679 -0.165374" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__7__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__8__1">
+            <inertial>
+              <origin xyz="0.019489999400669582 0.023999548077406 0.03600474469399404" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000176" izz="0.000287" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.052587 0.057374 -0.005376" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__8__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.052587 0.057374 -0.005376" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__8__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large_1">
+            <inertial>
+              <origin xyz="0.019508537102486963 0.023999548077397605 -0.035995258364225735" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000176" izz="0.000287" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.052545 0.057374 -0.167376" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.052545 0.057374 -0.167376" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="battery-frame-bottom_1">
+            <inertial>
+              <origin xyz="-0.004253042372786646 -0.08787568166183796 0.08984695595405534" rpy="0 0 0"/>
+              <mass value="0.7203422430283724"/>
+              <inertia ixx="0.00475" iyy="0.003868" izz="0.0026" ixy="2.3e-05" iyz="8e-06" ixz="6e-06"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.00741 0.04204 0.00364" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-frame-bottom_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque245245245"/>
+            </visual>
+            <collision>
+              <origin xyz="0.00741 0.04204 0.00364" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery-frame-bottom_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__2__1">
+            <inertial>
+              <origin xyz="-0.03599508116943264 -0.023999825239000183 -0.019508608166754943" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000287" iyy="0.000176" izz="0.000385" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.01641 0.07204 0.003642" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__2__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.01641 0.07204 0.003642" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__2__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__1__1">
+            <inertial>
+              <origin xyz="0.03600491577209107 -0.02399982523957872 -0.019489145868573216" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000287" iyy="0.000176" izz="0.000385" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.00159 0.11204 0.003638" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.00159 0.11204 0.003638" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__4__1">
+            <inertial>
+              <origin xyz="0.019507999909711672 -0.023999825239709782 -0.03599516568904662" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000176" izz="0.000287" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.037569 0.11204 -0.077372" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__4__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.037569 0.11204 -0.077372" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__4__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__6__1">
+            <inertial>
+              <origin xyz="0.019489537611527573 -0.023999825239716832 0.036004831252733585" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000385" iyy="0.000176" izz="0.000287" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.037564 0.11204 -0.095372" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__6__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.037564 0.11204 -0.095372" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__6__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__9__1">
+            <inertial>
+              <origin xyz="-0.03600517218772016 -0.02399982523901982 0.019489182712158687" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000287" iyy="0.000176" izz="0.000385" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.016457 0.07204 -0.176358" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__9__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.016457 0.07204 -0.176358" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__9__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="power-module-large__3__1">
+            <inertial>
+              <origin xyz="0.035994824753803556 -0.023999825239599343 0.019508645010338693" rpy="0 0 0"/>
+              <mass value="0.2949766795157407"/>
+              <inertia ixx="0.000287" iyy="0.000176" izz="0.000385" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.001543 0.11204 -0.176362" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__3__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.001543 0.11204 -0.176362" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/power-module-large__3__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="Power_Converter_1">
+            <inertial>
+              <origin xyz="-0.015368497172790214 1.747610835489688e-07 0.03249628165064687" rpy="0 0 0"/>
+              <mass value="0.1581469902793707"/>
+              <inertia ixx="0.000136" iyy="7.2e-05" izz="9e-05" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.052436 0.14854 -0.096348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/Power_Converter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.052436 0.14854 -0.096348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/Power_Converter_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="Power_Converter__2__1">
+            <inertial>
+              <origin xyz="-0.01535133833561634 1.7476109154257458e-07 -0.032503715461035136" rpy="0 0 0"/>
+              <mass value="0.1581469902793707"/>
+              <inertia ixx="0.000136" iyy="7.2e-05" izz="9e-05" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.052431 0.14854 -0.076348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/Power_Converter__2__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.052431 0.14854 -0.076348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/Power_Converter__2__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="5v-module__1__1">
+            <inertial>
+              <origin xyz="-0.006829591091305862 1.7476103840452506e-07 -0.027501493647208504" rpy="0 0 0"/>
+              <mass value="0.01797378705984352"/>
+              <inertia ixx="5e-06" iyy="4e-06" izz="1e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.05243 0.08754 -0.071348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/5v-module__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.05243 0.08754 -0.071348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/5v-module__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="5v-module_1">
+            <inertial>
+              <origin xyz="-0.006843749928479768 1.7476102991131892e-07 0.027498503464473134" rpy="0 0 0"/>
+              <mass value="0.01797378705984352"/>
+              <inertia ixx="5e-06" iyy="4e-06" izz="1e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.052438 0.08754 -0.101348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/5v-module_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.052438 0.08754 -0.101348" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/5v-module_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="naval-strap_1">
+            <inertial>
+              <origin xyz="-0.006996760881096832 -0.04627696351340316 -1.5510194544959832e-06" rpy="0 0 0"/>
+              <mass value="0.041584463944944944"/>
+              <inertia ixx="4.4e-05" iyy="3.1e-05" izz="1.5e-05" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.027566 -0.06596 -0.086369" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/naval-strap_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque245245245"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.027566 -0.06596 -0.086369" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/naval-strap_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="naval_1">
+            <inertial>
+              <origin xyz="-0.017589962097806593 -0.004048945439302078 0.019892622139461635" rpy="0 0 0"/>
+              <mass value="0.06001290787639682"/>
+              <inertia ixx="2.8e-05" iyy="2.9e-05" izz="1.5e-05" ixy="-2e-06" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.017572 0.00204 -0.066367" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/naval_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque22122113"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.017572 0.00204 -0.066367" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/naval_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="battery__1___1__1">
+            <inertial>
+              <origin xyz="0.03500037179257057 -0.12999982523929907 9.018421798165366e-06" rpy="0 0 0"/>
+              <mass value="2.912"/>
+              <inertia ixx="0.022617" iyy="0.007401" izz="0.017593" ixy="-0.0" iyz="-0.0" ixz="1e-06"/>
+            </inertial>
+            <visual>
+              <origin xyz="0.042434 -0.07396 -0.086351" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery__1___1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque191191191"/>
+            </visual>
+            <collision>
+              <origin xyz="0.042434 -0.07396 -0.086351" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/battery__1___1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="mcp1_1">
+            <inertial>
+              <origin xyz="0.0005699601199161616 -0.011599825239580641 0.017600379204158363" rpy="0 0 0"/>
+              <mass value="0.001255484516035344"/>
+              <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.03558 0.04824 -0.035821" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/mcp1_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque0125168"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.03558 0.04824 -0.035821" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/mcp1_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="mpu1__1__1">
+            <inertial>
+              <origin xyz="0.0007483229183894158 -0.010174825239574366 0.00518219945352337" rpy="0 0 0"/>
+              <mass value="0.0005832942495882682"/>
+              <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.035568 0.049865 -0.081371" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/mpu1__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque0125168"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.035568 0.049865 -0.081371" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/mpu1__1__1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+          
+          <link name="esp1_1">
+            <inertial>
+              <origin xyz="0.0007443336561322386 -0.011749825239586655 0.02335042239740054" rpy="0 0 0"/>
+              <mass value="0.0021978384991765366"/>
+              <inertia ixx="1e-06" iyy="0.0" izz="0.0" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+              <origin xyz="-0.035562 0.04829 -0.101521" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/esp1_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+              <material name="opaque808080"/>
+            </visual>
+            <collision>
+              <origin xyz="-0.035562 0.04829 -0.101521" rpy="0 0 0"/>
+              <geometry>
+                <mesh filename="package://dropbear_detailed_urdf/meshes/battery/esp1_1.stl" scale="0.001 0.001 0.001"/>
+              </geometry>
+            </collision>
+          </link>
+
+          <joint name="battery_torso_connection" type="fixed">
+            <xacro:insert_block name = "origin"/>
+            <parent link="${parent}"/>
+            <child link = "battery_base_link"/>
+          </joint>
+          
+          <joint name="Rigid 1" type="fixed">
+            <origin xyz="0.02259 0.01896 -0.003632" rpy="0 0 0"/>
+            <parent link="battery_base_link"/>
+            <child link="battery-frame-top_1"/>
+          </joint>
+          
+          <joint name="Rigid 2" type="fixed">
+            <origin xyz="-0.03 -0.041 -8e-06" rpy="0 0 0"/>
+            <parent link="battery-frame-top_1"/>
+            <child link="24ah-adapter_1"/>
+          </joint>
+          
+          <joint name="Rigid 3" type="fixed">
+            <origin xyz="0.019997 0.06 0.011497" rpy="0 0 0"/>
+            <parent link="battery-frame-top_1"/>
+            <child link="battery-board-adapter_1"/>
+          </joint>
+          
+          <joint name="Rigid 4" type="fixed">
+            <origin xyz="0.01 0.019719 -0.000491" rpy="0 0 0"/>
+            <parent link="battery-board-adapter_1"/>
+            <child link="power-module-large__5__1"/>
+          </joint>
+          
+          <joint name="Rigid 5" type="fixed">
+            <origin xyz="0.009959 0.019719 0.157509" rpy="0 0 0"/>
+            <parent link="battery-board-adapter_1"/>
+            <child link="power-module-large__7__1"/>
+          </joint>
+          
+          <joint name="Rigid 6" type="fixed">
+            <origin xyz="0.01 -0.136334 -0.002489" rpy="0 0 0"/>
+            <parent link="battery-board-adapter_1"/>
+            <child link="power-module-large__8__1"/>
+          </joint>
+          
+          <joint name="Rigid 7" type="fixed">
+            <origin xyz="0.009958 -0.136334 0.159511" rpy="0 0 0"/>
+            <parent link="battery-board-adapter_1"/>
+            <child link="power-module-large_1"/>
+          </joint>
+          
+          <joint name="Rigid 8" type="fixed">
+            <origin xyz="0.0 -0.02 0.0" rpy="0 0 0"/>
+            <parent link="24ah-adapter_1"/>
+            <child link="battery-frame-bottom_1"/>
+          </joint>
+          
+          <joint name="Rigid 9" type="fixed">
+            <origin xyz="-0.009 -0.03 -2e-06" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__2__1"/>
+          </joint>
+          
+          <joint name="Rigid 10" type="fixed">
+            <origin xyz="0.009 -0.07 2e-06" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__1__1"/>
+          </joint>
+          
+          <joint name="Rigid 11" type="fixed">
+            <origin xyz="0.044979 -0.07 0.081012" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__4__1"/>
+          </joint>
+          
+          <joint name="Rigid 12" type="fixed">
+            <origin xyz="0.044974 -0.07 0.099012" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__6__1"/>
+          </joint>
+          
+          <joint name="Rigid 13" type="fixed">
+            <origin xyz="-0.009047 -0.03 0.179998" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__9__1"/>
+          </joint>
+          
+          <joint name="Rigid 14" type="fixed">
+            <origin xyz="0.008953 -0.07 0.180002" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="power-module-large__3__1"/>
+          </joint>
+          
+          <joint name="Rigid 15" type="fixed">
+            <origin xyz="-0.045026 -0.1065 0.099988" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="Power_Converter_1"/>
+          </joint>
+          
+          <joint name="Rigid 16" type="fixed">
+            <origin xyz="-0.045021 -0.1065 0.079988" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="Power_Converter__2__1"/>
+          </joint>
+          
+          <joint name="Rigid 17" type="fixed">
+            <origin xyz="-0.04502 -0.0455 0.074988" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="5v-module__1__1"/>
+          </joint>
+          
+          <joint name="Rigid 18" type="fixed">
+            <origin xyz="-0.045028 -0.0455 0.104988" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="5v-module_1"/>
+          </joint>
+          
+          <joint name="Rigid 19" type="fixed">
+            <origin xyz="0.004976 0.047 0.090001" rpy="0 0 0"/>
+            <parent link="battery-frame-top_1"/>
+            <child link="naval-strap_1"/>
+          </joint>
+          
+          <joint name="Rigid 20" type="fixed">
+            <origin xyz="-0.009994 -0.068 -0.020002" rpy="0 0 0"/>
+            <parent link="naval-strap_1"/>
+            <child link="naval_1"/>
+          </joint>
+          
+          <joint name="Rigid 21" type="fixed">
+            <origin xyz="-0.065024 0.055 0.089983" rpy="0 0 0"/>
+            <parent link="battery-frame-top_1"/>
+            <child link="battery__1___1__1"/>
+          </joint>
+          
+          <joint name="Rigid 22" type="fixed">
+            <origin xyz="0.04299 -0.0062 0.039461" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="mcp1_1"/>
+          </joint>
+          
+          <joint name="Rigid 23" type="fixed">
+            <origin xyz="0.042978 -0.007825 0.085011" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="mpu1__1__1"/>
+          </joint>
+          
+          <joint name="Rigid 24" type="fixed">
+            <origin xyz="0.042972 -0.00625 0.105161" rpy="0 0 0"/>
+            <parent link="battery-frame-bottom_1"/>
+            <child link="esp1_1"/>
+          </joint>
+    </xacro:macro>
+/</robot>

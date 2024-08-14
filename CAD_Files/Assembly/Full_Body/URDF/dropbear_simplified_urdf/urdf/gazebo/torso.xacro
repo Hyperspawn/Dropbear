@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<robot name="torso"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/materials.xacro" />
+
+  <xacro:macro name="torso_macro" params="prefix">
+
+
+    <link name="torso">
+      <inertial>
+        <origin xyz="-0.03675640917673825 0.10469671997794947 0.060052559811593326" rpy="0 0 0"/>
+        <mass value="3.2595669741313733"/>
+        <inertia ixx="0.075048" iyy="0.064931" izz="0.077575" ixy="0.004011" iyz="0.00017" ixz="3.6e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/torso/base_link.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/torso/base_link.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="battery">
+      <inertial>
+        <origin xyz="-0.014703908327839686 -0.0843541120647618 0.0899587845320941" rpy="0 0 0"/>
+        <mass value="7.637162903287981"/>
+        <inertia ixx="0.079683" iyy="0.047453" izz="0.063603" ixy="-0.006221" iyz="1e-06" ixz="3e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.011029 -0.026628 0.030271" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/torso/HumanoidBatteryAssembly_Copy_v2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.011029 -0.026628 0.030271" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/torso/HumanoidBatteryAssembly_Copy_v2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <joint name="${prefix}_battery_torso_connection" type="fixed">
+      <origin xyz="0.011029 0.026628 -0.030271" rpy="0 0 0"/>
+      <parent link="torso"/>
+      <child link="battery"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

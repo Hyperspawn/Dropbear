@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="head">
+    
+    <!-- <xacro:macro name="head_ros2_control" params="prefix"> -->
+        <ros2_control name = "head" type="System">
+            <hardware>
+                <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+            </hardware>
+    
+            <joint name="head_Revolute 25">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 26">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 27">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 34">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+    
+            <joint name = "head_Revolute 36">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 37">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 38">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 44">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 45">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 46">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 47">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 48">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 54">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 55">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 56">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 57">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 58">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 64">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 65">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 66">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 67">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 68">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 74">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 75">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 76">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 77">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 78">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Revolute 84">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+
+            <joint name = "head_Revolute 85">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 30">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 40">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 50">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 60">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 70">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+    
+            <joint name = "head_Slider 80">
+                <command_interface name = "position">
+                    <param name = "min">-${PI}</param>
+                    <param name = "max">${PI}</param>
+                </command_interface>
+                <state_interface name = "position"/>
+            </joint>
+        </ros2_control>
+
+    <!-- </xacro:macro> -->
+    <gazebo>
+        <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+            <robot_param>robot_description</robot_param>
+            <robot_param_node>robot_state_publisher</robot_param_node>
+            <parameters>$(find dropbear_detailed_urdf)/config/controllers.yaml</parameters>
+        </plugin>
+    </gazebo>
+
+</robot>

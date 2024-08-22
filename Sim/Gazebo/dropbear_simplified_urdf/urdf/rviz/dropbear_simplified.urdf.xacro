@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<robot name= "humanoid"
+    xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Constants -->
+    <xacro:property name = "PI" value = "3.141593"/>
+
+    <!-- Head xacro -->
+    <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/rviz/head.xacro"/>
+
+    <!-- Torso xacro -->
+    <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/rviz/torso.xacro"/>
+
+    <!-- Waist xacro -->
+    <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/rviz/waist.xacro"/>
+
+    <!-- Arm xacro -->
+    <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/rviz/arm.xacro"/>
+
+    <!-- Leg Xacro -->
+    <xacro:include filename="$(find dropbear_simplified_urdf)/urdf/rviz/leg.xacro"/>
+
+    <!-- World Link -->
+    <link name="sim_world"/>
+
+    <!-- Torso macro -->
+    <xacro:torso_macro prefix="torso">
+    </xacro:torso_macro>
+
+    <!-- base_link to world joint -->
+    <joint name="base_link_sim_world_joint" type="fixed">
+        <origin xyz="0.0 0.0 1.4" rpy="${PI/2} 0.0 0.0"/>
+        <parent link="sim_world"/>
+        <child link="torso"/>
+    </joint>
+
+    <!-- Head -->
+    <!-- <xacro:head_macro prefix="head" parent = "torso">
+        <origin xyz="0.078519 0.116226 0.059747" rpy="0 ${PI/2} 0"/>
+    </xacro:head_macro> -->
+
+    <!-- waist -->
+    <xacro:waist_macro  parent = "torso">
+        <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/>
+    </xacro:waist_macro>
+
+    <!-- Right Arm-->
+    <xacro:arm_macro prefix="RH" folder = "rightarm" parent = "torso" sign = "1">
+        <origin xyz="-0.054627 0.160416 0.234212" rpy="0 0 ${-PI/2}"/>
+    </xacro:arm_macro>
+
+    <!-- Left Arm -->
+    <xacro:arm_macro prefix="LH" folder = "leftarm" parent = "torso" sign = "-1">
+        <origin xyz="-0.054536 0.160416 -0.114788" rpy="0 0 ${-PI/2}"/> 
+    </xacro:arm_macro>
+
+    <!-- Right Leg -->
+    <xacro:leg_macro prefix = "RL" folder = "rightleg" parent = "DumRightLeg_1" sign = "1">
+        <origin xyz="0.0 0.0 0.0" rpy="${PI/18} 0 0"/>
+    </xacro:leg_macro>
+
+    <!-- Left Leg -->
+    <xacro:leg_macro prefix = "LL" folder = "leftleg" parent = "DumLeftLeg_1" sign = "-1">
+        <origin xyz="0.0 0.0 0.0" rpy="${-PI/18} 0 0"/>
+    </xacro:leg_macro>
+
+</robot>

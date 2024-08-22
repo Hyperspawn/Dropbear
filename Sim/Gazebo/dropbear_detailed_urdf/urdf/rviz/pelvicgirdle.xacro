@@ -1,0 +1,2372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name = "pelvicgirdle"
+    xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name = "pelvicgirdle_macro" params = "prefix parent *origin">
+
+        <link name="${prefix}_lumbare_1">
+            <inertial>
+                <origin xyz="0.015013908729022599 -0.006651333878704202 8.561757265178327e-06" rpy="0 0 0"/>
+                <mass value="0.11728061424473395"/>
+                <inertia ixx="0.000113" iyy="0.0001" izz="3e-05" ixy="-1e-06" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.140001 0.171194 -0.05969" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/lumbare_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque22122113"/>
+            </visual>
+            <collision>
+                <origin xyz="0.140001 0.171194 -0.05969" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/lumbare_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_bearing-rocker-rear__1__1">
+            <inertial>
+                <origin xyz="-4.051960521583853e-06 1.0776773147785912e-05 0.014999619437497086" rpy="0 0 0"/>
+                <mass value="0.02415641953013871"/>
+                <inertia ixx="4e-06" iyy="5e-06" izz="5e-06" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.125015 0.187328 -0.112706" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-rocker-rear__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.125015 0.187328 -0.112706" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-rocker-rear__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_bearing-rocker-rear_1">
+            <inertial>
+                <origin xyz="4.398940962060949e-06 -1.1656552578204193e-05 -0.015000338115829372" rpy="0 0 0"/>
+                <mass value="0.02415641953013871"/>
+                <inertia ixx="4e-06" iyy="5e-06" izz="5e-06" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.124988 0.187407 -0.006706" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-rocker-rear_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.124988 0.187407 -0.006706" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-rocker-rear_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_inner-rear-rocker-bracket_1">
+            <inertial>
+                <origin xyz="0.004964601169662686 -0.023458406170343143 -0.004666761650881026" rpy="0 0 0"/>
+                <mass value="0.014902702246108816"/>
+                <inertia ixx="5e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="-1e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.106983 0.179419 0.008296" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/inner-rear-rocker-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.106983 0.179419 0.008296" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/inner-rear-rocker-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_butt-adapter-large-motor__1__1">
+            <inertial>
+                <origin xyz="-0.011499599475764566 2.8189050083060607e-07 -3.0285352733555593e-06" rpy="0 0 0"/>
+                <mass value="0.020042972489440314"/>
+                <inertia ixx="3e-06" iyy="2e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.142984 0.187418 0.008299" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-adapter-large-motor__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.142984 0.187418 0.008299" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-adapter-large-motor__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_bearing-torso-rocker-mount-rear_1">
+            <inertial>
+                <origin xyz="-0.004457273495875075 -0.020163860532738748 -0.003980601886465481" rpy="0 0 0"/>
+                <mass value="0.014516614019080996"/>
+                <inertia ixx="5e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="-1e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.165983 0.179417 0.008311" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-torso-rocker-mount-rear_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.165983 0.179417 0.008311" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-torso-rocker-mount-rear_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_inner-rear-rocker-bracket_MIR_1">
+            <inertial>
+                <origin xyz="0.004962707316387149 -0.023450982987579416 0.004705069037883952" rpy="0 0 0"/>
+                <mass value="0.014902702246108866"/>
+                <inertia ixx="5e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="1e-06" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.107019 0.179318 -0.127704" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/inner-rear-rocker-bracket_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.107019 0.179318 -0.127704" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/inner-rear-rocker-bracket_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_butt-adapter-large-motor_1">
+            <inertial>
+                <origin xyz="-0.011500050377145604 7.152162328771805e-07 -3.0709819154872697e-06" rpy="0 0 0"/>
+                <mass value="0.020042972489440314"/>
+                <inertia ixx="3e-06" iyy="2e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.143019 0.187317 -0.127701" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-adapter-large-motor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.143019 0.187317 -0.127701" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-adapter-large-motor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_bearing-torso-rocker-mount-rear_MIR_1">
+            <inertial>
+                <origin xyz="-0.0044588068688973526 -0.020157468768245007 0.004008321937005871" rpy="0 0 0"/>
+                <mass value="0.014516614019081067"/>
+                <inertia ixx="5e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="1e-06" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.166019 0.179316 -0.127689" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-torso-rocker-mount-rear_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.166019 0.179316 -0.127689" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/bearing-torso-rocker-mount-rear_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-S2_MIR4__1_Stator_1">
+            <inertial>
+                <origin xyz="-0.029814399326835647 -0.04213931603669818 -0.030882240102709804" rpy="0 0 0"/>
+                <mass value="0.12942242070368776"/>
+                <inertia ixx="0.000308" iyy="0.000243" izz="0.000239" ixy="-1e-06" iyz="2e-06" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.107026 0.220422 -0.151888" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__1_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.107026 0.220422 -0.151888" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__1_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_butt-mag_1">
+            <inertial>
+                <origin xyz="-0.009303598241699629 -0.016382975337149525 -0.007960240928721718" rpy="0 0 0"/>
+                <mass value="0.012951089642001812"/>
+                <inertia ixx="5e-06" iyy="4e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="-1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.166032 0.246906 -0.171145" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-mag_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.166032 0.246906 -0.171145" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-mag_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-S2_MIR4__2_Stator_1">
+            <inertial>
+                <origin xyz="-0.0298224689528043 -0.05223868345573501 -0.00021643276535368377" rpy="0 0 0"/>
+                <mass value="0.12942242070368776"/>
+                <inertia ixx="0.000308" iyy="0.000243" izz="0.000239" ixy="-1e-06" iyz="-2e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.106986 0.210414 0.001272" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__2_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.106986 0.210414 0.001272" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__2_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_butt-mag__1__1">
+            <inertial>
+                <origin xyz="-0.009307673480473788 -0.016371661528638837 0.007980659466157579" rpy="0 0 0"/>
+                <mass value="0.012951089642001812"/>
+                <inertia ixx="5e-06" iyy="4e-06" izz="2e-06" ixy="0.0" iyz="-0.0" ixz="1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.165974 0.247072 0.051667" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-mag__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.165974 0.247072 0.051667" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-mag__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-motor-bracket-v5-right_MIR_MIR2_1">
+            <inertial>
+                <origin xyz="-0.004508757400730257 -0.04285547128390793 0.029878461863052524" rpy="0 0 0"/>
+                <mass value="0.053843068772652776"/>
+                <inertia ixx="8.9e-05" iyy="1.6e-05" izz="7.4e-05" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.165995 0.220511 -0.029872" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-motor-bracket-v5-right_MIR_MIR2_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.165995 0.220511 -0.029872" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-motor-bracket-v5-right_MIR_MIR2_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_butt-center-rear-bracket_1">
+            <inertial>
+                <origin xyz="0.004106943183798131 -0.010673824252193403 0.029856070681211686" rpy="0 0 0"/>
+                <mass value="0.022955728042814354"/>
+                <inertia ixx="1e-05" iyy="8e-06" izz="3e-06" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.106995 0.220513 -0.029888" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-center-rear-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.106995 0.220513 -0.029888" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/butt-center-rear-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_center-waist-aluminum-strap_1">
+            <inertial>
+                <origin xyz="-4.966215997090351e-06 0.005174650257925489 0.020216538874073438" rpy="0 0 0"/>
+                <mass value="0.0037888199643830497"/>
+                <inertia ixx="1e-06" iyy="1e-06" izz="0.0" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.101497 0.212506 -0.03951" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-waist-aluminum-strap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.101497 0.212506 -0.03951" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-waist-aluminum-strap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_100m__3__1">
+            <inertial>
+                <origin xyz="0.0500006791988188 0.00999812568243022 5.663460121436981e-06" rpy="0 0 0"/>
+                <mass value="0.04"/>
+                <inertia ixx="3e-06" iyy="3.5e-05" izz="3.5e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.114003 0.228368 -0.059739" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.114003 0.228368 -0.059739" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_100m_1">
+            <inertial>
+                <origin xyz="0.04999967575019884 -2.0554806302031103e-06 1.273267922688448e-05" rpy="0 0 0"/>
+                <mass value="0.04"/>
+                <inertia ixx="3e-06" iyy="3.5e-05" izz="3.5e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.014002 0.218371 -0.059758" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.014002 0.218371 -0.059758" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_200mm__1__1">
+            <inertial>
+                <origin xyz="0.09999967747450955 -3.4648990998864537e-06 2.569806965750654e-05" rpy="0 0 0"/>
+                <mass value="0.039183494889124065"/>
+                <inertia ixx="3e-06" iyy="0.000132" izz="0.000132" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.114002 0.218368 -0.059732" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_200mm__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.114002 0.218368 -0.059732" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_200mm__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hips-front-mount_1">
+            <inertial>
+                <origin xyz="-0.023148813142749705 0.012445070155796156 -1.4998740947146094e-05" rpy="0 0 0"/>
+                <mass value="0.019194718736142608"/>
+                <inertia ixx="2e-06" iyy="5e-06" izz="6e-06" ixy="-1e-06" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.085998 0.208375 -0.059776" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hips-front-mount_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.085998 0.208375 -0.059776" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hips-front-mount_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_naval__1__1">
+            <inertial>
+                <origin xyz="0.012077970516442368 0.005748449342290712 0.009896317428883784" rpy="0 0 0"/>
+                <mass value="0.06001290787639682"/>
+                <inertia ixx="2.8e-05" iyy="2.9e-05" izz="1.5e-05" ixy="-2e-06" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.075001 0.187382 -0.049758" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/naval__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque22122113"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.075001 0.187382 -0.049758" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/naval__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_front-bearing-strap__1__1">
+            <inertial>
+                <origin xyz="0.0033641676122700553 2.5252365787320485e-07 6.486381132209118e-07" rpy="0 0 0"/>
+                <mass value="0.021884118466792318"/>
+                <inertia ixx="4e-06" iyy="9e-06" izz="6e-06" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.085998 0.218375 -0.059784" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.085998 0.218375 -0.059784" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__5__1">
+            <inertial>
+                <origin xyz="-1.1831417488783469e-07 -0.0034999978012551225 2.787040643249805e-06" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.096998 0.208375 -0.059779" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.096998 0.208375 -0.059779" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__6__1">
+            <inertial>
+                <origin xyz="4.656071285330521e-07 0.0035000058210604146 -2.5172348807681044e-06" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.096997 0.228375 -0.059794" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.096997 0.228375 -0.059794" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_center-bracket-waist-hips_1">
+            <inertial>
+                <origin xyz="-4.02415511607801e-08 -0.012304773493843929 9.27036730060532e-06" rpy="0 0 0"/>
+                <mass value="0.016897495003374823"/>
+                <inertia ixx="3e-06" iyy="3e-06" izz="1e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.096997 0.228375 -0.059794" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-bracket-waist-hips_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.096997 0.228375 -0.059794" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-bracket-waist-hips_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_groin-square__1__1">
+            <inertial>
+                <origin xyz="0.005053276703789328 -0.010152403348598654 -0.00999122951752511" rpy="0 0 0"/>
+                <mass value="0.014429794746034154"/>
+                <inertia ixx="4e-06" iyy="2e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.106994 0.243368 -0.069808" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/groin-square__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.106994 0.243368 -0.069808" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/groin-square__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_groin-square_1">
+            <inertial>
+                <origin xyz="-0.004946722261624653 -0.010152448999680541 -0.009994050283256728" rpy="0 0 0"/>
+                <mass value="0.014429794746034154"/>
+                <inertia ixx="4e-06" iyy="2e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.086994 0.243367 -0.069803" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/groin-square_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.086994 0.243367 -0.069803" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/groin-square_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_100m__1__1">
+            <inertial>
+                <origin xyz="-7.666258708682872e-07 -0.009999983451312255 7.197026067468082e-06" rpy="0 0 0"/>
+                <mass value="0.04"/>
+                <inertia ixx="3.5e-05" iyy="3.5e-05" izz="3e-06" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.096997 0.253375 -0.059813" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.096997 0.253375 -0.059813" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_front-bearing-strap__2__1">
+            <inertial>
+                <origin xyz="-6.714498490684173e-07 2.82182004524012e-06 0.0033646740722270557" rpy="0 0 0"/>
+                <mass value="0.021884118466792318"/>
+                <inertia ixx="9e-06" iyy="6e-06" izz="4e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.096983 0.263338 -0.10982" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.096983 0.263338 -0.10982" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_front-bearing-strap_1">
+            <inertial>
+                <origin xyz="1.1494234597314579e-06 -2.7887230267253926e-06 -0.0033642800171657158" rpy="0 0 0"/>
+                <mass value="0.021884118466792318"/>
+                <inertia ixx="9e-06" iyy="6e-06" izz="4e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.097009 0.263412 -0.00982" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.097009 0.263412 -0.00982" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-bearing-strap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__2__1">
+            <inertial>
+                <origin xyz="-0.003499667621974109 3.05603028438739e-07 -1.1275131960586382e-06" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.10698 0.26333 -0.120823" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.10698 0.26333 -0.120823" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__3__1">
+            <inertial>
+                <origin xyz="0.0035003328263464167 -2.808457734704284e-07 4.834883201854101e-07" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.08698 0.263329 -0.120818" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.08698 0.263329 -0.120818" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__1__1">
+            <inertial>
+                <origin xyz="-0.003499866078088179 3.139431491994138e-07 -1.0894361851855345e-06" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.107012 0.263421 0.001177" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.107012 0.263421 0.001177" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_skateboard-bearing__4__1">
+            <inertial>
+                <origin xyz="0.0035001343702322774 -2.7250558920499657e-07 5.215653947835807e-07" rpy="0 0 0"/>
+                <mass value="0.0023090706003884836"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.087012 0.26342 0.001182" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.087012 0.26342 0.001182" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/skateboard-bearing__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-S2_MIR4__1_Rotor_1">
+            <inertial>
+                <origin xyz="-0.010665636168260662 1.5246976385885347e-05 4.0222466801548284e-06" rpy="0 0 0"/>
+                <mass value="0.030077996769097937"/>
+                <inertia ixx="1e-05" iyy="7e-06" izz="7e-06" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.10502 0.263323 -0.120768" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__1_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.10502 0.263323 -0.120768" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__1_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1__1__1">
+            <inertial>
+                <origin xyz="0.012766304525695507 -4.811277808380865e-07 2.976496579931709e-06" rpy="0 0 0"/>
+                <mass value="0.03741323772199936"/>
+                <inertia ixx="1.4e-05" iyy="7e-06" izz="1.3e-05" ixy="0.0" iyz="-1e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.10452 0.263323 -0.120768" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.10452 0.263323 -0.120768" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap__3__1">
+            <inertial>
+                <origin xyz="0.004998338344220352 -0.016910188428680556 0.006170772735798344" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="6e-06" iyy="2e-06" izz="4e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.074518 0.246414 -0.114606" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.074518 0.246414 -0.114606" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_100m__4__1">
+            <inertial>
+                <origin xyz="-0.010004661138486665 -0.003284711254218864 0.018710862352918148" rpy="0 0 0"/>
+                <mass value="0.04"/>
+                <inertia ixx="3.5e-05" iyy="3.4e-05" izz="4e-06" ixy="-0.0" iyz="5e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.074515 0.260039 -0.102062" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.074515 0.260039 -0.102062" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__3__1">
+            <inertial>
+                <origin xyz="1.3338861513348399e-05 0.008645288745797619 -0.04924713764707936" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="1.7e-05" izz="2e-06" ixy="-0.0" iyz="3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084533 0.271969 -0.17002" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084533 0.271969 -0.17002" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__5__1">
+            <inertial>
+                <origin xyz="2.255591740468743e-07 -3.9259858347628906e-07 -2.898075188439986e-07" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="1.7e-05" izz="2e-06" ixy="-0.0" iyz="3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084533 0.271969 -0.17002" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084533 0.271969 -0.17002" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_6band__3__1">
+            <inertial>
+                <origin xyz="-0.0001165974860859037 -0.003632130583235582 0.027061831292523958" rpy="0 0 0"/>
+                <mass value="0.03795639265354152"/>
+                <inertia ixx="1.2e-05" iyy="1.4e-05" izz="1.3e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084533 0.26212 -0.171749" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/6band__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084533 0.26212 -0.171749" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/6band__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_side-band-brick-double__1__1">
+            <inertial>
+                <origin xyz="0.004157135173465942 -0.029548013350212676 -0.005186653610504521" rpy="0 0 0"/>
+                <mass value="0.019278298905722177"/>
+                <inertia ixx="9e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.10454 0.247176 -0.202288" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.10454 0.247176 -0.202288" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_side-band-brick-double_1">
+            <inertial>
+                <origin xyz="-0.004157108687691133 -0.029548021325816937 -0.005188393381026557" rpy="0 0 0"/>
+                <mass value="0.019278298905722177"/>
+                <inertia ixx="9e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.06454 0.247177 -0.202298" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.06454 0.247177 -0.202298" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_center-band-brick__6__1">
+            <inertial>
+                <origin xyz="0.010000295920794433 0.00933925135857655 0.0016427620433722423" rpy="0 0 0"/>
+                <mass value="0.009413139928418844"/>
+                <inertia ixx="2e-06" iyy="2e-06" izz="1e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.09454 0.306272 -0.191915" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-band-brick__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.09454 0.306272 -0.191915" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-band-brick__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-bracket_MIR_1">
+            <inertial>
+                <origin xyz="0.02864244263016219 0.0019294236355747174 0.053187245801758196" rpy="0 0 0"/>
+                <mass value="0.08432331097507158"/>
+                <inertia ixx="0.00012" iyy="0.000156" izz="4.7e-05" ixy="-2e-06" iyz="1.9e-05" ixz="-3e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084507 0.244829 -0.073255" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084507 0.244829 -0.073255" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-bracket__1__1">
+            <inertial>
+                <origin xyz="0.02864203998205766 -0.019929833160490573 0.04934954268309309" rpy="0 0 0"/>
+                <mass value="0.08432338826857588"/>
+                <inertia ixx="0.00012" iyy="0.000156" izz="4.7e-05" ixy="3e-06" iyz="2e-05" ixz="-2e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084506 0.264527 -0.069797" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084506 0.264527 -0.069797" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-V3__1_Stator_1">
+            <inertial>
+                <origin xyz="0.05299989142222803 -0.01717435821204119 -0.002509006684909887" rpy="0 0 0"/>
+                <mass value="0.11740885758024608"/>
+                <inertia ixx="0.00016" iyy="0.00026" izz="0.000167" ixy="-0.0" iyz="1.8e-05" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.046522 0.247152 -0.13276" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3__1_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.046522 0.247152 -0.13276" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3__1_Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hard-limit_1">
+            <inertial>
+                <origin xyz="-0.005074192239978868 -0.006086029788289871 0.00041137377241040607" rpy="0 0 0"/>
+                <mass value="0.011789131191838624"/>
+                <inertia ixx="3e-06" iyy="4e-06" izz="2e-06" ixy="-0.0" iyz="0.0" ixz="2e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.049348 0.288 -0.157243" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hard-limit_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque22122113"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.049348 0.288 -0.157243" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hard-limit_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-front-bracket-strap-motor__2__1">
+            <inertial>
+                <origin xyz="0.005231292988403774 0.007663374852923871 -0.011841032365664028" rpy="0 0 0"/>
+                <mass value="0.014686081988414824"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="2e-06" ixy="0.0" iyz="0.0" ixz="-1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.059478 0.247156 -0.132787" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.059478 0.247156 -0.132787" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-front-bracket-strap-motor_1">
+            <inertial>
+                <origin xyz="0.0052319389931231725 -0.003171662532312103 -0.013742972730407019" rpy="0 0 0"/>
+                <mass value="0.014686081988414824"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="2e-06" ixy="0.0" iyz="0.0" ixz="-1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.059478 0.282613 -0.126562" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.059478 0.282613 -0.126562" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_front-motor-roll-nut__1__1">
+            <inertial>
+                <origin xyz="-0.0015453143262860458 -0.016031485241368548 -0.012786230093987883" rpy="0 0 0"/>
+                <mass value="0.019564319664598383"/>
+                <inertia ixx="4e-06" iyy="3e-06" izz="3e-06" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.077478 0.247156 -0.132792" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-motor-roll-nut__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.077478 0.247156 -0.132792" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-motor-roll-nut__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-V3__1_Rotor_1">
+            <inertial>
+                <origin xyz="-8.635486826725526e-06 0.010801354979431688 0.0018805647672205383" rpy="0 0 0"/>
+                <mass value="0.027281477204810733"/>
+                <inertia ixx="6e-06" iyy="8e-06" izz="6e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006478 0.284582 -0.126203" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3__1_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006478 0.284582 -0.126203" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3__1_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__6__1">
+            <inertial>
+                <origin xyz="9.443359313549005e-07 -0.04924688663384891 -0.008645392909942637" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="2e-06" izz="1.7e-05" ixy="0.0" iyz="-3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__6__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-mot_MIR2__1__1">
+            <inertial>
+                <origin xyz="0.016573213463187433 -0.022881357393960966 -0.00401229152080175" rpy="0 0 0"/>
+                <mass value="0.02467593822678102"/>
+                <inertia ixx="7e-06" iyy="4e-06" izz="5e-06" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-mot_MIR2__2__1">
+            <inertial>
+                <origin xyz="-0.016572060667206755 -0.022880300514820373 -0.004020946326798114" rpy="0 0 0"/>
+                <mass value="0.02467593822678102"/>
+                <inertia ixx="7e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-yaw-chromatic-encoder_1">
+            <inertial>
+                <origin xyz="6.749658245702207e-06 -0.010427010858689578 -0.026179688400816997" rpy="0 0 0"/>
+                <mass value="0.007090112750408976"/>
+                <inertia ixx="1e-06" iyy="1e-06" izz="1e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-yaw-chromatic-encoder_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006478 0.285074 -0.126116" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-yaw-chromatic-encoder_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1__3__1">
+            <inertial>
+                <origin xyz="-2.67801007257807e-06 0.02829751038506284 0.012312402514463097" rpy="0 0 0"/>
+                <mass value="0.03741323772199936"/>
+                <inertia ixx="7e-06" iyy="1.3e-05" izz="1.4e-05" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.00648 0.383568 -0.108825" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.00648 0.383568 -0.108825" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap__5__1">
+            <inertial>
+                <origin xyz="-0.015586846777717812 -0.007998922054423208 -0.0064847198471600365" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="6e-06" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.02207 0.343427 -0.105723" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.02207 0.343427 -0.105723" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap_1">
+            <inertial>
+                <origin xyz="-0.015589337419589237 -0.009728467129956897 0.0033647584244824447" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="6e-06" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.022062 0.348614 -0.135271" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.022062 0.348614 -0.135271" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_encoder-magnet-leg__1__1">
+            <inertial>
+                <origin xyz="1.4213371310614967e-06 -0.008233539905391052 -0.005149597644239459" rpy="0 0 0"/>
+                <mass value="0.0015985875971530749"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006484 0.341697 -0.09587" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-magnet-leg__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006484 0.341697 -0.09587" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-magnet-leg__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_encoder-butt__1__1">
+            <inertial>
+                <origin xyz="-0.041040208924487995 0.0017238510377537986 -0.009871603911638743" rpy="0 0 0"/>
+                <mass value="0.02383177670081823"/>
+                <inertia ixx="1.5e-05" iyy="3.5e-05" izz="2.2e-05" ixy="2e-06" iyz="2e-06" ixz="-1.4e-05"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.104538 0.275427 -0.189713" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-butt__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.104538 0.275427 -0.189713" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-butt__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-S2_MIR4__2_Rotor_1">
+            <inertial>
+                <origin xyz="-0.010665831923032651 1.66787062478857e-05 -6.1281729886767614e-06" rpy="0 0 0"/>
+                <mass value="0.030077996769097937"/>
+                <inertia ixx="1e-05" iyy="7e-06" izz="7e-06" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.104988 0.263414 0.001232" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__2_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.104988 0.263414 0.001232" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-S2_MIR4__2_Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1__2__1">
+            <inertial>
+                <origin xyz="0.012766106069581493 -4.7278762732583246e-07 3.014573714488428e-06" rpy="0 0 0"/>
+                <mass value="0.03741323772199936"/>
+                <inertia ixx="1.4e-05" iyy="7e-06" izz="1.3e-05" ixy="-0.0" iyz="1e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.104488 0.263414 0.001232" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.104488 0.263414 0.001232" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap__2__1">
+            <inertial>
+                <origin xyz="0.0049961398881062935 -0.013780180088517668 0.011581810812932851" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="6e-06" iyy="2e-06" izz="4e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.074484 0.249635 0.012805" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.074484 0.249635 0.012805" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_100m__2__1">
+            <inertial>
+                <origin xyz="-0.009994859594600697 -0.0033127029140610498 -0.018711099569947504" rpy="0 0 0"/>
+                <mass value="0.04"/>
+                <inertia ixx="3.5e-05" iyy="3.4e-05" izz="4e-06" ixy="0.0" iyz="-5e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.074493 0.260102 -0.017484" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.074493 0.260102 -0.017484" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/100m__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__7__1">
+            <inertial>
+                <origin xyz="-1.2859594617456449e-05 0.008719297085938993 0.04923390043005274" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="1.7e-05" izz="2e-06" ixy="0.0" iyz="-3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084475 0.272134 0.050461" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__7__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084475 0.272134 0.050461" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__7__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__2__1">
+            <inertial>
+                <origin xyz="-3.0207156610784214e-07 1.6550215420352288e-07 3.7049995155191695e-09" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="1.7e-05" izz="2e-06" ixy="0.0" iyz="-3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084475 0.272134 0.050461" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084475 0.272134 0.050461" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_6band__4__1">
+            <inertial>
+                <origin xyz="-0.00010200352727010586 -0.0037484103508486633 -0.027484907873649753" rpy="0 0 0"/>
+                <mass value="0.037956392653541435"/>
+                <inertia ixx="1.2e-05" iyy="1.4e-05" izz="1.2e-05" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084475 0.262287 0.052205" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/6band__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084475 0.262287 0.052205" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/6band__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_side-band-brick-double__3__1">
+            <inertial>
+                <origin xyz="0.004154726496707395 -0.02954085288111985 0.0052322303914793394" rpy="0 0 0"/>
+                <mass value="0.019278298905722177"/>
+                <inertia ixx="9e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.104466 0.247388 0.082776" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.104466 0.247388 0.082776" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_side-band-brick-double__2__1">
+            <inertial>
+                <origin xyz="-0.004159517364449694 -0.029539860856734934 0.005230490620959191" rpy="0 0 0"/>
+                <mass value="0.019278298905722177"/>
+                <inertia ixx="9e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.064466 0.24739 0.082766" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.064466 0.24739 0.082766" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/side-band-brick-double__2__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_encoder-butt_1">
+            <inertial>
+                <origin xyz="-0.04104860722389017 0.004371473031633322 0.024615127088927408" rpy="0 0 0"/>
+                <mass value="0.02383177670081823"/>
+                <inertia ixx="1.5e-05" iyy="3.5e-05" izz="2.2e-05" ixy="2e-06" iyz="-2e-06" ixz="1.4e-05"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.104467 0.278237 0.08493" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-butt_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="0.104467 0.278237 0.08493" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-butt_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_center-band-brick__5__1">
+            <inertial>
+                <origin xyz="0.010001029831238128 0.00933672750437664 -0.001650778667978206" rpy="0 0 0"/>
+                <mass value="0.009413139928418844"/>
+                <inertia ixx="2e-06" iyy="2e-06" izz="1e-06" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.094471 0.306469 0.072311" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-band-brick__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.094471 0.306469 0.072311" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/center-band-brick__5__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-bracket_MIR__1__1">
+            <inertial>
+                <origin xyz="0.02866796412891067 -0.020003368291067802 -0.04930531005002852" rpy="0 0 0"/>
+                <mass value="0.08432331097507158"/>
+                <inertia ixx="0.00012" iyy="0.000156" izz="4.7e-05" ixy="3e-06" iyz="-2.1e-05" ixz="3e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.084501 0.264542 -0.049751" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_MIR__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.084501 0.264542 -0.049751" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_MIR__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-bracket_1">
+            <inertial>
+                <origin xyz="0.028670221303454285 0.0018499566527405698 -0.05317501008610957" rpy="0 0 0"/>
+                <mass value="0.08432338826857588"/>
+                <inertia ixx="0.00012" iyy="0.000156" izz="4.7e-05" ixy="-2e-06" iyz="-1.9e-05" ixz="3e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.0845 0.244849 -0.046263" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="0.0845 0.244849 -0.046263" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-bracket_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-V3Stator_1">
+            <inertial>
+                <origin xyz="0.04288451712059121 -0.022602451577021537 -0.028116282755387294" rpy="0 0 0"/>
+                <mass value="0.11740885758024593"/>
+                <inertia ixx="0.00016" iyy="0.00026" izz="0.000167" ixy="0.0" iyz="-1.8e-05" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="0.03637 0.241829 -0.01746" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="0.03637 0.241829 -0.01746" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3Stator_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hard-limit_MIR_1">
+            <inertial>
+                <origin xyz="-0.00507419120749391 -0.006086952344410312 -0.00040453243347005063" rpy="0 0 0"/>
+                <mass value="0.011789131564119733"/>
+                <inertia ixx="3e-06" iyy="4e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="-2e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.049399 0.288145 0.037591" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hard-limit_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque22122113"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.049399 0.288145 0.037591" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hard-limit_MIR_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-front-bracket-strap-motor__1__1">
+            <inertial>
+                <origin xyz="0.005225173765040281 0.0076811564896388795 0.011833045860623092" rpy="0 0 0"/>
+                <mass value="0.014686081988414824"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="2e-06" ixy="0.0" iyz="-0.0" ixz="1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.059516 0.247265 0.013191" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.059516 0.247265 0.013191" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-front-bracket-strap-motor__3__1">
+            <inertial>
+                <origin xyz="0.005224564898284552 -0.003150706712503226 0.01375102867860034" rpy="0 0 0"/>
+                <mass value="0.014686081988414824"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="2e-06" ixy="0.0" iyz="-0.0" ixz="1e-06"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.059513 0.282713 0.006913" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.059513 0.282713 0.006913" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-front-bracket-strap-motor__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_front-motor-roll-nut_1">
+            <inertial>
+                <origin xyz="-0.0015519343436562194 -0.01601093678098936 0.012809202218158186" rpy="0 0 0"/>
+                <mass value="0.019564319664598383"/>
+                <inertia ixx="4e-06" iyy="3e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.077516 0.247265 0.013186" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-motor-roll-nut_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.077516 0.247265 0.013186" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/front-motor-roll-nut_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_RMD-X10-V3Rotor_1">
+            <inertial>
+                <origin xyz="9.438944453764829e-06 0.010798504649699003 -0.0018967541361757214" rpy="0 0 0"/>
+                <mass value="0.027281477204810733"/>
+                <inertia ixx="6e-06" iyy="8e-06" izz="6e-06" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006513 0.284681 0.006578" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006513 0.284681 0.006578" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/RMD-X10-V3Rotor_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_2020_100mm__1__1">
+            <inertial>
+                <origin xyz="-4.015678990641931e-06 -0.04923383806166842 0.008719496554834222" rpy="0 0 0"/>
+                <mass value="0.01959174744456203"/>
+                <inertia ixx="1.7e-05" iyy="2e-06" izz="1.7e-05" ixy="-0.0" iyz="3e-06" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque727161"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/2020_100mm__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-mot_MIR2__3__1">
+            <inertial>
+                <origin xyz="-0.01657459728084018 -0.022874188345520186 0.00404707140028256" rpy="0 0 0"/>
+                <mass value="0.02467593822678102"/>
+                <inertia ixx="7e-06" iyy="4e-06" izz="5e-06" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2__3__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_hip-roll-al-mot_MIR2_1">
+            <inertial>
+                <origin xyz="0.016570676849713056 -0.022875240255869345 0.004055726202573089" rpy="0 0 0"/>
+                <mass value="0.02467593822678102"/>
+                <inertia ixx="7e-06" iyy="4e-06" izz="5e-06" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006513 0.285173 0.006491" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/hip-roll-al-mot_MIR2_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1__4__1">
+            <inertial>
+                <origin xyz="4.265464126183491e-06 0.02827911262940247 -0.012355045325274564" rpy="0 0 0"/>
+                <mass value="0.03741323772199936"/>
+                <inertia ixx="7e-06" iyy="1.3e-05" izz="1.4e-05" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006505 0.383641 -0.010948" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006505 0.383641 -0.010948" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/yaw-waist-adapter-motor-exal_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap__4__1">
+            <inertial>
+                <origin xyz="-0.015590318623910426 -0.00798965790687206 0.006488317925801082" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="6e-06" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.022094 0.343495 -0.013998" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.022094 0.343495 -0.013998" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__4__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_motor-yaw-cap__1__1">
+            <inertial>
+                <origin xyz="-0.015588272605469373 -0.00973396317387104 -0.0033577994542470114" rpy="0 0 0"/>
+                <mass value="0.017552094601676203"/>
+                <inertia ixx="2e-06" iyy="4e-06" izz="6e-06" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.022102 0.348726 0.015543" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque245245245"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.022102 0.348726 0.015543" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/motor-yaw-cap__1__1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <link name="${prefix}_encoder-magnet-leg_1">
+            <inertial>
+                <origin xyz="-1.4906095598000296e-06 -0.008225571590822212 0.005161955660450714" rpy="0 0 0"/>
+                <mass value="0.0015985875971530749"/>
+                <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+            </inertial>
+            <visual>
+                <origin xyz="-0.006503 0.341751 -0.02384" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-magnet-leg_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="opaque191191191"/>
+            </visual>
+            <collision>
+                <origin xyz="-0.006503 0.341751 -0.02384" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dropbear_detailed_urdf/meshes/pelvicgirdle/encoder-magnet-leg_1.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="pelvicgirdle_torso_connection" type="fixed">
+            <xacro:insert_block name="origin"/>
+            <parent link="${parent}"/>
+            <child link="${prefix}_lumbare_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid2" type="fixed">
+            <origin xyz="0.014986 -0.016134 0.053016" rpy="0 0 0"/>
+            <parent link="${prefix}_lumbare_1"/>
+            <child link="${prefix}_bearing-rocker-rear__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid3" type="fixed">
+            <origin xyz="0.015013 -0.016213 -0.052984" rpy="0 0 0"/>
+            <parent link="${prefix}_lumbare_1"/>
+            <child link="${prefix}_bearing-rocker-rear_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid4" type="fixed">
+            <origin xyz="0.018005 0.007988 -0.015002" rpy="0 0 0"/>
+            <parent link="${prefix}_bearing-rocker-rear_1"/>
+            <child link="${prefix}_inner-rear-rocker-bracket_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid5" type="fixed">
+            <origin xyz="-0.017996 -1.1e-05 -0.015005" rpy="0 0 0"/>
+            <parent link="${prefix}_bearing-rocker-rear_1"/>
+            <child link="${prefix}_butt-adapter-large-motor__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid6" type="fixed">
+            <origin xyz="-0.022999 0.008001 -1.2e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_butt-adapter-large-motor__1__1"/>
+            <child link="${prefix}_bearing-torso-rocker-mount-rear_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid7" type="fixed">
+            <origin xyz="0.017996 0.00801 0.014998" rpy="0 0 0"/>
+            <parent link="${prefix}_bearing-rocker-rear__1__1"/>
+            <child link="${prefix}_inner-rear-rocker-bracket_MIR_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid8" type="fixed">
+            <origin xyz="-0.018004 1.1e-05 0.014995" rpy="0 0 0"/>
+            <parent link="${prefix}_bearing-rocker-rear__1__1"/>
+            <child link="${prefix}_butt-adapter-large-motor_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid9" type="fixed">
+            <origin xyz="-0.023 0.008001 -1.2e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_butt-adapter-large-motor_1"/>
+            <child link="${prefix}_bearing-torso-rocker-mount-rear_MIR_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid10" type="fixed">
+            <origin xyz="-7e-06 -0.041104 0.024184" rpy="0 0 0"/>
+            <parent link="${prefix}_inner-rear-rocker-bracket_MIR_1"/>
+            <child link="${prefix}_RMD-X10-S2_MIR4__1_Stator_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid11" type="fixed">
+            <origin xyz="-0.059006 -0.026484 0.019257" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__1_Stator_1"/>
+            <child link="${prefix}_butt-mag_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid12" type="fixed">
+            <origin xyz="-3e-06 -0.030995 0.007024" rpy="0 0 0"/>
+            <parent link="${prefix}_inner-rear-rocker-bracket_1"/>
+            <child link="${prefix}_RMD-X10-S2_MIR4__2_Stator_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid13" type="fixed">
+            <origin xyz="-0.058988 -0.036658 -0.050395" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__2_Stator_1"/>
+            <child link="${prefix}_butt-mag__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid14" type="fixed">
+            <origin xyz="-0.059009 -0.010097 0.031144" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__2_Stator_1"/>
+            <child link="${prefix}_hip-motor-bracket-v5-right_MIR_MIR2_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid15" type="fixed">
+            <origin xyz="-9e-06 -0.010099 0.03116" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__2_Stator_1"/>
+            <child link="${prefix}_butt-center-rear-bracket_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid16" type="fixed">
+            <origin xyz="0.005498 0.008007 0.009622" rpy="0 0 0"/>
+            <parent link="${prefix}_butt-center-rear-bracket_1"/>
+            <child link="${prefix}_center-waist-aluminum-strap_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid17" type="fixed">
+            <origin xyz="-0.007008 -0.007855 0.029851" rpy="0 0 0"/>
+            <parent link="${prefix}_butt-center-rear-bracket_1"/>
+            <child link="${prefix}_100m__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid18" type="fixed">
+            <origin xyz="0.100001 0.009997 1.9e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__3__1"/>
+            <child link="${prefix}_100m_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid19" type="fixed">
+            <origin xyz="1e-06 0.01 -7e-06" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__3__1"/>
+            <child link="${prefix}_2020_200mm__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid20" type="fixed">
+            <origin xyz="0.1 0.009996 1.8e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_100m_1"/>
+            <child link="${prefix}_hips-front-mount_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid21" type="fixed">
+            <origin xyz="-0.010997 0.020993 -0.010018" rpy="0 0 0"/>
+            <parent link="${prefix}_hips-front-mount_1"/>
+            <child link="${prefix}_naval__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid22" type="fixed">
+            <origin xyz="0.1 -4e-06 2.6e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_100m_1"/>
+            <child link="${prefix}_front-bearing-strap__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid23" type="fixed">
+            <origin xyz="0.011 0.01 -5e-06" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap__1__1"/>
+            <child link="${prefix}_skateboard-bearing__5__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid24" type="fixed">
+            <origin xyz="0.010999 -0.01 1e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap__1__1"/>
+            <child link="${prefix}_skateboard-bearing__6__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid25" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_skateboard-bearing__6__1"/>
+            <child link="${prefix}_center-bracket-waist-hips_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid26" type="fixed">
+            <origin xyz="0.009997 -0.014993 0.010014" rpy="0 0 0"/>
+            <parent link="${prefix}_center-bracket-waist-hips_1"/>
+            <child link="${prefix}_groin-square__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid27" type="fixed">
+            <origin xyz="-0.010003 -0.014992 0.010009" rpy="0 0 0"/>
+            <parent link="${prefix}_center-bracket-waist-hips_1"/>
+            <child link="${prefix}_groin-square_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid28" type="fixed">
+            <origin xyz="0.0 -0.025 1.9e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_center-bracket-waist-hips_1"/>
+            <child link="${prefix}_100m__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid29" type="fixed">
+            <origin xyz="-1.4e-05 -0.009963 0.050007" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__1__1"/>
+            <child link="${prefix}_front-bearing-strap__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid30" type="fixed">
+            <origin xyz="1.2e-05 -0.010037 -0.049993" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__1__1"/>
+            <child link="${prefix}_front-bearing-strap_1"/>
+        </joint>
+
+        <joint name="${prefix}_Revolute31" type="revolute">
+            <origin xyz="0.009997 8e-06 0.011003" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap__2__1"/>
+            <child link="${prefix}_skateboard-bearing__2__1"/>
+            <axis xyz="1.0 -3.2e-05 0.000261"/>
+            <limit upper="0.0" lower="0.0" velocity="0.0" effort="0.0"/>
+        </joint>
+
+        <joint name="${prefix}_Revolute32" type="revolute">
+            <origin xyz="-0.010003 9e-06 0.010998" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap__2__1"/>
+            <child link="${prefix}_skateboard-bearing__3__1"/>
+            <axis xyz="-1.0 3.2e-05 -0.000261"/>
+            <limit upper="0.0" lower="0.0" velocity="0.0" effort="0.0"/>
+        </joint>
+
+        <joint name="${prefix}_Revolute33" type="revolute">
+            <origin xyz="0.010003 -9e-06 -0.010997" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap_1"/>
+            <child link="${prefix}_skateboard-bearing__1__1"/>
+            <axis xyz="1.0 -3.2e-05 0.000261"/>
+            <limit upper="0.0" lower="0.0" velocity="0.0" effort="0.0"/>
+        </joint>
+
+        <joint name="${prefix}_Revolute34" type="revolute">
+            <origin xyz="-0.009997 -8e-06 -0.011002" rpy="0 0 0"/>
+            <parent link="${prefix}_front-bearing-strap_1"/>
+            <child link="${prefix}_skateboard-bearing__4__1"/>
+            <axis xyz="-1.0 3.2e-05 -0.000261"/>
+            <limit upper="0.0" lower="0.0" velocity="0.0" effort="0.0"/>
+        </joint>
+
+        <joint name="${prefix}_right_leg_pitch" type="revolute">
+            <origin xyz="0.002006 -0.042901 -0.03112" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__1_Stator_1"/>
+            <child link="${prefix}_RMD-X10-S2_MIR4__1_Rotor_1"/>
+            <axis xyz="1.0 -3.2e-05 0.000261"/>
+            <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid36" type="fixed">
+            <origin xyz="0.0005 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__1_Rotor_1"/>
+            <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid37" type="fixed">
+            <origin xyz="0.030002 0.016909 -0.006162" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__1__1"/>
+            <child link="${prefix}_motor-yaw-cap__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid38" type="fixed">
+            <origin xyz="3e-06 -0.013625 -0.012544" rpy="0 0 0"/>
+            <parent link="${prefix}_motor-yaw-cap__3__1"/>
+            <child link="${prefix}_100m__4__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid39" type="fixed">
+            <origin xyz="-0.010018 -0.01193 0.067958" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__4__1"/>
+            <child link="${prefix}_2020_100mm__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid40" type="fixed">
+            <origin xyz="-0.010018 -0.01193 0.067958" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__4__1"/>
+            <child link="${prefix}_2020_100mm__5__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid41" type="fixed">
+            <origin xyz="-0.010018 -0.002081 0.069687" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__4__1"/>
+            <child link="${prefix}_6band__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid42" type="fixed">
+            <origin xyz="-0.020007 0.014944 0.030539" rpy="0 0 0"/>
+            <parent link="${prefix}_6band__3__1"/>
+            <child link="${prefix}_side-band-brick-double__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid43" type="fixed">
+            <origin xyz="0.019993 0.014943 0.030549" rpy="0 0 0"/>
+            <parent link="${prefix}_6band__3__1"/>
+            <child link="${prefix}_side-band-brick-double_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid44" type="fixed">
+            <origin xyz="0.01 -0.059096 -0.010373" rpy="0 0 0"/>
+            <parent link="${prefix}_side-band-brick-double__1__1"/>
+            <child link="${prefix}_center-band-brick__6__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid45" type="fixed">
+            <origin xyz="-0.009992 0.01521 -0.028807" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__4__1"/>
+            <child link="${prefix}_hip-roll-al-bracket_MIR_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid46" type="fixed">
+            <origin xyz="-0.009991 -0.004488 -0.032265" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__4__1"/>
+            <child link="${prefix}_hip-roll-al-bracket__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid47" type="fixed">
+            <origin xyz="0.037985 -0.002323 0.059505" rpy="0 0 0"/>
+            <parent link="${prefix}_hip-roll-al-bracket_MIR_1"/>
+            <child link="${prefix}_RMD-X10-V3__1_Stator_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid48" type="fixed">
+            <origin xyz="0.09587 -0.040848 0.024483" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3__1_Stator_1"/>
+            <child link="${prefix}_hard-limit_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid49" type="fixed">
+            <origin xyz="0.106 -4e-06 2.7e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3__1_Stator_1"/>
+            <child link="${prefix}_hip-roll-front-bracket-strap-motor__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid50" type="fixed">
+            <origin xyz="0.106 -0.035461 -0.006198" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3__1_Stator_1"/>
+            <child link="${prefix}_hip-roll-front-bracket-strap-motor_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid51" type="fixed">
+            <origin xyz="0.018 0.0 5e-06" rpy="0 0 0"/>
+            <parent link="${prefix}_hip-roll-front-bracket-strap-motor__2__1"/>
+            <child link="${prefix}_front-motor-roll-nut__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_right_leg_roll" type="revolute">
+            <origin xyz="0.053 -0.03743 -0.006557" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3__1_Stator_1"/>
+            <child link="${prefix}_RMD-X10-V3__1_Rotor_1"/>
+            <axis xyz="1.4e-05 -0.984937 -0.172914"/>
+            <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>      
+        </joint>
+
+        <joint name="${prefix}_Rigid53" type="fixed">
+            <origin xyz="0.0 -0.000492 -8.7e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3__1_Rotor_1"/>
+            <child link="${prefix}_2020_100mm__6__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid54" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__6__1"/>
+            <child link="${prefix}_hip-roll-al-mot_MIR2__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid55" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__6__1"/>
+            <child link="${prefix}_hip-roll-al-mot_MIR2__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid56" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__6__1"/>
+            <child link="${prefix}_hip-yaw-chromatic-encoder_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid57" type="fixed">
+            <origin xyz="2e-06 -0.098494 -0.017291" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__6__1"/>
+            <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid58" type="fixed">
+            <origin xyz="0.01559 0.040141 -0.003102" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__3__1"/>
+            <child link="${prefix}_motor-yaw-cap__5__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid59" type="fixed">
+            <origin xyz="0.015582 0.034954 0.026446" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__3__1"/>
+            <child link="${prefix}_motor-yaw-cap_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid61" type="fixed">
+            <origin xyz="-0.015586 0.00173 -0.009853" rpy="0 0 0"/>
+            <parent link="${prefix}_motor-yaw-cap__5__1"/>
+            <child link="${prefix}_encoder-magnet-leg__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid62" type="fixed">
+            <origin xyz="2e-06 -0.028251 -0.012575" rpy="0 0 0"/>
+            <parent link="${prefix}_side-band-brick-double__1__1"/>
+            <child link="${prefix}_encoder-butt__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_left_leg_pitch" type="revolute">
+            <origin xyz="0.001998 -0.053 4e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__2_Stator_1"/>
+            <child link="${prefix}_RMD-X10-S2_MIR4__2_Rotor_1"/>
+            <axis xyz="1.0 -3.2e-05 0.000261"/>
+            <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>    
+        </joint>
+
+        <joint name="${prefix}_Rigid64" type="fixed">
+            <origin xyz="0.0005 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-S2_MIR4__2_Rotor_1"/>
+            <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid65" type="fixed">
+            <origin xyz="0.030004 0.013779 -0.011573" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__2__1"/>
+            <child link="${prefix}_motor-yaw-cap__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid66" type="fixed">
+            <origin xyz="-9e-06 -0.010467 0.030289" rpy="0 0 0"/>
+            <parent link="${prefix}_motor-yaw-cap__2__1"/>
+            <child link="${prefix}_100m__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid67" type="fixed">
+            <origin xyz="-0.009982 -0.012032 -0.067945" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__2__1"/>
+            <child link="${prefix}_2020_100mm__7__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid68" type="fixed">
+            <origin xyz="-0.009982 -0.012032 -0.067945" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__2__1"/>
+            <child link="${prefix}_2020_100mm__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid69" type="fixed">
+            <origin xyz="-0.009982 -0.002185 -0.069689" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__2__1"/>
+            <child link="${prefix}_6band__4__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid70" type="fixed">
+            <origin xyz="-0.019991 0.014899 -0.030571" rpy="0 0 0"/>
+            <parent link="${prefix}_6band__4__1"/>
+            <child link="${prefix}_side-band-brick-double__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid71" type="fixed">
+            <origin xyz="0.020009 0.014897 -0.030561" rpy="0 0 0"/>
+            <parent link="${prefix}_6band__4__1"/>
+            <child link="${prefix}_side-band-brick-double__2__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid72" type="fixed">
+            <origin xyz="-1e-06 -0.030849 -0.002154" rpy="0 0 0"/>
+            <parent link="${prefix}_side-band-brick-double__3__1"/>
+            <child link="${prefix}_encoder-butt_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid73" type="fixed">
+            <origin xyz="0.009995 -0.059081 0.010465" rpy="0 0 0"/>
+            <parent link="${prefix}_side-band-brick-double__3__1"/>
+            <child link="${prefix}_center-band-brick__5__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid74" type="fixed">
+            <origin xyz="-0.010008 -0.00444 0.032267" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__2__1"/>
+            <child link="${prefix}_hip-roll-al-bracket_MIR__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid75" type="fixed">
+            <origin xyz="-0.010007 0.015253 0.028779" rpy="0 0 0"/>
+            <parent link="${prefix}_100m__2__1"/>
+            <child link="${prefix}_hip-roll-al-bracket_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid76" type="fixed">
+            <origin xyz="0.04813 0.00302 -0.028803" rpy="0 0 0"/>
+            <parent link="${prefix}_hip-roll-al-bracket_1"/>
+            <child link="${prefix}_RMD-X10-V3Stator_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid77" type="fixed">
+            <origin xyz="0.085769 -0.046316 -0.055051" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3Stator_1"/>
+            <child link="${prefix}_hard-limit_MIR_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid78" type="fixed">
+            <origin xyz="0.095886 -0.005436 -0.030651" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3Stator_1"/>
+            <child link="${prefix}_hip-roll-front-bracket-strap-motor__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid79" type="fixed">
+            <origin xyz="0.095883 -0.040884 -0.024373" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3Stator_1"/>
+            <child link="${prefix}_hip-roll-front-bracket-strap-motor__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid80" type="fixed">
+            <origin xyz="0.018 0.0 5e-06" rpy="0 0 0"/>
+            <parent link="${prefix}_hip-roll-front-bracket-strap-motor__1__1"/>
+            <child link="${prefix}_front-motor-roll-nut_1"/>
+        </joint>
+
+        <joint name="${prefix}_left_leg_roll" type="revolute">
+            <origin xyz="0.042883 -0.042852 -0.024038" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3Stator_1"/>
+            <child link="${prefix}_RMD-X10-V3Rotor_1"/>
+            <axis xyz="-7.7e-05 -0.984678 0.174383"/>
+            <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid82" type="fixed">
+            <origin xyz="0.0 -0.000492 8.7e-05" rpy="0 0 0"/>
+            <parent link="${prefix}_RMD-X10-V3Rotor_1"/>
+            <child link="${prefix}_2020_100mm__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid83" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__1__1"/>
+            <child link="${prefix}_hip-roll-al-mot_MIR2__3__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid84" type="fixed">
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__1__1"/>
+            <child link="${prefix}_hip-roll-al-mot_MIR2_1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid85" type="fixed">
+            <origin xyz="-8e-06 -0.098468 0.017439" rpy="0 0 0"/>
+            <parent link="${prefix}_2020_100mm__1__1"/>
+            <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__4__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid86" type="fixed">
+            <origin xyz="0.015589 0.040146 0.00305" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__4__1"/>
+            <child link="${prefix}_motor-yaw-cap__4__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid87" type="fixed">
+            <origin xyz="0.015597 0.034915 -0.026491" rpy="0 0 0"/>
+            <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__4__1"/>
+            <child link="${prefix}_motor-yaw-cap__1__1"/>
+        </joint>
+
+        <joint name="${prefix}_Rigid88" type="fixed">
+            <origin xyz="-0.015591 0.001744 0.009842" rpy="0 0 0"/>
+            <parent link="${prefix}_motor-yaw-cap__4__1"/>
+            <child link="${prefix}_encoder-magnet-leg_1"/>
+        </joint>
+
+    </xacro:macro>
+</robot>

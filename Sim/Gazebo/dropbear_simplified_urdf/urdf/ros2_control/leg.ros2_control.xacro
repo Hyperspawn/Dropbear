@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dropbear_simplified">
+
+<xacro:macro name = "leg_ros2_control" params = "prefix">
+    <xacro:joint prefix="${prefix}" name="hip_joint" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="knee_actuator_joint" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute4" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute5" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute7" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute8" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute10" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute11" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute12" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute13" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute14" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute15" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+</xacro:macro>
+
+</robot>

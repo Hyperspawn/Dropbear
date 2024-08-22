@@ -1,0 +1,326 @@
+<?xml version="1.0"?>
+
+<robot name="dropbear_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="arm_macro" params="prefix folder parent sign *origin">
+    
+          <link name="${prefix}_2020_100mm__9__1">
+              <inertial>
+                  <origin xyz="-0.0008466746254246146 0.0026057965560190325 ${sign*0.04747235208031805}" rpy="0 0 0"/>
+                  <mass value="0.15134342423432742"/>
+                  <inertia ixx="0.000135" iyy="0.000123" izz="6.9e-05" ixy="4e-06" iyz="-1e-06" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="0.0 0.0 ${sign*-0.0021}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/2020_100mm__9__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque727161"/>
+              </visual>
+              <collision>
+                  <origin xyz="0.0 0.0 ${sign*-0.0021}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/2020_100mm__9__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1">
+              <inertial>
+                  <origin xyz="0.03168610209516673 0.03722389945118263 ${sign*0.009663941690489952}" rpy="0 0 0"/>
+                  <mass value="0.39705688727274907"/>
+                  <inertia ixx="0.000836" iyy="0.000815" izz="0.001335" ixy="0.000113" iyz="-2.7e-05" ixz="-0.000101"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.008343 0.025679 ${sign*-0.0521}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque13110895"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.008343 0.025679 ${sign*-0.0521}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1">
+              <inertial>
+                  <origin xyz="0.073833397772971 0.021968775763905476 ${sign*0.008042518945865815}" rpy="0 0 0"/>
+                  <mass value="0.2600729816837481"/>
+                  <inertia ixx="0.000377" iyy="0.00073" izz="0.000813" ixy="-0.000126" iyz="-1.8e-05" ixz="-2.4e-05"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.101763 -0.033065 ${sign*-0.0661}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque13110895"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.101763 -0.033065 ${sign*-0.0661}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_bicep-motor-mate_1">
+              <inertial>
+                  <origin xyz="0.0036413059649407775 0.018293491559330355 ${sign*-0.004857773320266552}" rpy="0 0 0"/>
+                  <mass value="0.023400269164045275"/>
+                  <inertia ixx="1.3e-05" iyy="3e-06" izz="1.5e-05" ixy="-2e-06" iyz="0.0" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.198295 -0.06443 ${sign*-0.0566}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/bicep-motor-mate_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque22122113"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.198295 -0.06443 ${sign*-0.0566}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/bicep-motor-mate_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_bicep_1">
+              <inertial>
+                  <origin xyz="0.025073949425162723 0.0037579876201125073 ${sign*0.002524098473845139}" rpy="0 0 0"/>
+                  <mass value="0.006005506060977738"/>
+                  <inertia ixx="0.0" iyy="3e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.210008 -0.123276 ${sign*-0.0596}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/bicep_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque245245245"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.210008 -0.123276 ${sign*-0.0596}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/bicep_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_straight-tendon_1">
+              <inertial>
+                  <origin xyz="0.017202555024465327 -0.030696670853000735 ${sign*0.01188146583171501}" rpy="0 0 0"/>
+                  <mass value="0.03586551706248183"/>
+                  <inertia ixx="1.4e-05" iyy="2.2e-05" izz="3.1e-05" ixy="1.2e-05" iyz="0.0" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.259138 -0.132559 ${sign*-0.0646}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/straight-tendon_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque191191191"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.259138 -0.132559 ${sign*-0.0646}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/straight-tendon_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_elbow-rear-hanger_1">
+              <inertial>
+                  <origin xyz="0.02838273254466428 0.010873273915161949 ${sign*-0.01699980031492096}" rpy="0 0 0"/>
+                  <mass value="0.02628535609947448"/>
+                  <inertia ixx="8e-06" iyy="1.5e-05" izz="1.6e-05" ixy="-6e-06" iyz="0.0" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.269538 -0.089013 ${sign*-0.0936}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/elbow-rear-hanger_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque808080"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.269538 -0.089013 ${sign*-0.0936}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/elbow-rear-hanger_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1">
+              <inertial>
+                  <origin xyz="0.03483709188603029 0.029853602123198014 ${sign*0.009425483341316154}" rpy="0 0 0"/>
+                  <mass value="0.1386076860401193"/>
+                  <inertia ixx="0.000185" iyy="0.000188" izz="0.00016" ixy="-1e-05" iyz="5e-06" ixz="7e-06"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.30936 -0.080341 ${sign*-0.0596}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque13110895"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.30936 -0.080341 ${sign*-0.0596}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+          <link name="${prefix}_shoulder-ex-al-interface_1">
+              <inertial>
+                  <origin xyz="0.08747987639954247 0.0284217976129367 ${sign*-3.437234066816508e-09}" rpy="0 0 0"/>
+                  <mass value="0.3907290352810328"/>
+                  <inertia ixx="0.00028" iyy="0.000788" izz="0.00084" ixy="-0.000184" iyz="0.0" ixz="0.0"/>
+              </inertial>
+              <visual>
+                  <origin xyz="-0.384734 -0.124997 ${sign*-0.0661}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/shoulder-ex-al-interface_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+                  <material name="opaque22122113"/>
+              </visual>
+              <collision>
+                  <origin xyz="-0.384734 -0.124997 ${sign*-0.0661}" rpy="0 0 0"/>
+                  <geometry>
+                      <mesh filename="package://dropbear_simplified_urdf/meshes/${folder}/shoulder-ex-al-interface_1.stl" scale="0.001 0.001 0.001"/>
+                  </geometry>
+              </collision>
+          </link>
+      
+
+          <joint name="${prefix}_torso_connection" type = "revolute">
+            <xacro:insert_block name = "origin"/>
+            <parent link="${parent}"/>
+            <child link="${prefix}_2020_100mm__9__1"/>
+            <axis xyz="0.000261 0.0 ${sign*1.0}"/>
+            <!-- <dynamics damping="10.0" friction="5.0"/> -->
+            <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_pitch" type="revolute">
+              <origin xyz="0.008343 -0.025679 ${sign*0.05}" rpy="0 0 0"/>
+              <parent link="${prefix}_2020_100mm__9__1"/>
+              <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1"/>
+              <axis xyz="0.309017 -0.951057 0.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_roll" type="revolute">
+              <origin xyz="0.09342 0.058744 ${sign*0.014}" rpy="0 0 0"/>
+              <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1"/>
+              <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+              <axis xyz="0.951057 0.309017 0.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_elbow_joint" type="revolute">
+              <origin xyz="0.096532 0.031365 ${sign*-0.0095}" rpy="0 0 0"/>
+              <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+              <child link="${prefix}_bicep-motor-mate_1"/>
+              <axis xyz="0.0 0.0 -1.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_Revolute5" type="revolute">
+              <origin xyz="0.011713 0.058846 ${sign*0.003}" rpy="0 0 0"/>
+              <parent link="${prefix}_bicep-motor-mate_1"/>
+              <child link="${prefix}_bicep_1"/>
+              <axis xyz="0.0 0.0 1.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_Revolute6" type="revolute">
+              <origin xyz="0.04913 0.009283 ${sign*0.005}" rpy="0 0 0"/>
+              <parent link="${prefix}_bicep_1"/>
+              <child link="${prefix}_straight-tendon_1"/>
+              <axis xyz="0.0 0.0 1.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <gazebo>
+              <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      
+              <joint name="${prefix}_Revolute7 gz" type="revolute">
+                  <pose relative_to="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1">0.145986 0.076614 -0.015322 0 0 0</pose>
+                  <parent>${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+                  <child>${prefix}_straight-tendon_1</child>
+                  <axis>
+                      <xyz>0 0 1</xyz>
+                  </axis>
+      
+                  <limit>
+                      <lower>-3.142</lower>
+                      <upper>3.142</upper>
+                      <effort>10.0</effort>
+                      <velocity>10.0</velocity>
+                  </limit>
+                  <dynamics>
+                      <damping>10.0</damping>
+                      <friction>5.0</friction>
+                  </dynamics>
+              </joint>
+          </gazebo>
+      
+          <joint name="${prefix}_Revolute8" type="revolute">
+              <origin xyz="0.167775 0.055948 ${sign*0.0275}" rpy="0 0 0"/>
+              <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+              <child link="${prefix}_elbow-rear-hanger_1"/>
+              <axis xyz="0.0 0.0 -1.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <joint name="${prefix}_Revolute9" type="revolute">
+              <origin xyz="0.050222 -0.052218 ${sign*-0.005}" rpy="0 0 0"/>
+              <parent link="${prefix}_straight-tendon_1"/>
+              <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1"/>
+              <axis xyz="0.0 0.0 -1.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+      
+          <gazebo>
+              <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      
+              <joint name="${prefix}_Revolute10 gz" type="revolute">
+                  <pose relative_to="${prefix}_elbow-rear-hanger_1">0.053697 0.025533 -0.034938 0 0 0</pose>
+                  <parent>${prefix}_elbow-rear-hanger_1</parent>
+                  <child>${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1</child>
+                  <axis> 0 0 1 </axis>
+      
+                  <limit>
+                      <lower>-3.142</lower>
+                      <upper>3.142</upper>
+                      <effort>10.0</effort>
+                      <velocity>10.0</velocity>
+                  </limit>
+                  <dynamics>
+                      <damping>10.0</damping>
+                      <friction>5.0</friction>
+                  </dynamics>
+              </joint>
+          </gazebo>
+      
+          <joint name="${prefix}_wrist_roll" type="revolute">
+              <origin xyz="0.075374 0.044656 ${sign*0.0065}" rpy="0 0 0"/>
+              <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1"/>
+              <child link="${prefix}_shoulder-ex-al-interface_1"/>
+              <axis xyz="0.951057 0.309017 0.0"/>
+              <!-- <dynamics damping="10.0" friction="5.0"/> -->
+              <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+          </joint>
+
+          
+    </xacro:macro>
+</robot>

@@ -1,0 +1,1182 @@
+<?xml version="1.0" ?>
+<robot name="dropbear_head"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="head_macro" params="prefix parent *origin">
+
+
+    <link name="${prefix}_center-bracket2_1">
+      <inertial>
+        <origin xyz="3.8346437243874654e-05 0.028284627969764248 -0.09750810940579985" rpy="0 0 0"/>
+        <mass value="0.9900409412989982"/>
+        <inertia ixx="0.003998" iyy="0.00721" izz="0.004001" ixy="0.0" iyz="2e-06" ixz="2e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.283942 0.18654 -0.126791" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/center-bracket2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.283942 0.18654 -0.126791" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/center-bracket2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base__5__1">
+      <inertial>
+        <origin xyz="-3.06424356499857e-07 -0.0018028909754423672 -4.006902962760961e-07" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="75.91e-09" iyy="71.51e-09" izz="82.56e-09" ixy="0.0" iyz="0.0" ixz="-7.0e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.308942 0.12754 -0.129291" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.308942 0.12754 -0.129291" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base__2__1">
+      <inertial>
+        <origin xyz="-2.8817588032525876e-07 -0.001802890975445226 -4.730412566378295e-07" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="75.91e-09" iyy="71.51e-09" izz="82.56e-09" ixy="0.0" iyz="0.0" ixz="-7.0e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.258942 0.12754 -0.129291" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.258942 0.12754 -0.129291" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base__1__1">
+      <inertial>
+        <origin xyz="2.425383274773374e-07 -0.0018028909754462807 1.629635675003691e-07" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="71.61e-09" iyy="71.51e-09" izz="86.86e-09" ixy="0.0" iyz="0.0" ixz="1.427e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.383044 0.12754 -0.000941" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.383044 0.12754 -0.000941" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base_1">
+      <inertial>
+        <origin xyz="2.168950684611204e-07 -0.0018028909754433942 -5.184531954444127e-08" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="75.91e-09" iyy="71.51e-09" izz="82.56e-09" ixy="0.0" iyz="0.0" ixz="-7.0e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.358044 0.12754 0.04236" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.358044 0.12754 0.04236" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base__3__1">
+      <inertial>
+        <origin xyz="1.9223092723175128e-07 -0.0018028909754772282 -3.93148458163739e-08" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="75.91e-09" iyy="71.51e-09" izz="82.56e-09" ixy="0.0" iyz="0.0" ixz="-7.0e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.209839 0.12754 0.04236" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.209839 0.12754 0.04236" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_5mm-ujoint-base__4__1">
+      <inertial>
+        <origin xyz="1.6798179230947952e-07 -0.0018028909754432276 1.620475144446928e-07" rpy="0 0 0"/>
+        <mass value="0.0019034168312865901"/>
+        <inertia ixx="71.61e-09" iyy="71.51e-09" izz="86.86e-09" ixy="0.0" iyz="0.0" ixz="1.427e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.184839 0.12754 -0.000941" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.184839 0.12754 -0.000941" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__6__1">
+      <inertial>
+        <origin xyz="-0.004226364224141799 -3.831484210459202e-08 -0.002671317839583104" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.313168 0.11854 -0.131962" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.313168 0.11854 -0.131962" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__4___1">
+      <inertial>
+        <origin xyz="0.008090913802082988 0.05478640097420695 -0.015967801610564242" rpy="0 0 0"/>
+        <mass value="0.041870324726393286"/>
+        <inertia ixx="3.6e-05" iyy="8e-06" izz="3.2e-05" ixy="-7e-06" iyz="1.3e-05" ixz="3e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.312784 0.122047 -0.123213" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__4___1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.312784 0.122047 -0.123213" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__4___1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever_1">
+      <inertial>
+        <origin xyz="0.007426461752526592 0.03190986660772625 -0.013718757939493342" rpy="0 0 0"/>
+        <mass value="0.04298268184364639"/>
+        <inertia ixx="5.2e-05" iyy="1.2e-05" izz="4.7e-05" ixy="-1e-05" iyz="1.8e-05" ixz="4e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.310823 0.110454 -0.125815" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.310823 0.110454 -0.125815" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__1__1">
+      <inertial>
+        <origin xyz="-0.0049303029733915316 1.0162823491088879e-07 -0.0008343581172669257" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.263872 0.11854 -0.130125" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.263872 0.11854 -0.130125" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__5___1__1">
+      <inertial>
+        <origin xyz="-0.010697780740818036 0.0484324768709017 -0.02935746116647918" rpy="0 0 0"/>
+        <mass value="0.04187032472639328"/>
+        <inertia ixx="3.6e-05" iyy="8e-06" izz="3.2e-05" ixy="7e-06" iyz="1.3e-05" ixz="-3e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.257696 0.115673 -0.136655" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__5___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.257696 0.115673 -0.136655" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__5___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever__4__1">
+      <inertial>
+        <origin xyz="-0.0074348154663718136 0.03193576048858819 -0.013691785153830918" rpy="0 0 0"/>
+        <mass value="0.042982681843648216"/>
+        <inertia ixx="5.2e-05" iyy="1.2e-05" izz="4.7e-05" ixy="1e-05" iyz="1.8e-05" ixz="-4e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.257058 0.110451 -0.125823" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.257058 0.110451 -0.125823" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__3__1">
+      <inertial>
+        <origin xyz="-0.004978762007825044 -4.937069579546982e-08 0.00046206432615511966" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.388023 0.11854 -0.000479" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.388023 0.11854 -0.000479" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__1___1__1">
+      <inertial>
+        <origin xyz="-0.012356712790251911 0.048365296241757866 0.028810741379527917" rpy="0 0 0"/>
+        <mass value="0.04187032472639327"/>
+        <inertia ixx="3.6e-05" iyy="8e-06" izz="3.2e-05" ixy="8e-06" iyz="-1.2e-05" ixz="3e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.382356 0.115621 0.006475" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__1___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.382356 0.115621 0.006475" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__1___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever__1__1">
+      <inertial>
+        <origin xyz="-0.008120661984091504 0.03192691679860454 0.013318601322868981" rpy="0 0 0"/>
+        <mass value="0.04298268184364818"/>
+        <inertia ixx="5.2e-05" iyy="1.2e-05" izz="4.7e-05" ixy="1.1e-05" iyz="-1.8e-05" ixz="4e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.380987 0.110454 -0.004315" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.380987 0.110454 -0.004315" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__2__1">
+      <inertial>
+        <origin xyz="0.0018403789193226494 -4.1457359517549364e-08 0.004648879074007656" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.356204 0.11854 0.047009" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.356204 0.11854 0.047009" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__0__1">
+      <inertial>
+        <origin xyz="-0.031857275970217425 0.047916784457887496 0.0033276778975500285" rpy="0 0 0"/>
+        <mass value="0.04187032472639328"/>
+        <inertia ixx="3e-05" iyy="8e-06" izz="3.7e-05" ixy="1.5e-05" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.364802 0.115197 0.045036" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__0__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.364802 0.115197 0.045036" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__0__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever__2__1">
+      <inertial>
+        <origin xyz="-0.01561212278275853 0.03188457435312017 0.00040503058741351433" rpy="0 0 0"/>
+        <mass value="0.042982681843648195"/>
+        <inertia ixx="4.4e-05" iyy="1.2e-05" izz="5.4e-05" ixy="2.1e-05" iyz="-1e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.354087 0.110458 0.042257" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.354087 0.110458 0.042257" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__4__1">
+      <inertial>
+        <origin xyz="0.004356124760737379 9.141860647654543e-08 -0.002455149691664195" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.205483 0.11854 0.039905" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.205483 0.11854 0.039905" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__3___1__1">
+      <inertial>
+        <origin xyz="0.028842623507411347 0.04934271537953708 0.007439093732284317" rpy="0 0 0"/>
+        <mass value="0.04187032472639327"/>
+        <inertia ixx="3e-05" iyy="8e-06" izz="3.7e-05" ixy="-1.5e-05" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.20603 0.116591 0.049119" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__3___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.20603 0.116591 0.049119" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__3___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever__3__1">
+      <inertial>
+        <origin xyz="0.015584715497152818 0.03193070525388275 0.0004236047800553547" rpy="0 0 0"/>
+        <mass value="0.04298268184354137"/>
+        <inertia ixx="4.5e-05" iyy="1.2e-05" izz="5.5e-05" ixy="-2.1e-05" iyz="-1e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.213786 0.110452 0.042253" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.213786 0.110452 0.042253" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__5__1">
+      <inertial>
+        <origin xyz="0.004985175531100422 1.0243782577745719e-07 0.00038312367678919757" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.179854 0.11854 -0.000558" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.179854 0.11854 -0.000558" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_leadscrew__2___1__1">
+      <inertial>
+        <origin xyz="0.012505547819126883 0.04834098253159427 0.028787508745766965" rpy="0 0 0"/>
+        <mass value="0.041870324726393286"/>
+        <inertia ixx="3.6e-05" iyy="8e-06" izz="3.2e-05" ixy="-8e-06" iyz="-1.2e-05" ixz="-3e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.18541 0.115595 0.006475" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__2___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.18541 0.115595 0.006475" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/leadscrew__2___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_screw-reciever__5__1">
+      <inertial>
+        <origin xyz="0.008061623594433992 0.03161751443189505 0.013175413237320646" rpy="0 0 0"/>
+        <mass value="0.042818900146596034"/>
+        <inertia ixx="5.1e-05" iyy="1.2e-05" izz="4.6e-05" ixy="-1.1e-05" iyz="-1.7e-05" ixz="-4e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.186901 0.110453 -0.004311" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque25514347"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.186901 0.110453 -0.004311" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/screw-reciever__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__8__1">
+      <inertial>
+        <origin xyz="-0.004714550703244946 0.0014502030420447346 0.000820321543006583" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.34418 -0.011176 -0.072081" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__8__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.34418 -0.011176 -0.072081" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__8__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base__3__1">
+      <inertial>
+        <origin xyz="-0.0008631103535244322 0.0100927968035996 -0.004917803052373437" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.340322 -0.012623 -0.077827" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.340322 -0.012623 -0.077827" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_Head_1">
+      <inertial>
+        <origin xyz="-0.05445785559977906 0.0791227204508759 -0.050633116327556904" rpy="0 0 0"/>
+        <mass value="1.8674963122317672"/>
+        <inertia ixx="0.011021" iyy="0.011236" izz="0.008366" ixy="-7e-06" iyz="0.000445" ixz="2e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.339454 -0.029626 -0.072915" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/Head_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.339454 -0.029626 -0.072915" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/Head_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_u-joint-center__7__1">
+      <inertial>
+        <origin xyz="-0.001164126831218526 -0.0021212943707097434 0.004375827543159155" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.350841 -0.01476 -0.05129" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.350841 -0.01476 -0.05129" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base__2__1">
+      <inertial>
+        <origin xyz="-0.0048251103398560535 0.010093321294563556 -0.0012805299667578013" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.354509 -0.012635 -0.056949" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.354509 -0.012635 -0.056949" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+
+    <link name="${prefix}_u-joint-center__9__1">
+      <inertial>
+        <origin xyz="0.0023709258457064175 0.0011070871145714267 0.00426110181416265" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.291472 -0.011469 0.044954" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.291472 -0.011469 0.044954" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base__1__1">
+      <inertial>
+        <origin xyz="-0.004374417577884759 0.010085622713966397 0.0024369614949263582" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.298212 -0.01258 0.043124" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.298212 -0.01258 0.043124" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name="${prefix}_u-joint-center_1">
+      <inertial>
+        <origin xyz="-0.002654534649389917 0.001241606002754329 0.004051810068480127" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.276526 -0.011416 0.044672" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.276526 -0.011416 0.044672" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base_1">
+      <inertial>
+        <origin xyz="-0.00418094602180985 0.010091298212800023 -0.0027347789599892758" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.278054 -0.012656 0.03788" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.278054 -0.012656 0.03788" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name="${prefix}_u-joint-center__10__1">
+      <inertial>
+        <origin xyz="0.0010869079977688934 -0.0021109819465681343 0.004400401099097305" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.2172 -0.014754 -0.051206" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__10__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.2172 -0.014754 -0.051206" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__10__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base__5__1">
+      <inertial>
+        <origin xyz="0.005217041197059458 0.00986470883503762 -0.0015102147129289062" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.213462 -0.012858 -0.056901" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.213462 -0.012858 -0.056901" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name="${prefix}_u-joint-center__11__1">
+      <inertial>
+        <origin xyz="-3.210636303846437e-06 -0.0019705200384065574 -0.004594639231801437" rpy="0 0 0"/>
+        <mass value="0.0009727380393185158"/>
+        <inertia ixx="14.27e-09" iyy="19.21e-09" izz="16.13e-09" ixy="2.27e-10" iyz="-1.34e-09" ixz="-3.25e-10"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.228395 -0.014648 -0.07763" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__11__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.228395 -0.014648 -0.07763" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/u-joint-center__11__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_10mm-ujoint-base__4__1">
+      <inertial>
+        <origin xyz="0.005005631071676758 0.010087151077690207 -4.07206132493898e-06" rpy="0 0 0"/>
+        <mass value="0.0014232382644525146"/>
+        <inertia ixx="65.84e-09" iyy="63.94e-09" izz="73.94e-09" ixy="-3.0e-12" iyz="-2.0e-12" ixz="6.53e-09"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.223392 -0.01268 -0.073037" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.223392 -0.01268 -0.073037" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <joint name = "head_torso_connection" type = "fixed">
+      <xacro:insert_block name = "origin"/>
+      <parent link = "${parent}"/>
+      <child link="${prefix}_center-bracket2_1"/>
+  </joint>
+
+    <joint name="${prefix}_Revolute2" type="revolute">
+      <origin xyz="0.025 0.059 0.0025" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base__5__1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute3" type="revolute">
+      <origin xyz="-0.025 0.059 0.0025" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base__2__1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute4" type="revolute">
+      <origin xyz="0.099102 0.059 -0.12585" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base__1__1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute5" type="revolute">
+      <origin xyz="0.074102 0.059 -0.169151" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base_1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute6" type="revolute">
+      <origin xyz="-0.074103 0.059 -0.169151" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base__3__1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute7" type="revolute">
+      <origin xyz="-0.099103 0.059 -0.12585" rpy="0 0 0"/>
+      <parent link="${prefix}_center-bracket2_1"/>
+      <child link="${prefix}_5mm-ujoint-base__4__1"/>
+      <axis xyz="0.0 1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute8" type="revolute">
+      <origin xyz="0.004226 0.009 0.002671" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base__5__1"/>
+      <child link="${prefix}_u-joint-center__6__1"/>
+      <axis xyz="-0.845262 0.0 -0.534352"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute9" type="revolute">
+      <origin xyz="-0.000384 -0.003507 -0.008749" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__6__1"/>
+      <child link="${prefix}_leadscrew__4___1"/>
+      <axis xyz="0.480273 -0.438371 -0.759716"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider10" type="prismatic">
+      <origin xyz="-0.001961 0.011593 0.002602" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__4___1"/>
+      <child link="${prefix}_screw-reciever_1"/>
+      <axis xyz="-0.209066 -0.898398 0.386228"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute11" type="revolute">
+      <origin xyz="0.00493 0.009 0.000834" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base__2__1"/>
+      <child link="${prefix}_u-joint-center__1__1"/>
+      <axis xyz="-0.985983 0.0 -0.166846"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute12" type="revolute">
+      <origin xyz="-0.006176 0.002867 0.00653" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__1__1"/>
+      <child link="${prefix}_leadscrew__5___1__1"/>
+      <axis xyz="-0.155764 0.358368 0.920494"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider13" type="prismatic">
+      <origin xyz="-0.000638 0.005222 -0.010832" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__5___1__1"/>
+      <child link="${prefix}_screw-reciever__4__1"/>
+      <axis xyz="0.209246 -0.89875 0.385311"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute14" type="revolute">
+      <origin xyz="0.004979 0.009 -0.000462" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base__1__1"/>
+      <child link="${prefix}_u-joint-center__3__1"/>
+      <axis xyz="-0.995725 0.0 0.092371"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute15" type="revolute">
+      <origin xyz="-0.005667 0.002919 -0.006954" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__3__1"/>
+      <child link="${prefix}_leadscrew__1___1__1"/>
+      <axis xyz="-0.086002 0.364877 -0.927075"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider16" type="prismatic">
+      <origin xyz="-0.001369 0.005167 0.01079" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__1___1__1"/>
+      <child link="${prefix}_screw-reciever__1__1"/>
+      <axis xyz="0.228543 -0.898484 -0.374825"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute17" type="revolute">
+      <origin xyz="-0.00184 0.009 -0.004649" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base_1"/>
+      <child link="${prefix}_u-joint-center__2__1"/>
+      <axis xyz="0.368125 0.0 0.929776"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute18" type="revolute">
+      <origin xyz="0.008598 0.003343 0.001973" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__2__1"/>
+      <child link="${prefix}_leadscrew__0__1"/>
+      <axis xyz="0.84471 0.417867 -0.334444"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider19" type="prismatic">
+      <origin xyz="-0.010715 0.004739 0.002779" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__0__1"/>
+      <child link="${prefix}_screw-reciever__2__1"/>
+      <axis xyz="0.439735 -0.898055 -0.011418"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute20" type="revolute">
+      <origin xyz="-0.004356 0.009 0.002455" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base__3__1"/>
+      <child link="${prefix}_u-joint-center__4__1"/>
+      <axis xyz="0.871168 0.0 -0.490985"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute21" type="revolute">
+      <origin xyz="0.000547 0.001949 -0.009214" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__4__1"/>
+      <child link="${prefix}_leadscrew__3___1__1"/>
+      <axis xyz="-0.476193 0.243615 -0.844921"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider22" type="prismatic">
+      <origin xyz="0.007756 0.006139 0.006866" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__3___1__1"/>
+      <child link="${prefix}_screw-reciever__3__1"/>
+      <axis xyz="-0.438578 -0.898614 -0.011916"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute23" type="revolute">
+      <origin xyz="-0.004985 0.009 -0.000383" rpy="0 0 0"/>
+      <parent link="${prefix}_5mm-ujoint-base__4__1"/>
+      <child link="${prefix}_u-joint-center__5__1"/>
+      <axis xyz="0.997055 0.0 0.076689"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute24" type="revolute">
+      <origin xyz="0.005556 0.002945 -0.007033" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__5__1"/>
+      <child link="${prefix}_leadscrew__2___1__1"/>
+      <axis xyz="0.071303 0.368125 -0.927038"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Slider25" type="prismatic">
+      <origin xyz="0.001491 0.005142 0.010786" rpy="0 0 0"/>
+      <parent link="${prefix}_leadscrew__2___1__1"/>
+      <child link="${prefix}_screw-reciever__5__1"/>
+      <axis xyz="-0.229094 -0.898514 -0.374418"/>
+      <limit upper="0.0" lower="-0.075" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute26" type="revolute">
+      <origin xyz="0.033357 0.12163 -0.053734" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever_1"/>
+      <child link="${prefix}_u-joint-center__8__1"/>
+      <axis xyz="-0.942857 0.289971 0.164128"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute27" type="revolute">
+      <origin xyz="-0.003858 0.001447 0.005746" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__8__1"/>
+      <child link="${prefix}_10mm-ujoint-base__3__1"/>
+      <axis xyz="0.1713 -0.000659 0.985219"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid 28" type="fixed">
+      <origin xyz="-0.000868 0.017003 -0.004912" rpy="0 0 0"/>
+      <parent link="${prefix}_10mm-ujoint-base__3__1"/>
+      <child link="${prefix}_Head_1"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute29" type="revolute">
+      <origin xyz="-0.030146 0.125214 0.046975" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever__1__1"/>
+      <child link="${prefix}_u-joint-center__7__1"/>
+      <axis xyz="-0.232746 -0.424277 0.87511"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute30" type="revolute">
+      <origin xyz="0.003668 -0.002125 0.005659" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__7__1"/>
+      <child link="${prefix}_10mm-ujoint-base__2__1"/>
+      <axis xyz="0.966493 -0.000738 0.256693"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+
+    <joint name="${prefix}_Revolute32" type="revolute">
+      <origin xyz="-0.062615 0.121927 -0.002697" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever__2__1"/>
+      <child link="${prefix}_u-joint-center__9__1"/>
+      <axis xyz="0.474078 0.221298 0.852219"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute33" type="revolute">
+      <origin xyz="0.00674 0.001111 0.00183" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__9__1"/>
+      <child link="${prefix}_10mm-ujoint-base__1__1"/>
+      <axis xyz="0.873803 0.000747 -0.486279"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+
+
+    <joint name="${prefix}_Revolute35" type="revolute">
+      <origin xyz="0.06274 0.121868 -0.002419" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever__3__1"/>
+      <child link="${prefix}_u-joint-center_1"/>
+      <axis xyz="-0.530813 0.248324 0.810292"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute36" type="revolute">
+      <origin xyz="0.001528 0.00124 0.006792" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center_1"/>
+      <child link="${prefix}_10mm-ujoint-base_1"/>
+      <axis xyz="0.836433 -0.000427 0.548069"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+
+    <joint name="${prefix}_Revolute38" type="revolute">
+      <origin xyz="0.030299 0.125207 0.046895" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever__5__1"/>
+      <child link="${prefix}_u-joint-center__10__1"/>
+      <axis xyz="0.2173 -0.422149 0.880097"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute39" type="revolute">
+      <origin xyz="-0.003738 -0.001896 0.005695" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__10__1"/>
+      <child link="${prefix}_10mm-ujoint-base__5__1"/>
+      <axis xyz="-0.96494 0.043076 0.25891"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+
+    <joint name="${prefix}_Revolute41" type="revolute">
+      <origin xyz="-0.028663 0.125099 -0.048193" rpy="0 0 0"/>
+      <parent link="${prefix}_screw-reciever__4__1"/>
+      <child link="${prefix}_u-joint-center__11__1"/>
+      <axis xyz="-0.000586 -0.394148 -0.919047"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute42" type="revolute">
+      <origin xyz="-0.005003 -0.001968 -0.004593" rpy="0 0 0"/>
+      <parent link="${prefix}_u-joint-center__11__1"/>
+      <child link="${prefix}_10mm-ujoint-base__4__1"/>
+      <axis xyz="-1.0 0.000581 0.000388"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+
+
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+
+      <joint name="${prefix}_platform_Rigig_1__44__gz" type="fixed">
+        <pose relative_to="${prefix}_Head_1">0.1165 0.0 -0.03791 0 0 0</pose>
+        <parent>${prefix}_10mm-ujoint-base__5__1</parent>
+        <child>${prefix}_Head_1</child>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+
+      <joint name="${prefix}_platform_Rigid_2__45_gz" type="fixed">
+        <pose relative_to="${prefix}_Head_1">0.1096 0.0 -0.01913 0 0 0</pose>
+        <parent>${prefix}_10mm-ujoint-base__4__1</parent>
+        <child>${prefix}_Head_1</child>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+
+      <joint name="${prefix}_platform_Rigid_3__46_gz" type="fixed">
+        <pose relative_to="${prefix}_Head_1">-0.01283 0.0 -0.01534 0 0 0</pose>
+        <parent>${prefix}_10mm-ujoint-base__2__1</parent>
+        <child>${prefix}_Head_1</child>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+
+      <joint name="${prefix}_platform_Rigid_4__47_gz" type="fixed">
+        <pose relative_to="${prefix}_Head_1">0.0254 0.0 -0.1198 0 0 0</pose>
+        <parent>${prefix}_10mm-ujoint-base__1__1</parent>
+        <child>${prefix}_Head_1</child>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+
+      <joint name="${prefix}_platform_Rigid_5__48_gz" type="fixed">
+        <pose relative_to="${prefix}_Head_1">0.0451 0.00 -0.1233 0 0 0</pose>
+        <parent>${prefix}_10mm-ujoint-base_1</parent>
+        <child>${prefix}_Head_1</child>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+    </gazebo>
+
+    <gazebo reference='${prefix}_Rigid 28'>
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

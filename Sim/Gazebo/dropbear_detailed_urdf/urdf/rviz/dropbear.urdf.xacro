@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<robot name= "humanoid"
+    xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/materials.xacro"/>  
+
+    <!-- Constants -->
+    <xacro:property name = "PI" value = "3.141593"/>
+
+    <!-- Torso xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/torso.xacro"/>
+
+    <!-- Waist xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/pelvicgirdle.xacro"/>
+
+    <!-- Arm xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/arm.xacro"/>
+
+    <!-- Leg Xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/leg.xacro"/>
+
+    <!-- Head xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/head.xacro"/>
+
+    <!-- Battery xacro -->
+    <xacro:include filename="$(find dropbear_detailed_urdf)/urdf/rviz/battery.xacro"/>
+
+    <!-- World Link -->
+    <link name="sim_world"/>
+
+    <!-- Torso macro -->
+     <xacro:torso_macro prefix="torso">
+     </xacro:torso_macro>
+
+    <!-- base_link to world joint -->
+    <joint name="base_link_sim_world_joint" type="fixed">
+        <origin xyz="0.0 0.0 1.5" rpy="${PI/2} 0.0 0.0"/>
+        <parent link="sim_world"/>
+        <!-- Torso Base link -->
+        <child link="torso_base_link"/>
+    </joint>
+
+    <!-- Head -->
+    <xacro:head_macro prefix="head" parent = "torso_base_link">
+        <origin xyz="0.0985 0.0798 0.069747" rpy="0 ${PI/2} 0"/>
+    </xacro:head_macro>
+
+    <!-- waist -->
+    <xacro:pelvicgirdle_macro prefix="PG" parent = "torso_lumbar-strap_1">
+        <!-- <origin xyz="-0.140001 -0.171194 0.05969" rpy="0 0 0"/> -->
+        <origin xyz="-0.023253 -0.021955 0.0" rpy="0 0 0"/>
+    </xacro:pelvicgirdle_macro>
+
+    <!-- Right Arm-->
+    <xacro:arm_macro prefix="RH" folder = "rightarm" parent = "torso_RMD-X10Rotot_1" sign = "1">
+        <origin xyz="0.0 0.0 0.0005" rpy="0 0 ${-PI/2}"/>
+    </xacro:arm_macro>
+
+    <!-- Left Arm -->
+    <xacro:arm_macro prefix="LH" folder = "leftarm" parent = "torso_RMD-X10__1_Rotor_1" sign = "-1">
+        <origin xyz="0.0 0.0 -0.0005" rpy="0 0 ${-PI/2}"/>
+    </xacro:arm_macro>
+
+    <!-- Right Leg -->
+    <xacro:leg_macro prefix = "RL" folder = "rightleg" parent = "PG_motor-yaw-cap_1" sign = "1">
+        <origin xyz="-2e-06 -0.001729 0.00985" rpy="${PI/18} 0 0"/>
+    </xacro:leg_macro>
+
+    <!-- Left Leg -->
+    <xacro:leg_macro prefix = "LL" folder = "leftleg" parent = "PG_motor-yaw-cap__1__1" sign = "-1">
+        <origin xyz="2e-06 -0.001744 -0.009847" rpy="${-PI/18} 0 0"/>
+    </xacro:leg_macro>
+
+    <!-- Battery -->
+     <xacro:battery_macro parent = "torso_left-battery-mount_1">
+        <origin xyz="0.08 -0.028115 0.03632" rpy="0 0 0"/>
+     </xacro:battery_macro>
+
+</robot>

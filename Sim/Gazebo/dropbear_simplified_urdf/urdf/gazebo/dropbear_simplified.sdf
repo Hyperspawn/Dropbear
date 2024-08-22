@@ -1,0 +1,4582 @@
+<sdf version='1.7'>
+  <model name='humanoid'>
+    <joint name='base_link_world_joint' type='fixed'>
+      <pose relative_to='__model__'>0 0 1.5 1.5708 -0 0</pose>
+      <parent>world</parent>
+      <child>torso</child>
+    </joint>
+    <link name='torso'>
+      <pose relative_to='base_link_world_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.01809 -0.013596 0.059783 0 -0 0</pose>
+        <mass>12.8408</mass>
+        <inertia>
+          <ixx>0.292344</ixx>
+          <ixy>-0.000518562</ixy>
+          <ixz>5.88885e-05</ixz>
+          <iyy>0.13765</iyy>
+          <iyz>2.99455e-05</iyz>
+          <izz>0.291541</izz>
+        </inertia>
+      </inertial>
+      <collision name='torso_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/torso/base_link.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='torso_fixed_joint_lump__head_center-bracket2_1_collision_1'>
+        <pose>-0.048272 0.302766 0.343689 0 1.5708 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/center-bracket2_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='torso_fixed_joint_lump__battery_collision_2'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/torso/HumanoidBatteryAssembly_Copy_v2_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='torso_fixed_joint_lump__Buttocks_1_collision_3'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Buttocks_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='torso_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/torso/base_link.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='torso_fixed_joint_lump__head_center-bracket2_1_visual_1'>
+        <pose>-0.048272 0.302766 0.343689 0 1.5708 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/center-bracket2_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='torso_fixed_joint_lump__battery_visual_2'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/torso/HumanoidBatteryAssembly_Copy_v2_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='torso_fixed_joint_lump__Buttocks_1_visual_3'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Buttocks_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_torso_connection' type='revolute'>
+      <pose relative_to='torso'>-0.054536 0.160416 -0.114788 0 0 -1.5708</pose>
+      <parent>torso</parent>
+      <child>LH_2020_100mm__9__1</child>
+      <axis>
+        <xyz>0.000261 0 -1</xyz>
+        <limit>
+          <lower>-3.14159</lower>
+          <upper>3.14159</upper>
+          <effort>10</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_2020_100mm__9__1'>
+      <pose relative_to='LH_torso_connection'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.000847 0.002606 -0.047472 0 -0 0</pose>
+        <mass>0.151343</mass>
+        <inertia>
+          <ixx>0.000135</ixx>
+          <ixy>4e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000123</iyy>
+          <iyz>-1e-06</iyz>
+          <izz>6.9e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_2020_100mm__9__1_collision'>
+        <pose>0 0 0.0021 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/2020_100mm__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_2020_100mm__9__1_visual'>
+        <pose>0 0 0.0021 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/2020_100mm__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_pitch' type='revolute'>
+      <pose relative_to='LH_2020_100mm__9__1'>0.008343 -0.025679 -0.05 0 -0 0</pose>
+      <parent>LH_2020_100mm__9__1</parent>
+      <child>LH_RMD-X8-Pro_MIR8_MIR1__1__1</child>
+      <axis>
+        <xyz>0.309017 -0.951057 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_RMD-X8-Pro_MIR8_MIR1__1__1'>
+      <pose relative_to='LH_pitch'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.031686 0.037224 -0.009664 0 -0 0</pose>
+        <mass>0.397057</mass>
+        <inertia>
+          <ixx>0.000836</ixx>
+          <ixy>0.000113</ixy>
+          <ixz>-0.000101</ixz>
+          <iyy>0.000815</iyy>
+          <iyz>-2.7e-05</iyz>
+          <izz>0.001335</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_RMD-X8-Pro_MIR8_MIR1__1__1_collision'>
+        <pose>-0.008343 0.025679 0.0521 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_RMD-X8-Pro_MIR8_MIR1__1__1_visual'>
+        <pose>-0.008343 0.025679 0.0521 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_roll' type='revolute'>
+      <pose relative_to='LH_RMD-X8-Pro_MIR8_MIR1__1__1'>0.09342 0.058744 -0.014 0 -0 0</pose>
+      <parent>LH_RMD-X8-Pro_MIR8_MIR1__1__1</parent>
+      <child>LH_RMD-X8-Pro_MIR8_MIR1__3__1</child>
+      <axis>
+        <xyz>0.951057 0.309017 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_RMD-X8-Pro_MIR8_MIR1__3__1'>
+      <pose relative_to='LH_roll'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.073833 0.021969 -0.008043 0 -0 0</pose>
+        <mass>0.260073</mass>
+        <inertia>
+          <ixx>0.000377</ixx>
+          <ixy>-0.000126</ixy>
+          <ixz>-2.4e-05</ixz>
+          <iyy>0.00073</iyy>
+          <iyz>-1.8e-05</iyz>
+          <izz>0.000813</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_RMD-X8-Pro_MIR8_MIR1__3__1_collision'>
+        <pose>-0.101763 -0.033065 0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_RMD-X8-Pro_MIR8_MIR1__3__1_visual'>
+        <pose>-0.101763 -0.033065 0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_Revolute 8' type='revolute'>
+      <pose relative_to='LH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.167775 0.055948 -0.0275 0 -0 0</pose>
+      <parent>LH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>LH_elbow-rear-hanger_1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_elbow-rear-hanger_1'>
+      <pose relative_to='LH_Revolute 8'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.028383 0.010873 0.017 0 -0 0</pose>
+        <mass>0.0262854</mass>
+        <inertia>
+          <ixx>8e-06</ixx>
+          <ixy>-6e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>1.5e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.6e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_elbow-rear-hanger_1_collision'>
+        <pose>-0.269538 -0.089013 0.0936 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/elbow-rear-hanger_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_elbow-rear-hanger_1_visual'>
+        <pose>-0.269538 -0.089013 0.0936 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/elbow-rear-hanger_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_elbow_joint' type='revolute'>
+      <pose relative_to='LH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.096532 0.031365 0.0095 0 -0 0</pose>
+      <parent>LH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>LH_bicep-motor-mate_1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_bicep-motor-mate_1'>
+      <pose relative_to='LH_elbow_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.003641 0.018293 0.004858 0 -0 0</pose>
+        <mass>0.0234003</mass>
+        <inertia>
+          <ixx>1.3e-05</ixx>
+          <ixy>-2e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>3e-06</iyy>
+          <iyz>0</iyz>
+          <izz>1.5e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_bicep-motor-mate_1_collision'>
+        <pose>-0.198295 -0.06443 0.0566 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/bicep-motor-mate_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_bicep-motor-mate_1_visual'>
+        <pose>-0.198295 -0.06443 0.0566 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/bicep-motor-mate_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_Revolute 5' type='revolute'>
+      <pose relative_to='LH_bicep-motor-mate_1'>0.011713 0.058846 -0.003 0 -0 0</pose>
+      <parent>LH_bicep-motor-mate_1</parent>
+      <child>LH_bicep_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_bicep_1'>
+      <pose relative_to='LH_Revolute 5'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.025074 0.003758 -0.002524 0 -0 0</pose>
+        <mass>0.00600551</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>3e-06</iyy>
+          <iyz>0</iyz>
+          <izz>3e-06</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_bicep_1_collision'>
+        <pose>-0.210008 -0.123276 0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/bicep_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_bicep_1_visual'>
+        <pose>-0.210008 -0.123276 0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/bicep_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_Revolute 6' type='revolute'>
+      <pose relative_to='LH_bicep_1'>0.04913 0.009283 -0.005 0 -0 0</pose>
+      <parent>LH_bicep_1</parent>
+      <child>LH_straight-tendon_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_straight-tendon_1'>
+      <pose relative_to='LH_Revolute 6'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.017203 -0.030697 -0.011881 0 -0 0</pose>
+        <mass>0.0358655</mass>
+        <inertia>
+          <ixx>1.4e-05</ixx>
+          <ixy>1.2e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>2.2e-05</iyy>
+          <iyz>0</iyz>
+          <izz>3.1e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_straight-tendon_1_collision'>
+        <pose>-0.259138 -0.132559 0.0646 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/straight-tendon_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_straight-tendon_1_visual'>
+        <pose>-0.259138 -0.132559 0.0646 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/straight-tendon_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_Revolute 9' type='revolute'>
+      <pose relative_to='LH_straight-tendon_1'>0.050222 -0.052218 0.005 0 -0 0</pose>
+      <parent>LH_straight-tendon_1</parent>
+      <child>LH_RMD-X8-Pro_MIR8_MIR1__4__1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_RMD-X8-Pro_MIR8_MIR1__4__1'>
+      <pose relative_to='LH_Revolute 9'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.034837 0.029854 -0.009425 0 -0 0</pose>
+        <mass>0.138608</mass>
+        <inertia>
+          <ixx>0.000185</ixx>
+          <ixy>-1e-05</ixy>
+          <ixz>7e-06</ixz>
+          <iyy>0.000188</iyy>
+          <iyz>5e-06</iyz>
+          <izz>0.00016</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_RMD-X8-Pro_MIR8_MIR1__4__1_collision'>
+        <pose>-0.30936 -0.080341 0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_RMD-X8-Pro_MIR8_MIR1__4__1_visual'>
+        <pose>-0.30936 -0.080341 0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LH_wrist_roll' type='revolute'>
+      <pose relative_to='LH_RMD-X8-Pro_MIR8_MIR1__4__1'>0.075374 0.044656 -0.0065 0 -0 0</pose>
+      <parent>LH_RMD-X8-Pro_MIR8_MIR1__4__1</parent>
+      <child>LH_shoulder-ex-al-interface_1</child>
+      <axis>
+        <xyz>0.951057 0.309017 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LH_shoulder-ex-al-interface_1'>
+      <pose relative_to='LH_wrist_roll'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.08748 0.028422 0 0 -0 0</pose>
+        <mass>0.390729</mass>
+        <inertia>
+          <ixx>0.00028</ixx>
+          <ixy>-0.000184</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000788</iyy>
+          <iyz>0</iyz>
+          <izz>0.00084</izz>
+        </inertia>
+      </inertial>
+      <collision name='LH_shoulder-ex-al-interface_1_collision'>
+        <pose>-0.384734 -0.124997 0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/shoulder-ex-al-interface_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LH_shoulder-ex-al-interface_1_visual'>
+        <pose>-0.384734 -0.124997 0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftarm/shoulder-ex-al-interface_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_torso_connection' type='revolute'>
+      <pose relative_to='torso'>-0.054627 0.160416 0.234212 0 0 -1.5708</pose>
+      <parent>torso</parent>
+      <child>RH_2020_100mm__9__1</child>
+      <axis>
+        <xyz>0.000261 0 1</xyz>
+        <limit>
+          <lower>-3.14159</lower>
+          <upper>3.14159</upper>
+          <effort>10</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_2020_100mm__9__1'>
+      <pose relative_to='RH_torso_connection'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.000847 0.002606 0.047472 0 -0 0</pose>
+        <mass>0.151343</mass>
+        <inertia>
+          <ixx>0.000135</ixx>
+          <ixy>4e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000123</iyy>
+          <iyz>-1e-06</iyz>
+          <izz>6.9e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_2020_100mm__9__1_collision'>
+        <pose>0 0 -0.0021 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/2020_100mm__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_2020_100mm__9__1_visual'>
+        <pose>0 0 -0.0021 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/2020_100mm__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_pitch' type='revolute'>
+      <pose relative_to='RH_2020_100mm__9__1'>0.008343 -0.025679 0.05 0 -0 0</pose>
+      <parent>RH_2020_100mm__9__1</parent>
+      <child>RH_RMD-X8-Pro_MIR8_MIR1__1__1</child>
+      <axis>
+        <xyz>0.309017 -0.951057 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_RMD-X8-Pro_MIR8_MIR1__1__1'>
+      <pose relative_to='RH_pitch'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.031686 0.037224 0.009664 0 -0 0</pose>
+        <mass>0.397057</mass>
+        <inertia>
+          <ixx>0.000836</ixx>
+          <ixy>0.000113</ixy>
+          <ixz>-0.000101</ixz>
+          <iyy>0.000815</iyy>
+          <iyz>-2.7e-05</iyz>
+          <izz>0.001335</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_RMD-X8-Pro_MIR8_MIR1__1__1_collision'>
+        <pose>-0.008343 0.025679 -0.0521 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_RMD-X8-Pro_MIR8_MIR1__1__1_visual'>
+        <pose>-0.008343 0.025679 -0.0521 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_roll' type='revolute'>
+      <pose relative_to='RH_RMD-X8-Pro_MIR8_MIR1__1__1'>0.09342 0.058744 0.014 0 -0 0</pose>
+      <parent>RH_RMD-X8-Pro_MIR8_MIR1__1__1</parent>
+      <child>RH_RMD-X8-Pro_MIR8_MIR1__3__1</child>
+      <axis>
+        <xyz>0.951057 0.309017 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_RMD-X8-Pro_MIR8_MIR1__3__1'>
+      <pose relative_to='RH_roll'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.073833 0.021969 0.008043 0 -0 0</pose>
+        <mass>0.260073</mass>
+        <inertia>
+          <ixx>0.000377</ixx>
+          <ixy>-0.000126</ixy>
+          <ixz>-2.4e-05</ixz>
+          <iyy>0.00073</iyy>
+          <iyz>-1.8e-05</iyz>
+          <izz>0.000813</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_RMD-X8-Pro_MIR8_MIR1__3__1_collision'>
+        <pose>-0.101763 -0.033065 -0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_RMD-X8-Pro_MIR8_MIR1__3__1_visual'>
+        <pose>-0.101763 -0.033065 -0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_Revolute 8' type='revolute'>
+      <pose relative_to='RH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.167775 0.055948 0.0275 0 -0 0</pose>
+      <parent>RH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>RH_elbow-rear-hanger_1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_elbow-rear-hanger_1'>
+      <pose relative_to='RH_Revolute 8'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.028383 0.010873 -0.017 0 -0 0</pose>
+        <mass>0.0262854</mass>
+        <inertia>
+          <ixx>8e-06</ixx>
+          <ixy>-6e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>1.5e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.6e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_elbow-rear-hanger_1_collision'>
+        <pose>-0.269538 -0.089013 -0.0936 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/elbow-rear-hanger_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_elbow-rear-hanger_1_visual'>
+        <pose>-0.269538 -0.089013 -0.0936 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/elbow-rear-hanger_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_elbow_joint' type='revolute'>
+      <pose relative_to='RH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.096532 0.031365 -0.0095 0 -0 0</pose>
+      <parent>RH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>RH_bicep-motor-mate_1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_bicep-motor-mate_1'>
+      <pose relative_to='RH_elbow_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.003641 0.018293 -0.004858 0 -0 0</pose>
+        <mass>0.0234003</mass>
+        <inertia>
+          <ixx>1.3e-05</ixx>
+          <ixy>-2e-06</ixy>
+          <ixz>0</ixz>
+          <iyy>3e-06</iyy>
+          <iyz>0</iyz>
+          <izz>1.5e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_bicep-motor-mate_1_collision'>
+        <pose>-0.198295 -0.06443 -0.0566 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/bicep-motor-mate_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_bicep-motor-mate_1_visual'>
+        <pose>-0.198295 -0.06443 -0.0566 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/bicep-motor-mate_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_Revolute 5' type='revolute'>
+      <pose relative_to='RH_bicep-motor-mate_1'>0.011713 0.058846 0.003 0 -0 0</pose>
+      <parent>RH_bicep-motor-mate_1</parent>
+      <child>RH_bicep_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_bicep_1'>
+      <pose relative_to='RH_Revolute 5'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.025074 0.003758 0.002524 0 -0 0</pose>
+        <mass>0.00600551</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>3e-06</iyy>
+          <iyz>0</iyz>
+          <izz>3e-06</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_bicep_1_collision'>
+        <pose>-0.210008 -0.123276 -0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/bicep_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_bicep_1_visual'>
+        <pose>-0.210008 -0.123276 -0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/bicep_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_Revolute 6' type='revolute'>
+      <pose relative_to='RH_bicep_1'>0.04913 0.009283 0.005 0 -0 0</pose>
+      <parent>RH_bicep_1</parent>
+      <child>RH_straight-tendon_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_straight-tendon_1'>
+      <pose relative_to='RH_Revolute 6'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.017203 -0.030697 0.011881 0 -0 0</pose>
+        <mass>0.0358655</mass>
+        <inertia>
+          <ixx>1.4e-05</ixx>
+          <ixy>1.2e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>2.2e-05</iyy>
+          <iyz>0</iyz>
+          <izz>3.1e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_straight-tendon_1_collision'>
+        <pose>-0.259138 -0.132559 -0.0646 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/straight-tendon_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_straight-tendon_1_visual'>
+        <pose>-0.259138 -0.132559 -0.0646 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/straight-tendon_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_Revolute 9' type='revolute'>
+      <pose relative_to='RH_straight-tendon_1'>0.050222 -0.052218 -0.005 0 -0 0</pose>
+      <parent>RH_straight-tendon_1</parent>
+      <child>RH_RMD-X8-Pro_MIR8_MIR1__4__1</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_RMD-X8-Pro_MIR8_MIR1__4__1'>
+      <pose relative_to='RH_Revolute 9'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.034837 0.029854 0.009425 0 -0 0</pose>
+        <mass>0.138608</mass>
+        <inertia>
+          <ixx>0.000185</ixx>
+          <ixy>-1e-05</ixy>
+          <ixz>7e-06</ixz>
+          <iyy>0.000188</iyy>
+          <iyz>5e-06</iyz>
+          <izz>0.00016</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_RMD-X8-Pro_MIR8_MIR1__4__1_collision'>
+        <pose>-0.30936 -0.080341 -0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_RMD-X8-Pro_MIR8_MIR1__4__1_visual'>
+        <pose>-0.30936 -0.080341 -0.0596 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/RMD-X8-Pro_MIR8_MIR1__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RH_wrist_roll' type='revolute'>
+      <pose relative_to='RH_RMD-X8-Pro_MIR8_MIR1__4__1'>0.075374 0.044656 0.0065 0 -0 0</pose>
+      <parent>RH_RMD-X8-Pro_MIR8_MIR1__4__1</parent>
+      <child>RH_shoulder-ex-al-interface_1</child>
+      <axis>
+        <xyz>0.951057 0.309017 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RH_shoulder-ex-al-interface_1'>
+      <pose relative_to='RH_wrist_roll'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.08748 0.028422 -0 0 -0 0</pose>
+        <mass>0.390729</mass>
+        <inertia>
+          <ixx>0.00028</ixx>
+          <ixy>-0.000184</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000788</iyy>
+          <iyz>0</iyz>
+          <izz>0.00084</izz>
+        </inertia>
+      </inertial>
+      <collision name='RH_shoulder-ex-al-interface_1_collision'>
+        <pose>-0.384734 -0.124997 -0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/shoulder-ex-al-interface_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RH_shoulder-ex-al-interface_1_visual'>
+        <pose>-0.384734 -0.124997 -0.0661 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightarm/shoulder-ex-al-interface_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 2' type='revolute'>
+      <pose relative_to='torso'>0.081019 0.175226 0.034747 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base__5__1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base__5__1'>
+      <pose relative_to='head_Revolute 2'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0 -0.001803 -0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.591e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>-7e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.256e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base__5__1_collision'>
+        <pose>-0.308942 0.12754 -0.129291 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base__5__1_visual'>
+        <pose>-0.308942 0.12754 -0.129291 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 8' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base__5__1'>0.004226 0.009 0.002671 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base__5__1</parent>
+      <child>head_u-joint-center__6__1</child>
+      <axis>
+        <xyz>-0.845262 0 -0.534352</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__6__1'>
+      <pose relative_to='head_Revolute 8'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004226 -0 -0.002671 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__6__1_collision'>
+        <pose>-0.313168 0.11854 -0.131962 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__6__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__6__1_visual'>
+        <pose>-0.313168 0.11854 -0.131962 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__6__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 9' type='revolute'>
+      <pose relative_to='head_u-joint-center__6__1'>-0.000384 -0.003507 -0.008749 0 -0 0</pose>
+      <parent>head_u-joint-center__6__1</parent>
+      <child>head_leadscrew__4___1</child>
+      <axis>
+        <xyz>0.480273 -0.438371 -0.759716</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__4___1'>
+      <pose relative_to='head_Revolute 9'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.008091 0.054786 -0.015968 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3.6e-05</ixx>
+          <ixy>-7e-06</ixy>
+          <ixz>3e-06</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>1.3e-05</iyz>
+          <izz>3.2e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__4___1_collision'>
+        <pose>-0.312784 0.122047 -0.123213 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__4___1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__4___1_visual'>
+        <pose>-0.312784 0.122047 -0.123213 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__4___1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 10' type='prismatic'>
+      <pose relative_to='head_leadscrew__4___1'>-0.001961 0.011593 0.002602 0 -0 0</pose>
+      <parent>head_leadscrew__4___1</parent>
+      <child>head_screw-reciever_1</child>
+      <axis>
+        <xyz>-0.209066 -0.898398 0.386228</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever_1'>
+      <pose relative_to='head_Slider 10'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.007426 0.03191 -0.013719 0 -0 0</pose>
+        <mass>0.0429827</mass>
+        <inertia>
+          <ixx>5.2e-05</ixx>
+          <ixy>-1e-05</ixy>
+          <ixz>4e-06</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>1.8e-05</iyz>
+          <izz>4.7e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever_1_collision'>
+        <pose>-0.310823 0.110454 -0.125815 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever_1_visual'>
+        <pose>-0.310823 0.110454 -0.125815 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 26' type='revolute'>
+      <pose relative_to='head_screw-reciever_1'>0.033357 0.12163 -0.053734 0 -0 0</pose>
+      <parent>head_screw-reciever_1</parent>
+      <child>head_u-joint-center__8__1</child>
+      <axis>
+        <xyz>-0.942857 0.289971 0.164128</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__8__1'>
+      <pose relative_to='head_Revolute 26'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004715 0.00145 0.00082 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__8__1_collision'>
+        <pose>-0.34418 -0.011176 -0.072081 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__8__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__8__1_visual'>
+        <pose>-0.34418 -0.011176 -0.072081 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__8__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 27' type='revolute'>
+      <pose relative_to='head_u-joint-center__8__1'>-0.003858 0.001447 0.005746 0 -0 0</pose>
+      <parent>head_u-joint-center__8__1</parent>
+      <child>head_10mm-ujoint-base__3__1</child>
+      <axis>
+        <xyz>0.1713 -0.000659 0.985219</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base__3__1'>
+      <pose relative_to='head_Revolute 27'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.000863 0.010093 -0.004918 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base__3__1_collision'>
+        <pose>-0.340322 -0.012623 -0.077827 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base__3__1_visual'>
+        <pose>-0.340322 -0.012623 -0.077827 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Rigid 28' type='fixed'>
+      <pose relative_to='head_10mm-ujoint-base__3__1'>-0.000868 0.017003 -0.004912 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base__3__1</parent>
+      <child>head_Head_1</child>
+      <axis>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <physics>
+        <ode>
+          <limit>
+            <cfm>0</cfm>
+            <erp>0.2</erp>
+          </limit>
+        </ode>
+      </physics>
+    </joint>
+    <link name='head_Head_1'>
+      <pose relative_to='head_Rigid 28'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.054458 0.079123 -0.050633 0 -0 0</pose>
+        <mass>1.8675</mass>
+        <inertia>
+          <ixx>0.011021</ixx>
+          <ixy>-7e-06</ixy>
+          <ixz>2e-05</ixz>
+          <iyy>0.011236</iyy>
+          <iyz>0.000445</iyz>
+          <izz>0.008366</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_Head_1_collision'>
+        <pose>-0.339454 -0.029626 -0.072915 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/Head_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_Head_1_visual'>
+        <pose>-0.339454 -0.029626 -0.072915 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/Head_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 3' type='revolute'>
+      <pose relative_to='torso'>0.081019 0.175226 0.084747 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base__2__1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base__2__1'>
+      <pose relative_to='head_Revolute 3'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0 -0.001803 -0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.591e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>-7e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.256e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base__2__1_collision'>
+        <pose>-0.258942 0.12754 -0.129291 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base__2__1_visual'>
+        <pose>-0.258942 0.12754 -0.129291 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 11' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base__2__1'>0.00493 0.009 0.000834 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base__2__1</parent>
+      <child>head_u-joint-center__1__1</child>
+      <axis>
+        <xyz>-0.985983 0 -0.166846</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__1__1'>
+      <pose relative_to='head_Revolute 11'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.00493 0 -0.000834 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__1__1_collision'>
+        <pose>-0.263872 0.11854 -0.130125 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__1__1_visual'>
+        <pose>-0.263872 0.11854 -0.130125 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 12' type='revolute'>
+      <pose relative_to='head_u-joint-center__1__1'>-0.006176 0.002867 0.00653 0 -0 0</pose>
+      <parent>head_u-joint-center__1__1</parent>
+      <child>head_leadscrew__5___1__1</child>
+      <axis>
+        <xyz>-0.155764 0.358368 0.920494</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__5___1__1'>
+      <pose relative_to='head_Revolute 12'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.010698 0.048432 -0.029357 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3.6e-05</ixx>
+          <ixy>7e-06</ixy>
+          <ixz>-3e-06</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>1.3e-05</iyz>
+          <izz>3.2e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__5___1__1_collision'>
+        <pose>-0.257696 0.115673 -0.136655 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__5___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__5___1__1_visual'>
+        <pose>-0.257696 0.115673 -0.136655 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__5___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 13' type='prismatic'>
+      <pose relative_to='head_leadscrew__5___1__1'>-0.000638 0.005222 -0.010832 0 -0 0</pose>
+      <parent>head_leadscrew__5___1__1</parent>
+      <child>head_screw-reciever__4__1</child>
+      <axis>
+        <xyz>0.209246 -0.89875 0.385311</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever__4__1'>
+      <pose relative_to='head_Slider 13'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.007435 0.031936 -0.013692 0 -0 0</pose>
+        <mass>0.0429827</mass>
+        <inertia>
+          <ixx>5.2e-05</ixx>
+          <ixy>1e-05</ixy>
+          <ixz>-4e-06</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>1.8e-05</iyz>
+          <izz>4.7e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever__4__1_collision'>
+        <pose>-0.257058 0.110451 -0.125823 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever__4__1_visual'>
+        <pose>-0.257058 0.110451 -0.125823 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 41' type='revolute'>
+      <pose relative_to='head_screw-reciever__4__1'>-0.028663 0.125099 -0.048193 0 -0 0</pose>
+      <parent>head_screw-reciever__4__1</parent>
+      <child>head_u-joint-center__11__1</child>
+      <axis>
+        <xyz>-0.000586 -0.394148 -0.919047</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__11__1'>
+      <pose relative_to='head_Revolute 41'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-3e-06 -0.001971 -0.004595 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__11__1_collision'>
+        <pose>-0.228395 -0.014648 -0.07763 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__11__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__11__1_visual'>
+        <pose>-0.228395 -0.014648 -0.07763 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__11__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 42' type='revolute'>
+      <pose relative_to='head_u-joint-center__11__1'>-0.005003 -0.001968 -0.004593 0 -0 0</pose>
+      <parent>head_u-joint-center__11__1</parent>
+      <child>head_10mm-ujoint-base__4__1</child>
+      <axis>
+        <xyz>-1 0.000581 0.000388</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base__4__1'>
+      <pose relative_to='head_Revolute 42'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.005006 0.010087 -4e-06 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base__4__1_collision'>
+        <pose>-0.223392 -0.01268 -0.073037 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base__4__1_visual'>
+        <pose>-0.223392 -0.01268 -0.073037 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 4' type='revolute'>
+      <pose relative_to='torso'>-0.047331 0.175226 -0.039355 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base__1__1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base__1__1'>
+      <pose relative_to='head_Revolute 4'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 -0.001803 0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.161e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>1.427e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.686e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base__1__1_collision'>
+        <pose>-0.383044 0.12754 -0.000941 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base__1__1_visual'>
+        <pose>-0.383044 0.12754 -0.000941 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 14' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base__1__1'>0.004979 0.009 -0.000462 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base__1__1</parent>
+      <child>head_u-joint-center__3__1</child>
+      <axis>
+        <xyz>-0.995725 0 0.092371</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__3__1'>
+      <pose relative_to='head_Revolute 14'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004979 -0 0.000462 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__3__1_collision'>
+        <pose>-0.388023 0.11854 -0.000479 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__3__1_visual'>
+        <pose>-0.388023 0.11854 -0.000479 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 15' type='revolute'>
+      <pose relative_to='head_u-joint-center__3__1'>-0.005667 0.002919 -0.006954 0 -0 0</pose>
+      <parent>head_u-joint-center__3__1</parent>
+      <child>head_leadscrew__1___1__1</child>
+      <axis>
+        <xyz>-0.086002 0.364877 -0.927075</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__1___1__1'>
+      <pose relative_to='head_Revolute 15'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.012357 0.048365 0.028811 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3.6e-05</ixx>
+          <ixy>8e-06</ixy>
+          <ixz>3e-06</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>-1.2e-05</iyz>
+          <izz>3.2e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__1___1__1_collision'>
+        <pose>-0.382356 0.115621 0.006475 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__1___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__1___1__1_visual'>
+        <pose>-0.382356 0.115621 0.006475 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__1___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 16' type='prismatic'>
+      <pose relative_to='head_leadscrew__1___1__1'>-0.001369 0.005167 0.01079 0 -0 0</pose>
+      <parent>head_leadscrew__1___1__1</parent>
+      <child>head_screw-reciever__1__1</child>
+      <axis>
+        <xyz>0.228543 -0.898484 -0.374825</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever__1__1'>
+      <pose relative_to='head_Slider 16'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.008121 0.031927 0.013319 0 -0 0</pose>
+        <mass>0.0429827</mass>
+        <inertia>
+          <ixx>5.2e-05</ixx>
+          <ixy>1.1e-05</ixy>
+          <ixz>4e-06</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>-1.8e-05</iyz>
+          <izz>4.7e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever__1__1_collision'>
+        <pose>-0.380987 0.110454 -0.004315 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever__1__1_visual'>
+        <pose>-0.380987 0.110454 -0.004315 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 29' type='revolute'>
+      <pose relative_to='head_screw-reciever__1__1'>-0.030146 0.125214 0.046975 0 -0 0</pose>
+      <parent>head_screw-reciever__1__1</parent>
+      <child>head_u-joint-center__7__1</child>
+      <axis>
+        <xyz>-0.232746 -0.424277 0.87511</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__7__1'>
+      <pose relative_to='head_Revolute 29'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.001164 -0.002121 0.004376 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__7__1_collision'>
+        <pose>-0.350841 -0.01476 -0.05129 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__7__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__7__1_visual'>
+        <pose>-0.350841 -0.01476 -0.05129 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__7__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 30' type='revolute'>
+      <pose relative_to='head_u-joint-center__7__1'>0.003668 -0.002125 0.005659 0 -0 0</pose>
+      <parent>head_u-joint-center__7__1</parent>
+      <child>head_10mm-ujoint-base__2__1</child>
+      <axis>
+        <xyz>0.966493 -0.000738 0.256693</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base__2__1'>
+      <pose relative_to='head_Revolute 30'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004825 0.010093 -0.001281 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base__2__1_collision'>
+        <pose>-0.354509 -0.012635 -0.056949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base__2__1_visual'>
+        <pose>-0.354509 -0.012635 -0.056949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 5' type='revolute'>
+      <pose relative_to='torso'>-0.090632 0.175226 -0.014355 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base_1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base_1'>
+      <pose relative_to='head_Revolute 5'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 -0.001803 -0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.591e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>-7e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.256e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base_1_collision'>
+        <pose>-0.358044 0.12754 0.04236 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base_1_visual'>
+        <pose>-0.358044 0.12754 0.04236 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 17' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base_1'>-0.00184 0.009 -0.004649 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base_1</parent>
+      <child>head_u-joint-center__2__1</child>
+      <axis>
+        <xyz>0.368125 0 0.929776</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__2__1'>
+      <pose relative_to='head_Revolute 17'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.00184 -0 0.004649 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__2__1_collision'>
+        <pose>-0.356204 0.11854 0.047009 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__2__1_visual'>
+        <pose>-0.356204 0.11854 0.047009 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 18' type='revolute'>
+      <pose relative_to='head_u-joint-center__2__1'>0.008598 0.003343 0.001973 0 -0 0</pose>
+      <parent>head_u-joint-center__2__1</parent>
+      <child>head_leadscrew__0__1</child>
+      <axis>
+        <xyz>0.84471 0.417867 -0.334444</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__0__1'>
+      <pose relative_to='head_Revolute 18'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.031857 0.047917 0.003328 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3e-05</ixx>
+          <ixy>1.5e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>0</iyz>
+          <izz>3.7e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__0__1_collision'>
+        <pose>-0.364802 0.115197 0.045036 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__0__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__0__1_visual'>
+        <pose>-0.364802 0.115197 0.045036 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__0__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 19' type='prismatic'>
+      <pose relative_to='head_leadscrew__0__1'>-0.010715 0.004739 0.002779 0 -0 0</pose>
+      <parent>head_leadscrew__0__1</parent>
+      <child>head_screw-reciever__2__1</child>
+      <axis>
+        <xyz>0.439735 -0.898055 -0.011418</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever__2__1'>
+      <pose relative_to='head_Slider 19'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.015612 0.031885 0.000405 0 -0 0</pose>
+        <mass>0.0429827</mass>
+        <inertia>
+          <ixx>4.4e-05</ixx>
+          <ixy>2.1e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>-1e-06</iyz>
+          <izz>5.4e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever__2__1_collision'>
+        <pose>-0.354087 0.110458 0.042257 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever__2__1_visual'>
+        <pose>-0.354087 0.110458 0.042257 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__2__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 32' type='revolute'>
+      <pose relative_to='head_screw-reciever__2__1'>-0.062615 0.121927 -0.002697 0 -0 0</pose>
+      <parent>head_screw-reciever__2__1</parent>
+      <child>head_u-joint-center__9__1</child>
+      <axis>
+        <xyz>0.474078 0.221298 0.852219</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__9__1'>
+      <pose relative_to='head_Revolute 32'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.002371 0.001107 0.004261 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__9__1_collision'>
+        <pose>-0.291472 -0.011469 0.044954 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__9__1_visual'>
+        <pose>-0.291472 -0.011469 0.044954 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__9__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 33' type='revolute'>
+      <pose relative_to='head_u-joint-center__9__1'>0.00674 0.001111 0.00183 0 -0 0</pose>
+      <parent>head_u-joint-center__9__1</parent>
+      <child>head_10mm-ujoint-base__1__1</child>
+      <axis>
+        <xyz>0.873803 0.000747 -0.486279</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base__1__1'>
+      <pose relative_to='head_Revolute 33'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004374 0.010086 0.002437 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base__1__1_collision'>
+        <pose>-0.298212 -0.01258 0.043124 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base__1__1_visual'>
+        <pose>-0.298212 -0.01258 0.043124 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 6' type='revolute'>
+      <pose relative_to='torso'>-0.090632 0.175226 0.13385 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base__3__1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base__3__1'>
+      <pose relative_to='head_Revolute 6'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 -0.001803 -0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.591e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>-7e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.256e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base__3__1_collision'>
+        <pose>-0.209839 0.12754 0.04236 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base__3__1_visual'>
+        <pose>-0.209839 0.12754 0.04236 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 20' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base__3__1'>-0.004356 0.009 0.002455 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base__3__1</parent>
+      <child>head_u-joint-center__4__1</child>
+      <axis>
+        <xyz>0.871168 0 -0.490985</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__4__1'>
+      <pose relative_to='head_Revolute 20'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.004356 0 -0.002455 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__4__1_collision'>
+        <pose>-0.205483 0.11854 0.039905 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__4__1_visual'>
+        <pose>-0.205483 0.11854 0.039905 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 21' type='revolute'>
+      <pose relative_to='head_u-joint-center__4__1'>0.000547 0.001949 -0.009214 0 -0 0</pose>
+      <parent>head_u-joint-center__4__1</parent>
+      <child>head_leadscrew__3___1__1</child>
+      <axis>
+        <xyz>-0.476193 0.243615 -0.844921</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__3___1__1'>
+      <pose relative_to='head_Revolute 21'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.028843 0.049343 0.007439 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3e-05</ixx>
+          <ixy>-1.5e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>0</iyz>
+          <izz>3.7e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__3___1__1_collision'>
+        <pose>-0.20603 0.116591 0.049119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__3___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__3___1__1_visual'>
+        <pose>-0.20603 0.116591 0.049119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__3___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 22' type='prismatic'>
+      <pose relative_to='head_leadscrew__3___1__1'>0.007756 0.006139 0.006866 0 -0 0</pose>
+      <parent>head_leadscrew__3___1__1</parent>
+      <child>head_screw-reciever__3__1</child>
+      <axis>
+        <xyz>-0.438578 -0.898614 -0.011916</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever__3__1'>
+      <pose relative_to='head_Slider 22'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.015585 0.031931 0.000424 0 -0 0</pose>
+        <mass>0.0429827</mass>
+        <inertia>
+          <ixx>4.5e-05</ixx>
+          <ixy>-2.1e-05</ixy>
+          <ixz>0</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>-1e-06</iyz>
+          <izz>5.5e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever__3__1_collision'>
+        <pose>-0.213786 0.110452 0.042253 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever__3__1_visual'>
+        <pose>-0.213786 0.110452 0.042253 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__3__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 35' type='revolute'>
+      <pose relative_to='head_screw-reciever__3__1'>0.06274 0.121868 -0.002419 0 -0 0</pose>
+      <parent>head_screw-reciever__3__1</parent>
+      <child>head_u-joint-center_1</child>
+      <axis>
+        <xyz>-0.530813 0.248324 0.810292</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center_1'>
+      <pose relative_to='head_Revolute 35'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.002655 0.001242 0.004052 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center_1_collision'>
+        <pose>-0.276526 -0.011416 0.044672 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center_1_visual'>
+        <pose>-0.276526 -0.011416 0.044672 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 36' type='revolute'>
+      <pose relative_to='head_u-joint-center_1'>0.001528 0.00124 0.006792 0 -0 0</pose>
+      <parent>head_u-joint-center_1</parent>
+      <child>head_10mm-ujoint-base_1</child>
+      <axis>
+        <xyz>0.836433 -0.000427 0.548069</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base_1'>
+      <pose relative_to='head_Revolute 36'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.004181 0.010091 -0.002735 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base_1_collision'>
+        <pose>-0.278054 -0.012656 0.03788 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base_1_visual'>
+        <pose>-0.278054 -0.012656 0.03788 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 7' type='revolute'>
+      <pose relative_to='torso'>-0.047331 0.175226 0.15885 3.14159 1.5708 3.14159</pose>
+      <parent>torso</parent>
+      <child>head_5mm-ujoint-base__4__1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_5mm-ujoint-base__4__1'>
+      <pose relative_to='head_Revolute 7'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 -0.001803 0 0 -0 0</pose>
+        <mass>0.00190342</mass>
+        <inertia>
+          <ixx>7.161e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>1.427e-09</ixz>
+          <iyy>7.151e-08</iyy>
+          <iyz>0</iyz>
+          <izz>8.686e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_5mm-ujoint-base__4__1_collision'>
+        <pose>-0.184839 0.12754 -0.000941 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_5mm-ujoint-base__4__1_visual'>
+        <pose>-0.184839 0.12754 -0.000941 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/5mm-ujoint-base__4__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 23' type='revolute'>
+      <pose relative_to='head_5mm-ujoint-base__4__1'>-0.004985 0.009 -0.000383 0 -0 0</pose>
+      <parent>head_5mm-ujoint-base__4__1</parent>
+      <child>head_u-joint-center__5__1</child>
+      <axis>
+        <xyz>0.997055 0 0.076689</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__5__1'>
+      <pose relative_to='head_Revolute 23'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.004985 0 0.000383 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__5__1_collision'>
+        <pose>-0.179854 0.11854 -0.000558 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__5__1_visual'>
+        <pose>-0.179854 0.11854 -0.000558 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 24' type='revolute'>
+      <pose relative_to='head_u-joint-center__5__1'>0.005556 0.002945 -0.007033 0 -0 0</pose>
+      <parent>head_u-joint-center__5__1</parent>
+      <child>head_leadscrew__2___1__1</child>
+      <axis>
+        <xyz>0.071303 0.368125 -0.927038</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_leadscrew__2___1__1'>
+      <pose relative_to='head_Revolute 24'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.012506 0.048341 0.028788 0 -0 0</pose>
+        <mass>0.0418703</mass>
+        <inertia>
+          <ixx>3.6e-05</ixx>
+          <ixy>-8e-06</ixy>
+          <ixz>-3e-06</ixz>
+          <iyy>8e-06</iyy>
+          <iyz>-1.2e-05</iyz>
+          <izz>3.2e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_leadscrew__2___1__1_collision'>
+        <pose>-0.18541 0.115595 0.006475 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__2___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_leadscrew__2___1__1_visual'>
+        <pose>-0.18541 0.115595 0.006475 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/leadscrew__2___1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Slider 25' type='prismatic'>
+      <pose relative_to='head_leadscrew__2___1__1'>0.001491 0.005142 0.010786 0 -0 0</pose>
+      <parent>head_leadscrew__2___1__1</parent>
+      <child>head_screw-reciever__5__1</child>
+      <axis>
+        <xyz>-0.229094 -0.898514 -0.374418</xyz>
+        <limit>
+          <lower>-0.075</lower>
+          <upper>0</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_screw-reciever__5__1'>
+      <pose relative_to='head_Slider 25'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.008062 0.031618 0.013175 0 -0 0</pose>
+        <mass>0.0428189</mass>
+        <inertia>
+          <ixx>5.1e-05</ixx>
+          <ixy>-1.1e-05</ixy>
+          <ixz>-4e-06</ixz>
+          <iyy>1.2e-05</iyy>
+          <iyz>-1.7e-05</iyz>
+          <izz>4.6e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_screw-reciever__5__1_collision'>
+        <pose>-0.186901 0.110453 -0.004311 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_screw-reciever__5__1_visual'>
+        <pose>-0.186901 0.110453 -0.004311 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/screw-reciever__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 38' type='revolute'>
+      <pose relative_to='head_screw-reciever__5__1'>0.030299 0.125207 0.046895 0 -0 0</pose>
+      <parent>head_screw-reciever__5__1</parent>
+      <child>head_u-joint-center__10__1</child>
+      <axis>
+        <xyz>0.2173 -0.422149 0.880097</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_u-joint-center__10__1'>
+      <pose relative_to='head_Revolute 38'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.001087 -0.002111 0.0044 0 -0 0</pose>
+        <mass>0.000972738</mass>
+        <inertia>
+          <ixx>1.427e-08</ixx>
+          <ixy>2.27e-10</ixy>
+          <ixz>-3.25e-10</ixz>
+          <iyy>1.921e-08</iyy>
+          <iyz>-1.34e-09</iyz>
+          <izz>1.613e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_u-joint-center__10__1_collision'>
+        <pose>-0.2172 -0.014754 -0.051206 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__10__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_u-joint-center__10__1_visual'>
+        <pose>-0.2172 -0.014754 -0.051206 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/u-joint-center__10__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='head_Revolute 39' type='revolute'>
+      <pose relative_to='head_u-joint-center__10__1'>-0.003738 -0.001896 0.005695 0 -0 0</pose>
+      <parent>head_u-joint-center__10__1</parent>
+      <child>head_10mm-ujoint-base__5__1</child>
+      <axis>
+        <xyz>-0.96494 0.043076 0.25891</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='head_10mm-ujoint-base__5__1'>
+      <pose relative_to='head_Revolute 39'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.005217 0.009865 -0.00151 0 -0 0</pose>
+        <mass>0.00142324</mass>
+        <inertia>
+          <ixx>6.584e-08</ixx>
+          <ixy>-3e-12</ixy>
+          <ixz>6.53e-09</ixz>
+          <iyy>6.394e-08</iyy>
+          <iyz>-2e-12</iyz>
+          <izz>7.394e-08</izz>
+        </inertia>
+      </inertial>
+      <collision name='head_10mm-ujoint-base__5__1_collision'>
+        <pose>-0.213462 -0.012858 -0.056901 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='head_10mm-ujoint-base__5__1_visual'>
+        <pose>-0.213462 -0.012858 -0.056901 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/head/10mm-ujoint-base__5__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='left_leg_pitch' type='revolute'>
+      <pose relative_to='torso'>-0.104988 -0.263369 -0.001301 0 -0 0</pose>
+      <parent>torso</parent>
+      <child>Rotate-left-leg_1</child>
+      <axis>
+        <xyz>1 -3.2e-05 0.000261</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Rotate-left-leg_1'>
+      <pose relative_to='left_leg_pitch'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.061201 -0.00295 -0.014768 0 -0 0</pose>
+        <mass>0.563679</mass>
+        <inertia>
+          <ixx>0.001016</ixx>
+          <ixy>-2.1e-05</ixy>
+          <ixz>-0.000248</ixz>
+          <iyy>0.002797</iyy>
+          <iyz>-0.000121</iyz>
+          <izz>0.002177</izz>
+        </inertia>
+      </inertial>
+      <collision name='Rotate-left-leg_1_collision'>
+        <pose>0.104988 0.263369 0.001301 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Rotate-left-leg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Rotate-left-leg_1_visual'>
+        <pose>0.104988 0.263369 0.001301 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Rotate-left-leg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='left_leg_yaw' type='revolute'>
+      <pose relative_to='Rotate-left-leg_1'>0.112901 -0.021262 -0.005361 0 -0 0</pose>
+      <parent>Rotate-left-leg_1</parent>
+      <child>Left-femur-top_1</child>
+      <axis>
+        <xyz>-7.7e-05 -0.984808 0.173648</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Left-femur-top_1'>
+      <pose relative_to='left_leg_yaw'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-2e-06 -0.053933 -0.005142 0 -0 0</pose>
+        <mass>0.269312</mass>
+        <inertia>
+          <ixx>0.000356904</ixx>
+          <ixy>1.36875e-08</ixy>
+          <ixz>1.07492e-08</ixz>
+          <iyy>0.000136996</iyy>
+          <iyz>-4.09209e-05</iyz>
+          <izz>0.000331908</izz>
+        </inertia>
+      </inertial>
+      <collision name='Left-femur-top_1_collision'>
+        <pose>-0.007913 0.284631 0.006662 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Left-femur-top_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='Left-femur-top_1_fixed_joint_lump__DumLeftLeg_1_collision_1'>
+        <pose>-0.007913 0.284631 0.006662 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/DumLeftLeg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='Left-femur-top_1_fixed_joint_lump__LL_RMD-X10-S2_MIR4__3_Rotor_1_collision_2'>
+        <pose>0.191555 -0.479197 -0.118468 -0.174533 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Left-femur-top_1_visual'>
+        <pose>-0.007913 0.284631 0.006662 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Left-femur-top_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='Left-femur-top_1_fixed_joint_lump__DumLeftLeg_1_visual_1'>
+        <pose>-0.007913 0.284631 0.006662 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/DumLeftLeg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='Left-femur-top_1_fixed_joint_lump__LL_RMD-X10-S2_MIR4__3_Rotor_1_visual_2'>
+        <pose>0.191555 -0.479197 -0.118468 -0.174533 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_hip_joint' type='revolute'>
+      <pose relative_to='Left-femur-top_1'>2e-06 -0.074639 -0.017302 -0.174533 0 0</pose>
+      <parent>Left-femur-top_1</parent>
+      <child>LL_RMD-X10-S2_MIR4__3_Stator_1</child>
+      <axis>
+        <xyz>0.000261 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_RMD-X10-S2_MIR4__3_Stator_1'>
+      <pose relative_to='LL_hip_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.036718 -0.054239 -0.033684 0 -0 0</pose>
+        <mass>0.548366</mass>
+        <inertia>
+          <ixx>0.002044</ixx>
+          <ixy>-0.000494</ixy>
+          <ixz>0.000142</ixz>
+          <iyy>0.001828</iyy>
+          <iyz>0.000171</iyz>
+          <izz>0.002663</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_RMD-X10-S2_MIR4__3_Stator_1_collision'>
+        <pose>0.191553 -0.380845 -0.16988 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Stator_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_RMD-X10-S2_MIR4__3_Stator_1_visual'>
+        <pose>0.191553 -0.380845 -0.16988 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4__3_Stator_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 4' type='revolute'>
+      <pose relative_to='LL_RMD-X10-S2_MIR4__3_Stator_1'>0.050251 -0.016453 -0.080013 0 -0 0</pose>
+      <parent>LL_RMD-X10-S2_MIR4__3_Stator_1</parent>
+      <child>LL_double-bracket_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_double-bracket_1'>
+      <pose relative_to='LL_Revolute 4'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.002417 -0.170655 0.026189 0 -0 0</pose>
+        <mass>0.594174</mass>
+        <inertia>
+          <ixx>0.006967</ixx>
+          <ixy>-0.000485</ixy>
+          <ixz>-4.1e-05</ixz>
+          <iyy>0.001718</iyy>
+          <iyz>0.001043</iyz>
+          <izz>0.006134</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_double-bracket_1_collision'>
+        <pose>0.141302 -0.364392 -0.089867 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/double-bracket_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_double-bracket_1_visual'>
+        <pose>0.141302 -0.364392 -0.089867 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/double-bracket_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 7' type='revolute'>
+      <pose relative_to='LL_double-bracket_1'>-0.062308 -0.329573 -0.019984 0 -0 0</pose>
+      <parent>LL_double-bracket_1</parent>
+      <child>LL_knee-strap-second-test_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_knee-strap-second-test_1'>
+      <pose relative_to='LL_Revolute 7'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.022898 -0.050008 0.009994 0 -0 0</pose>
+        <mass>0.06382</mass>
+        <inertia>
+          <ixx>9.8e-05</ixx>
+          <ixy>3.6e-05</ixy>
+          <ixz>1e-06</ixz>
+          <iyy>3.7e-05</iyy>
+          <iyz>-2e-06</iyz>
+          <izz>0.000101</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_knee-strap-second-test_1_collision'>
+        <pose>0.20361 -0.034819 -0.069883 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/knee-strap-second-test_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_knee-strap-second-test_1_visual'>
+        <pose>0.20361 -0.034819 -0.069883 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/knee-strap-second-test_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 8' type='revolute'>
+      <pose relative_to='LL_knee-strap-second-test_1'>0.045796 -0.100016 0.019988 0 -0 0</pose>
+      <parent>LL_knee-strap-second-test_1</parent>
+      <child>LL_double-bracket-10deg_MIR_MIR_MIR_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_double-bracket-10deg_MIR_MIR_MIR_1'>
+      <pose relative_to='LL_Revolute 8'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.023031 -0.208706 -0.043949 0 -0 0</pose>
+        <mass>0.972328</mass>
+        <inertia>
+          <ixx>0.01683</ixx>
+          <ixy>0.001098</ixy>
+          <ixz>-0.000198</ixz>
+          <iyy>0.002068</iyy>
+          <iyz>0.002791</iyz>
+          <izz>0.017418</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_double-bracket-10deg_MIR_MIR_MIR_1_collision'>
+        <pose>0.157814 0.065197 -0.089871 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/double-bracket-10deg_MIR_MIR_MIR_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_double-bracket-10deg_MIR_MIR_MIR_1_visual'>
+        <pose>0.157814 0.065197 -0.089871 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/double-bracket-10deg_MIR_MIR_MIR_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 10' type='revolute'>
+      <pose relative_to='LL_double-bracket-10deg_MIR_MIR_MIR_1'>-0.05478 -0.171261 -0.016732 0 -0 0</pose>
+      <parent>LL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>LL_calf-motor-driver-ext_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_calf-motor-driver-ext_1'>
+      <pose relative_to='LL_Revolute 10'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.010181 -0.006406 0.010824 0 -0 0</pose>
+        <mass>0.0390465</mass>
+        <inertia>
+          <ixx>7e-06</ixx>
+          <ixy>4e-06</ixy>
+          <ixz>1e-06</ixz>
+          <iyy>1.4e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.8e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_calf-motor-driver-ext_1_collision'>
+        <pose>0.212594 0.236458 -0.073139 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_calf-motor-driver-ext_1_visual'>
+        <pose>0.212594 0.236458 -0.073139 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 11' type='revolute'>
+      <pose relative_to='LL_calf-motor-driver-ext_1'>0.036768 -0.020444 0.023645 0 -0 0</pose>
+      <parent>LL_calf-motor-driver-ext_1</parent>
+      <child>LL_290mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_290mm-tie-rod_v1_1'>
+      <pose relative_to='LL_Revolute 11'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.008619 -0.144104 -0.016275 0 -0 0</pose>
+        <mass>0.316713</mass>
+        <inertia>
+          <ixx>0.00297</ixx>
+          <ixy>-0.000175</ixy>
+          <ixz>3.1e-05</ixz>
+          <iyy>0.000108</iyy>
+          <iyz>0.000506</iyz>
+          <izz>0.002894</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_290mm-tie-rod_v1_1_collision'>
+        <pose>0.175826 0.256902 -0.096784 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/290mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_290mm-tie-rod_v1_1_visual'>
+        <pose>0.175826 0.256902 -0.096784 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/290mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 12' type='revolute'>
+      <pose relative_to='LL_double-bracket-10deg_MIR_MIR_MIR_1'>-0.052651 -0.260801 -0.073142 0 -0 0</pose>
+      <parent>LL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>LL_calf-motor-driver-ext__1__1</child>
+      <axis>
+        <xyz>-0.004499 0.173596 0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_calf-motor-driver-ext__1__1'>
+      <pose relative_to='LL_Revolute 12'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.010998 0.002322 -0.011642 0 -0 0</pose>
+        <mass>0.0390465</mass>
+        <inertia>
+          <ixx>5e-06</ixx>
+          <ixy>-1e-06</ixy>
+          <ixz>-2e-06</ixz>
+          <iyy>1.6e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.8e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_calf-motor-driver-ext__1__1_collision'>
+        <pose>0.210465 0.325998 -0.016729 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_calf-motor-driver-ext__1__1_visual'>
+        <pose>0.210465 0.325998 -0.016729 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/calf-motor-driver-ext__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 13' type='revolute'>
+      <pose relative_to='LL_calf-motor-driver-ext__1__1'>0.039866 0.005665 -0.026601 0 -0 0</pose>
+      <parent>LL_calf-motor-driver-ext__1__1</parent>
+      <child>LL_210mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>-0.004499 0.173596 0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_210mm-tie-rod_v1_1'>
+      <pose relative_to='LL_Revolute 13'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.011697 -0.101214 -0.026926 0 -0 0</pose>
+        <mass>0.243526</mass>
+        <inertia>
+          <ixx>0.001287</ixx>
+          <ixy>-0.000141</ixy>
+          <ixz>2.5e-05</ixz>
+          <iyy>6.1e-05</iyy>
+          <iyz>0.000219</iyz>
+          <izz>0.001267</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_210mm-tie-rod_v1_1_collision'>
+        <pose>0.170599 0.320333 0.009872 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/210mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_210mm-tie-rod_v1_1_visual'>
+        <pose>0.170599 0.320333 0.009872 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/210mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 14' type='revolute'>
+      <pose relative_to='LL_double-bracket-10deg_MIR_MIR_MIR_1'>0.010923 -0.447738 -0.075922 0 -0 0</pose>
+      <parent>LL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>LL_basis_left_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_basis_left_1'>
+      <pose relative_to='LL_Revolute 14'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.000298 -0.020223 -0.013552 0 -0 0</pose>
+        <mass>0.0937168</mass>
+        <inertia>
+          <ixx>6.4e-05</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>3.3e-05</iyy>
+          <iyz>4e-06</iyz>
+          <izz>5.6e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_basis_left_1_collision'>
+        <pose>0.146891 0.512935 -0.013949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/basis_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_basis_left_1_visual'>
+        <pose>0.146891 0.512935 -0.013949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/basis_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 15' type='revolute'>
+      <pose relative_to='LL_basis_left_1'>0.019519 -0.037853 -0.016916 0 -0 0</pose>
+      <parent>LL_basis_left_1</parent>
+      <child>LL_heel-bracket_left_1</child>
+      <axis>
+        <xyz>0.999931 -0.00994 0.006321</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_heel-bracket_left_1'>
+      <pose relative_to='LL_Revolute 15'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.012688 -0.007712 -0.001607 0 -0 0</pose>
+        <mass>0.706979</mass>
+        <inertia>
+          <ixx>0.000698</ixx>
+          <ixy>0.000121</ixy>
+          <ixz>-4.2e-05</ixz>
+          <iyy>0.005471</iyy>
+          <iyz>-8.5e-05</iyz>
+          <izz>0.005014</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_heel-bracket_left_1_collision'>
+        <pose>0.127372 0.550788 0.002967 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/heel-bracket_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_heel-bracket_left_1_visual'>
+        <pose>0.127372 0.550788 0.002967 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/heel-bracket_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_knee_joint' type='revolute'>
+      <pose relative_to='LL_RMD-X10-S2_MIR4__3_Stator_1'>-0.071726 -0.0987 -0.063481 0 -0 0</pose>
+      <parent>LL_RMD-X10-S2_MIR4__3_Stator_1</parent>
+      <child>LL_RMD-X10-S2_MIR4Rotor_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_RMD-X10-S2_MIR4Rotor_1'>
+      <pose relative_to='LL_knee_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.004337 -0.100835 -0.022799 0 -0 0</pose>
+        <mass>0.618392</mass>
+        <inertia>
+          <ixx>0.006212</ixx>
+          <ixy>0.000357</ixy>
+          <ixz>-2e-05</ixz>
+          <iyy>0.000506</iyy>
+          <iyz>0.000167</iyz>
+          <izz>0.00633</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_RMD-X10-S2_MIR4Rotor_1_collision'>
+        <pose>0.263279 -0.282145 -0.106399 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_RMD-X10-S2_MIR4Rotor_1_visual'>
+        <pose>0.263279 -0.282145 -0.106399 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/RMD-X10-S2_MIR4Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='LL_Revolute 5' type='revolute'>
+      <pose relative_to='LL_RMD-X10-S2_MIR4Rotor_1'>0.02018 -0.294308 -0.036505 0 -0 0</pose>
+      <parent>LL_RMD-X10-S2_MIR4Rotor_1</parent>
+      <child>LL_conjstraint-knee-test-oute_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='LL_conjstraint-knee-test-oute_1'>
+      <pose relative_to='LL_Revolute 5'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.03882 0.002025 0.009922 0 -0 0</pose>
+        <mass>0.172736</mass>
+        <inertia>
+          <ixx>0.000316</ixx>
+          <ixy>-0.000137</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000318</iyy>
+          <iyz>0</iyz>
+          <izz>0.000394</izz>
+        </inertia>
+      </inertial>
+      <collision name='LL_conjstraint-knee-test-oute_1_collision'>
+        <pose>0.243318 0.012178 -0.069894 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/conjstraint-knee-test-oute_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='LL_conjstraint-knee-test-oute_1_visual'>
+        <pose>0.243318 0.012178 -0.069894 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/leftleg/conjstraint-knee-test-oute_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='right_leg_pitch' type='revolute'>
+      <pose relative_to='torso'>-0.10502 -0.263369 0.120699 0 -0 0</pose>
+      <parent>torso</parent>
+      <child>Rotate-right-leg_1</child>
+      <axis>
+        <xyz>1 -3.2e-05 0.000261</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Rotate-right-leg_1'>
+      <pose relative_to='right_leg_pitch'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.061208 -0.00295 0.014756 0 -0 0</pose>
+        <mass>0.563474</mass>
+        <inertia>
+          <ixx>0.001013</ixx>
+          <ixy>-2.1e-05</ixy>
+          <ixz>0.000246</ixz>
+          <iyy>0.002795</iyy>
+          <iyz>0.000121</iyz>
+          <izz>0.002177</izz>
+        </inertia>
+      </inertial>
+      <collision name='Rotate-right-leg_1_collision'>
+        <pose>0.10502 0.263369 -0.120699 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Rotate-right-leg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Rotate-right-leg_1_visual'>
+        <pose>0.10502 0.263369 -0.120699 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Rotate-right-leg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='right_leg_yaw' type='revolute'>
+      <pose relative_to='Rotate-right-leg_1'>0.112898 -0.021262 0.00542 0 -0 0</pose>
+      <parent>Rotate-right-leg_1</parent>
+      <child>Right-femur-top_1</child>
+      <axis>
+        <xyz>1.4e-05 -0.984808 -0.173648</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Right-femur-top_1'>
+      <pose relative_to='right_leg_yaw'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-1e-05 -0.052829 0.004336 0 -0 0</pose>
+        <mass>0.276399</mass>
+        <inertia>
+          <ixx>0.000378066</ixx>
+          <ixy>1.02335e-08</ixy>
+          <ixz>-8.10323e-09</ixz>
+          <iyy>0.000144694</iyy>
+          <iyz>4.98161e-05</iyz>
+          <izz>0.000344372</izz>
+        </inertia>
+      </inertial>
+      <collision name='Right-femur-top_1_collision'>
+        <pose>-0.007878 0.284631 -0.126119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Right-femur-top_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='Right-femur-top_1_fixed_joint_lump__DumRightLeg_1_collision_1'>
+        <pose>-0.007878 0.284631 -0.126119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/DumRightLeg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='Right-femur-top_1_fixed_joint_lump__RL_RMD-X10-S2_MIR4__3_Rotor_1_collision_2'>
+        <pose>0.191546 -0.479197 0.118468 0.174533 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Right-femur-top_1_visual'>
+        <pose>-0.007878 0.284631 -0.126119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/Right-femur-top_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='Right-femur-top_1_fixed_joint_lump__DumRightLeg_1_visual_1'>
+        <pose>-0.007878 0.284631 -0.126119 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/waist/DumRightLeg_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='Right-femur-top_1_fixed_joint_lump__RL_RMD-X10-S2_MIR4__3_Rotor_1_visual_2'>
+        <pose>0.191546 -0.479197 0.118468 0.174533 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_hip_joint' type='revolute'>
+      <pose relative_to='Right-femur-top_1'>-7e-06 -0.074639 0.017302 0.174533 -0 0</pose>
+      <parent>Right-femur-top_1</parent>
+      <child>RL_RMD-X10-S2_MIR4__3_Stator_1</child>
+      <axis>
+        <xyz>0.000261 0 -1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_RMD-X10-S2_MIR4__3_Stator_1'>
+      <pose relative_to='RL_hip_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.036718 -0.054239 0.033684 0 -0 0</pose>
+        <mass>0.548366</mass>
+        <inertia>
+          <ixx>0.002044</ixx>
+          <ixy>-0.000494</ixy>
+          <ixz>0.000142</ixz>
+          <iyy>0.001828</iyy>
+          <iyz>0.000171</iyz>
+          <izz>0.002663</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_RMD-X10-S2_MIR4__3_Stator_1_collision'>
+        <pose>0.191553 -0.380845 0.16988 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Stator_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_RMD-X10-S2_MIR4__3_Stator_1_visual'>
+        <pose>0.191553 -0.380845 0.16988 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4__3_Stator_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 4' type='revolute'>
+      <pose relative_to='RL_RMD-X10-S2_MIR4__3_Stator_1'>0.050251 -0.016453 0.080013 0 -0 0</pose>
+      <parent>RL_RMD-X10-S2_MIR4__3_Stator_1</parent>
+      <child>RL_double-bracket_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_double-bracket_1'>
+      <pose relative_to='RL_Revolute 4'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.002417 -0.170655 -0.026189 0 -0 0</pose>
+        <mass>0.594174</mass>
+        <inertia>
+          <ixx>0.006967</ixx>
+          <ixy>-0.000485</ixy>
+          <ixz>-4.1e-05</ixz>
+          <iyy>0.001718</iyy>
+          <iyz>0.001043</iyz>
+          <izz>0.006134</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_double-bracket_1_collision'>
+        <pose>0.141302 -0.364392 0.089867 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/double-bracket_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_double-bracket_1_visual'>
+        <pose>0.141302 -0.364392 0.089867 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/double-bracket_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 7' type='revolute'>
+      <pose relative_to='RL_double-bracket_1'>-0.062308 -0.329573 0.019984 0 -0 0</pose>
+      <parent>RL_double-bracket_1</parent>
+      <child>RL_knee-strap-second-test_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_knee-strap-second-test_1'>
+      <pose relative_to='RL_Revolute 7'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.022898 -0.050008 -0.009994 0 -0 0</pose>
+        <mass>0.06382</mass>
+        <inertia>
+          <ixx>9.8e-05</ixx>
+          <ixy>3.6e-05</ixy>
+          <ixz>1e-06</ixz>
+          <iyy>3.7e-05</iyy>
+          <iyz>-2e-06</iyz>
+          <izz>0.000101</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_knee-strap-second-test_1_collision'>
+        <pose>0.20361 -0.034819 0.069883 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/knee-strap-second-test_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_knee-strap-second-test_1_visual'>
+        <pose>0.20361 -0.034819 0.069883 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/knee-strap-second-test_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 8' type='revolute'>
+      <pose relative_to='RL_knee-strap-second-test_1'>0.045796 -0.100016 -0.019988 0 -0 0</pose>
+      <parent>RL_knee-strap-second-test_1</parent>
+      <child>RL_double-bracket-10deg_MIR_MIR_MIR_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_double-bracket-10deg_MIR_MIR_MIR_1'>
+      <pose relative_to='RL_Revolute 8'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.023031 -0.208706 0.043949 0 -0 0</pose>
+        <mass>0.972328</mass>
+        <inertia>
+          <ixx>0.01683</ixx>
+          <ixy>0.001098</ixy>
+          <ixz>-0.000198</ixz>
+          <iyy>0.002068</iyy>
+          <iyz>0.002791</iyz>
+          <izz>0.017418</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_double-bracket-10deg_MIR_MIR_MIR_1_collision'>
+        <pose>0.157814 0.065197 0.089871 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/double-bracket-10deg_MIR_MIR_MIR_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_double-bracket-10deg_MIR_MIR_MIR_1_visual'>
+        <pose>0.157814 0.065197 0.089871 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/double-bracket-10deg_MIR_MIR_MIR_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 10' type='revolute'>
+      <pose relative_to='RL_double-bracket-10deg_MIR_MIR_MIR_1'>-0.05478 -0.171261 0.016732 0 -0 0</pose>
+      <parent>RL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>RL_calf-motor-driver-ext_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_calf-motor-driver-ext_1'>
+      <pose relative_to='RL_Revolute 10'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.010181 -0.006406 -0.010824 0 -0 0</pose>
+        <mass>0.0390465</mass>
+        <inertia>
+          <ixx>7e-06</ixx>
+          <ixy>4e-06</ixy>
+          <ixz>1e-06</ixz>
+          <iyy>1.4e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.8e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_calf-motor-driver-ext_1_collision'>
+        <pose>0.212594 0.236458 0.073139 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_calf-motor-driver-ext_1_visual'>
+        <pose>0.212594 0.236458 0.073139 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 11' type='revolute'>
+      <pose relative_to='RL_calf-motor-driver-ext_1'>0.036768 -0.020444 -0.023645 0 -0 0</pose>
+      <parent>RL_calf-motor-driver-ext_1</parent>
+      <child>RL_290mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_290mm-tie-rod_v1_1'>
+      <pose relative_to='RL_Revolute 11'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.008619 -0.144104 0.016275 0 -0 0</pose>
+        <mass>0.316713</mass>
+        <inertia>
+          <ixx>0.00297</ixx>
+          <ixy>-0.000175</ixy>
+          <ixz>3.1e-05</ixz>
+          <iyy>0.000108</iyy>
+          <iyz>0.000506</iyz>
+          <izz>0.002894</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_290mm-tie-rod_v1_1_collision'>
+        <pose>0.175826 0.256902 0.096784 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/290mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_290mm-tie-rod_v1_1_visual'>
+        <pose>0.175826 0.256902 0.096784 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/290mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 12' type='revolute'>
+      <pose relative_to='RL_double-bracket-10deg_MIR_MIR_MIR_1'>-0.052651 -0.260801 0.073142 0 -0 0</pose>
+      <parent>RL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>RL_calf-motor-driver-ext__1__1</child>
+      <axis>
+        <xyz>-0.004499 0.173596 0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_calf-motor-driver-ext__1__1'>
+      <pose relative_to='RL_Revolute 12'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.010998 0.002322 0.011642 0 -0 0</pose>
+        <mass>0.0390465</mass>
+        <inertia>
+          <ixx>5e-06</ixx>
+          <ixy>-1e-06</ixy>
+          <ixz>-2e-06</ixz>
+          <iyy>1.6e-05</iyy>
+          <iyz>0</iyz>
+          <izz>1.8e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_calf-motor-driver-ext__1__1_collision'>
+        <pose>0.210465 0.325998 0.016729 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_calf-motor-driver-ext__1__1_visual'>
+        <pose>0.210465 0.325998 0.016729 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/calf-motor-driver-ext__1__1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 13' type='revolute'>
+      <pose relative_to='RL_calf-motor-driver-ext__1__1'>0.039866 0.005665 0.026601 0 -0 0</pose>
+      <parent>RL_calf-motor-driver-ext__1__1</parent>
+      <child>RL_210mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>-0.004499 0.173596 0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_210mm-tie-rod_v1_1'>
+      <pose relative_to='RL_Revolute 13'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.011697 -0.101214 0.026926 0 -0 0</pose>
+        <mass>0.243526</mass>
+        <inertia>
+          <ixx>0.001287</ixx>
+          <ixy>-0.000141</ixy>
+          <ixz>2.5e-05</ixz>
+          <iyy>6.1e-05</iyy>
+          <iyz>0.000219</iyz>
+          <izz>0.001267</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_210mm-tie-rod_v1_1_collision'>
+        <pose>0.170599 0.320333 -0.009872 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/210mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_210mm-tie-rod_v1_1_visual'>
+        <pose>0.170599 0.320333 -0.009872 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/210mm-tie-rod_v1_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 14' type='revolute'>
+      <pose relative_to='RL_double-bracket-10deg_MIR_MIR_MIR_1'>0.010923 -0.447738 0.075922 0 -0 0</pose>
+      <parent>RL_double-bracket-10deg_MIR_MIR_MIR_1</parent>
+      <child>RL_basis_left_1</child>
+      <axis>
+        <xyz>0.004499 -0.173596 -0.984807</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_basis_left_1'>
+      <pose relative_to='RL_Revolute 14'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>-0.000298 -0.020223 0.013552 0 -0 0</pose>
+        <mass>0.0937168</mass>
+        <inertia>
+          <ixx>6.4e-05</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>3.3e-05</iyy>
+          <iyz>4e-06</iyz>
+          <izz>5.6e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_basis_left_1_collision'>
+        <pose>0.146891 0.512935 0.013949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/basis_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_basis_left_1_visual'>
+        <pose>0.146891 0.512935 0.013949 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/basis_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 15' type='revolute'>
+      <pose relative_to='RL_basis_left_1'>0.019519 -0.037853 0.016916 0 -0 0</pose>
+      <parent>RL_basis_left_1</parent>
+      <child>RL_heel-bracket_left_1</child>
+      <axis>
+        <xyz>0.999931 -0.00994 0.006321</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_heel-bracket_left_1'>
+      <pose relative_to='RL_Revolute 15'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.012688 -0.007712 0.001607 0 -0 0</pose>
+        <mass>0.706979</mass>
+        <inertia>
+          <ixx>0.000698</ixx>
+          <ixy>0.000121</ixy>
+          <ixz>-4.2e-05</ixz>
+          <iyy>0.005471</iyy>
+          <iyz>-8.5e-05</iyz>
+          <izz>0.005014</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_heel-bracket_left_1_collision'>
+        <pose>0.127372 0.550788 -0.002967 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/heel-bracket_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_heel-bracket_left_1_visual'>
+        <pose>0.127372 0.550788 -0.002967 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/heel-bracket_left_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_knee_joint' type='revolute'>
+      <pose relative_to='RL_RMD-X10-S2_MIR4__3_Stator_1'>-0.071726 -0.0987 0.063481 0 -0 0</pose>
+      <parent>RL_RMD-X10-S2_MIR4__3_Stator_1</parent>
+      <child>RL_RMD-X10-S2_MIR4Rotor_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_RMD-X10-S2_MIR4Rotor_1'>
+      <pose relative_to='RL_knee_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.004337 -0.100835 0.022799 0 -0 0</pose>
+        <mass>0.618392</mass>
+        <inertia>
+          <ixx>0.006212</ixx>
+          <ixy>0.000357</ixy>
+          <ixz>-2e-05</ixz>
+          <iyy>0.000506</iyy>
+          <iyz>0.000167</iyz>
+          <izz>0.00633</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_RMD-X10-S2_MIR4Rotor_1_collision'>
+        <pose>0.263279 -0.282145 0.106399 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_RMD-X10-S2_MIR4Rotor_1_visual'>
+        <pose>0.263279 -0.282145 0.106399 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/RMD-X10-S2_MIR4Rotor_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='RL_Revolute 5' type='revolute'>
+      <pose relative_to='RL_RMD-X10-S2_MIR4Rotor_1'>0.02018 -0.294308 0.036505 0 -0 0</pose>
+      <parent>RL_RMD-X10-S2_MIR4Rotor_1</parent>
+      <child>RL_conjstraint-knee-test-oute_1</child>
+      <axis>
+        <xyz>-0.000261 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='RL_conjstraint-knee-test-oute_1'>
+      <pose relative_to='RL_Revolute 5'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.03882 0.002025 -0.009922 0 -0 0</pose>
+        <mass>0.172736</mass>
+        <inertia>
+          <ixx>0.000316</ixx>
+          <ixy>-0.000137</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000318</iyy>
+          <iyz>0</iyz>
+          <izz>0.000394</izz>
+        </inertia>
+      </inertial>
+      <collision name='RL_conjstraint-knee-test-oute_1_collision'>
+        <pose>0.243318 0.012178 0.069894 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/conjstraint-knee-test-oute_1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='RL_conjstraint-knee-test-oute_1_visual'>
+        <pose>0.243318 0.012178 0.069894 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.001 0.001 0.001</scale>
+            <uri>model://dropbear_simplified_urdf/meshes/rightleg/conjstraint-knee-test-oute_1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='head_platform_Rigig_1__44__gz' type='fixed'>
+      <pose relative_to='head_Head_1'>0.1165 0 -0.03791 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base__5__1</parent>
+      <child>head_Head_1</child>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <joint name='head_platform_Rigid_2__45_gz' type='fixed'>
+      <pose relative_to='head_Head_1'>0.1096 0 -0.01913 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base__4__1</parent>
+      <child>head_Head_1</child>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <joint name='head_platform_Rigid_3__46_gz' type='fixed'>
+      <pose relative_to='head_Head_1'>-0.01283 0 -0.01534 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base__2__1</parent>
+      <child>head_Head_1</child>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <joint name='head_platform_Rigid_4__47_gz' type='fixed'>
+      <pose relative_to='head_Head_1'>0.0254 0 -0.1198 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base__1__1</parent>
+      <child>head_Head_1</child>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <joint name='head_platform_Rigid_5__48_gz' type='fixed'>
+      <pose relative_to='head_Head_1'>0.0451 0 -0.1233 0 -0 0</pose>
+      <parent>head_10mm-ujoint-base_1</parent>
+      <child>head_Head_1</child>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RH_Revolute 7 gz' type='revolute'>
+      <pose relative_to='RH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.145986 0.076614 -0.015322 0 -0 0</pose>
+      <parent>RH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>RH_straight-tendon_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RH_Revolute 10 gz' type='revolute'>
+      <pose relative_to='RH_elbow-rear-hanger_1'>0.053697 0.025533 -0.034938 0 -0 0</pose>
+      <parent>RH_elbow-rear-hanger_1</parent>
+      <child>RH_RMD-X8-Pro_MIR8_MIR1__4__1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LH_Revolute 7 gz' type='revolute'>
+      <pose relative_to='LH_RMD-X8-Pro_MIR8_MIR1__3__1'>0.145986 0.076614 -0.015322 0 -0 0</pose>
+      <parent>LH_RMD-X8-Pro_MIR8_MIR1__3__1</parent>
+      <child>LH_straight-tendon_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LH_Revolute 10 gz' type='revolute'>
+      <pose relative_to='LH_elbow-rear-hanger_1'>0.053697 0.025533 -0.034938 0 -0 0</pose>
+      <parent>LH_elbow-rear-hanger_1</parent>
+      <child>LH_RMD-X8-Pro_MIR8_MIR1__4__1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RL_Revolute 6 gz' type='revolute'>
+      <pose relative_to='RL_double-bracket_1'>-0.002137 -0.329993 0.019999 0 -0 0</pose>
+      <parent>RL_double-bracket_1</parent>
+      <child>RL_conjstraint-knee-test-oute_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RL_Revolute 9 gz' type='revolute'>
+      <pose relative_to='RL_conjstraint-knee-test-oute_1'>0.025403 -0.05436 -0.019993 0 -0 0</pose>
+      <parent>RL_conjstraint-knee-test-oute_1</parent>
+      <child>RL_double-bracket-10deg_MIR_MIR_MIR_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RL_Revolute 16 gz' type='revolute'>
+      <pose relative_to='RL_heel-bracket_left_1'>-0.067753 0.029044 0.045342 0 -0 0</pose>
+      <parent>RL_heel-bracket_left_1</parent>
+      <child>RL_210mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='RL_Revolute 17 gz' type='revolute'>
+      <pose relative_to='RL_heel-bracket_left_1'>-0.067303 0.011689 -0.05314 0 -0 0</pose>
+      <parent>RL_heel-bracket_left_1</parent>
+      <child>RL_290mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LL_Revolute 6 gz' type='revolute'>
+      <pose relative_to='LL_double-bracket_1'>-0.002137 -0.329993 -0.019999 0 -0 0</pose>
+      <parent>LL_double-bracket_1</parent>
+      <child>LL_conjstraint-knee-test-oute_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LL_Revolute 9 gz' type='revolute'>
+      <pose relative_to='LL_conjstraint-knee-test-oute_1'>0.025403 -0.05436 0.019993 0 -0 0</pose>
+      <parent>LL_conjstraint-knee-test-oute_1</parent>
+      <child>LL_double-bracket-10deg_MIR_MIR_MIR_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LL_Revolute 16 gz' type='revolute'>
+      <pose relative_to='LL_heel-bracket_left_1'>-0.067753 0.029044 -0.045342 0 -0 0</pose>
+      <parent>LL_heel-bracket_left_1</parent>
+      <child>LL_210mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+    <static>0</static>
+    <plugin name='gazebo_ros' filename='libgazebo_ros_api_plugin.so'/>
+    <joint name='LL_Revolute 17 gz' type='revolute'>
+      <pose relative_to='LL_heel-bracket_left_1'>-0.067303 0.011689 0.05314 0 -0 0</pose>
+      <parent>LL_heel-bracket_left_1</parent>
+      <child>LL_290mm-tie-rod_v1_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+      </axis>
+      <limit>
+        <lower>-3.142</lower>
+        <upper>3.142</upper>
+        <effort>10.0</effort>
+        <velocity>10.0</velocity>
+      </limit>
+      <dynamics>
+        <damping>0.0</damping>
+        <friction>0.0</friction>
+      </dynamics>
+    </joint>
+  </model>
+</sdf>

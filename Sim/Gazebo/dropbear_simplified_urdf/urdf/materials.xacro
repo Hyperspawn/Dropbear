@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<robot name="humanoid"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <material name="silver_default">
+    <color rgba="0.700 0.700 0.700 1.000"/>
+  </material>
+  <material name="opaque727161">
+    <color rgba="0.2823529411764706 0.2784313725490196 0.23921568627450981 1.0"/>
+  </material>
+  <material name="opaque2550255">
+    <color rgba="1.0 0.0 1.0 1.0"/>
+  </material>
+
+  <!-- Waist Material Color -->
+  <material name="opaque245245245">
+    <color rgba="0.9607843137254902 0.9607843137254902 0.9607843137254902 1.0"/>
+  </material>
+  <material name="opaque20400">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+  <material name="opaque2551530">
+    <color rgba="1.0 0.6 0.0 1.0"/>
+  </material>
+
+  <!-- Leg Materials -->
+  <material name="opaque22122113">
+    <color rgba="0.8666666666666667 0.8666666666666667 0.050980392156862744 1.0"/>
+  </material>
+
+  <material name="opaque191191191">
+    <color rgba="0.7490196078431373 0.7490196078431373 0.7490196078431373 1.0"/>
+  </material>
+  <material name="opaque252525">
+    <color rgba="0.09803921568627451 0.09803921568627451 0.09803921568627451 1.0"/>
+  </material>
+  <material name="opaque0125168">
+    <color rgba="0.0 0.49019607843137253 0.6588235294117647 1.0"/>
+  </material>
+
+  <material name="opaque2552550">
+    <color rgba="1.0 1.0 0.0 1.0"/>
+  </material>
+  <material name="opaque13110895">
+    <color rgba="0.5137254901960784 0.4235294117647059 0.37254901960784315 1.0"/>
+  </material>
+  <material name="powder_coat_green">
+    <color rgba="0.26666666666666666 0.5882352941176471 0.2823529411764706 0.0"/>
+  </material>
+
+  <!-- Hand Materials -->
+  <material name="opaque808080">
+    <color rgba="0.3137254901960784 0.3137254901960784 0.3137254901960784 1.0"/>
+  </material>
+
+  <!-- Head Materials -->
+  <material name="opaque25514347">
+    <color rgba="1.0 0.5607843137254902 0.1843137254901961 1.0"/>
+  </material>
+
+</robot>

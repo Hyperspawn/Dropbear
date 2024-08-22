@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dropbear_simplified">
+
+<xacro:macro name = "stewart_platform_ros2_control" params = "prefix">
+
+    <xacro:joint prefix="${prefix}" name="Revolute2" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute3" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute4" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute5" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute6" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute7" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute8" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute9" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute11" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute12" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute14" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute15" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute17" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute18" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute20" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute21" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute23" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute24" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute26" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute27" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute29" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute30" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute32" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute33" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute35" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute36" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute38" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute39" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute41" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Revolute42" min_value="-${PI}" max_value="-${PI}">
+    </xacro:joint>
+
+
+    <xacro:joint prefix="${prefix}" name="Slider10" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Slider13" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Slider16" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Slider19" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Slider22" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+    <xacro:joint prefix="${prefix}" name="Slider25" min_value="-0.075" max_value="0.0">
+    </xacro:joint>
+
+</xacro:macro>
+
+</robot>

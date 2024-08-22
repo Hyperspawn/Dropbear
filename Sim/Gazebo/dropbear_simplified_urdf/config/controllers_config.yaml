@@ -1,0 +1,268 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 10
+  
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+        # Joint Trajectory Controller
+    stewart_base_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    stewart_slider_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_hand_joints_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_hand_elbow_controller:
+      type: position_controllers/JointGroupPositionController
+    
+    left_hand_joints_controller:
+      type: position_controllers/JointGroupPositionController
+    
+    left_hand_elbow_controller:
+      type: position_controllers/JointGroupPositionController
+
+    waist_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_leg_knee_controller:
+      type: position_controllers/JointGroupPositionController
+
+    lower_right_leg_controller:
+      type: position_controllers/JointGroupPositionController
+    
+    left_leg_knee_controller:
+      type: position_controllers/JointGroupPositionController
+    
+    lower_left_leg_controller:
+      type: position_controllers/JointGroupPositionController
+
+stewart_base_controller:
+  ros__parameters:
+    joints:
+      - head_Revolute2
+      - head_Revolute3
+      - head_Revolute4
+      - head_Revolute5
+      - head_Revolute6
+      - head_Revolute7
+      - head_Revolute8
+      - head_Revolute9
+      - head_Revolute11
+      - head_Revolute12
+      - head_Revolute14
+      - head_Revolute15
+      - head_Revolute17
+      - head_Revolute18
+      - head_Revolute20
+      - head_Revolute21
+      - head_Revolute23
+      - head_Revolute24
+      - head_Revolute26
+      - head_Revolute27
+      - head_Revolute29
+      - head_Revolute30
+      - head_Revolute32
+      - head_Revolute33
+      - head_Revolute35
+      - head_Revolute36
+      - head_Revolute38
+      - head_Revolute39
+      - head_Revolute41
+      - head_Revolute42
+
+    command_interfaces:
+      - position
+    
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+stewart_slider_controller:
+  ros__parameters:
+    joints:
+      - head_Slider10
+      - head_Slider13
+      - head_Slider16
+      - head_Slider19
+      - head_Slider22
+      - head_Slider25
+
+    command_interfaces:
+      - position
+    
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+right_hand_joints_controller:
+  ros__parameters:
+    joints:
+      # - RH_yaw
+      - RH_pitch
+      - RH_roll
+      - RH_wrist_roll
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+right_hand_elbow_controller:
+  ros__parameters:
+    joints:
+      - RH_elbow_joint
+      - RH_Revolute5
+      - RH_Revolute6
+      - RH_Revolute8
+      - RH_Revolute9
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+left_hand_joints_controller:
+  ros__parameters:
+    joints:
+      # - LH_yaw
+      - LH_pitch
+      - LH_roll
+      - LH_wrist_roll
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+left_hand_elbow_controller:
+  ros__parameters:
+    joints:
+      - LH_elbow_joint
+      - LH_Revolute5
+      - LH_Revolute6
+      - LH_Revolute8
+      - LH_Revolute9
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+waist_controller:
+  ros__parameters:
+    joints:
+      - _right_leg_pitch
+      - _left_leg_pitch
+      - _right_leg_yaw
+      - _left_leg_yaw
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+right_leg_knee_controller:
+  ros__parameters:
+    joints:
+      - RL_hip_joint
+      - RL_knee_actuator_joint
+      - RL_Revolute4
+      - RL_Revolute5
+      - RL_Revolute7
+      - RL_Revolute8
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+lower_right_leg_controller:
+  ros__parameters:
+    joints:
+      - RL_Revolute10
+      - RL_Revolute11
+      - RL_Revolute12
+      - RL_Revolute13
+      - RL_Revolute14
+      - RL_Revolute15
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+left_leg_knee_controller:
+  ros__parameters:
+    joints:
+      - LL_hip_joint
+      - LL_knee_actuator_joint
+      - LL_Revolute4
+      - LL_Revolute5
+      - LL_Revolute7
+      - LL_Revolute8
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+lower_left_leg_controller:
+  ros__parameters:
+    joints:
+      - LL_Revolute10
+      - LL_Revolute11
+      - LL_Revolute12
+      - LL_Revolute13
+      - LL_Revolute14
+      - LL_Revolute15
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+
+

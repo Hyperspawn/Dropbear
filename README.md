@@ -45,7 +45,7 @@ Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transform
 
 ### Teleoperation mode
 #### Dropbear can be used as a proxy avatar by controlling the robot using VR gear like a motion-tracking suit, etc. The robot precisely mimics your actions. While interacting with physical objects, VR gloves give you sensation feedback for an immersive teleportation-like experience.
-![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/c10953ef-935c-45c4-8f8a-a1805f13ac3e)
+![Dropbear Teleoperation](https://github.com/user-attachments/assets/7d74c8da-ae27-4cde-bb03-05f5a6bca405)
 
 
 ## Assembly Instructions

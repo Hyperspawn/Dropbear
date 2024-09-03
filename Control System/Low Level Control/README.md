@@ -74,6 +74,10 @@ This project involves an ESP32-based control system designed to manage bipedal r
 - **SPIFFS**
 - **FreeRTOS**
 
+## To-Do
+Implement correct channels for IMU's present on calves and feet
+Implement streaming of IMU data from torso
+
 ## License
 This project is licensed under the MIT License.
 

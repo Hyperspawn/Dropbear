@@ -1,5 +1,6 @@
 <img src="https://github.com/Hyperspawn/Dropbear/blob/main/Media/Flows/dropbear.png" width="1024">
-![fract](https://github.com/user-attachments/assets/9b977d62-3cf2-4aa8-bfd4-e3401927e4af)
+
+[![Group 2](https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/bd13c6f5-7a3f-4262-9891-4259f17abbe0)](https://t.me/fractionalrobots)
 
 Welcome to the official repository of the Dropbear Humanoid Robot! Developed by Hyperspawn & [Pointblank](https://www.pointblankllc.com/). Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
 
@@ -51,6 +52,8 @@ Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transform
 
 ## Assembly Instructions
 For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide](URL).
+
+For the Head and Neck specifically, [click here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
 
 ## Usage
 Instructions and guidelines for operating the Dropbear Humanoid Robot can be found in the [User Manual](URL).

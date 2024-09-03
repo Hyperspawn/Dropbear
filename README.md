@@ -52,7 +52,7 @@ Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transform
 
 ## Assembly Instructions
 For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide](URL).
-
+To Explore Low Level Control, [Check out the folder in this repo!](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control)
 For the Head and Neck specifically, [click here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
 
 ## Usage

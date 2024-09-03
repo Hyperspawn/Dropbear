@@ -23,11 +23,11 @@ This project involves an ESP32-based control system designed to manage bipedal r
 - **CAN0_CS**: GPIO 5 - Chip select pin for CAN bus.
 - **I2C SDA**: GPIO 21 - I2C data line for IMU communication.
 - **I2C SCL**: GPIO 22 - I2C clock line for IMU communication.
-- **Outer Calf Sensor**: GPIO 14 - Analog input for outer calf sensor.
-- **Inner Calf Sensor**: GPIO 27 - Analog input for inner calf sensor.
-- **Hip Sensor**: GPIO 26 - Analog input for hip sensor.
-- **Knee Sensor**: GPIO 25 - Analog input for knee sensor.
-- **Butt Sensor**: GPIO 33 - Analog input for butt sensor.
+- **Outer Calf AS5600 Encoder**: GPIO 14 - Analog input for outer calf sensor.
+- **Inner Calf AS5600 Encoder**: GPIO 27 - Analog input for inner calf sensor.
+- **Hip AS5600 Encoder**: GPIO 26 - Analog input for hip sensor.
+- **Knee AS5600 Encoder**: GPIO 25 - Analog input for knee sensor.
+- **Butt AS5600 Encoder**: GPIO 33 - Analog input for butt sensor.
 
 ## Actuator IDs
 - **Right Calf Outer**: 0x144

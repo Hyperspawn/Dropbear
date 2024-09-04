@@ -21,11 +21,10 @@ void computeAverages();
 void normalizeReadings();
 void calibrateSensors();
 void printReadings();
-void saveCalibration();
-void loadCalibration();
+void saveConfig();
+void loadConfig();
+void resetSPIFFS();
 void promptLegSide();
-void saveLegSide();
-void loadLegSide();
 void printSavedOffsets();
 void printMACAddress();
 void sendTorqueCommand(long unsigned int actuatorID, int16_t torqueValue);
@@ -86,6 +85,10 @@ bool stopCommandsSent[12] = {false}; // To track if stop command was printed for
 
 SemaphoreHandle_t serialMutex;
 
+// Offset arrays for the left and right legs
+int leftLegOffsets[5] = {32, -26, -4, -17, 2};   // Offsets for left leg (Outer, Inner, Hip, Knee, Butt)
+int rightLegOffsets[5] = {-28, 39, -2, 18, -2};  // Offsets for right leg (Outer, Inner, Hip, Knee, Butt)
+
 void setup() {
   Serial.begin(115200);
   serialMutex = xSemaphoreCreateMutex();
@@ -95,8 +98,8 @@ void setup() {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
-  loadCalibration();
-  loadLegSide();
+
+  loadConfig();
 
   for (int i = 0; i < numReadings; i++) {
     readingsOuter[i] = readingsInner[i] = readingsHip[i] = readingsKnee[i] = readingsButt[i] = 0;
@@ -116,7 +119,7 @@ void setup() {
   // Create tasks for different functionalities
   xTaskCreatePinnedToCore(readAndComputeTask, "Read and Compute Task", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(torqueControlTask, "Torque Control Task", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(checkChiralityTask, "Check Chirality Task", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(checkChiralityTask, "Check Chirality Task", 4096, NULL, 1, NULL, 1); // Increase stack size from 2048 to 4096
 
   if (isCenter) {
     xTaskCreatePinnedToCore(imuReadTask, "IMU Read Task", 4096, NULL, 1, NULL, 0);
@@ -198,11 +201,38 @@ void imuReadTask(void *parameter) {
   }
 }
 
+// SPIFFS Integrity Check and Reset function
+void resetSPIFFS() {
+    Serial.println("Checking SPIFFS integrity...");
+
+    if (SPIFFS.totalBytes() == 0) {
+        Serial.println("SPIFFS appears to be unformatted or corrupted.");
+        Serial.println("Type 'yes' to format SPIFFS.");
+        while (!Serial.available()) delay(10);
+        String response = Serial.readStringUntil('\n');
+        response.trim();
+
+        if (response.equalsIgnoreCase("yes")) {
+            SPIFFS.format();
+            Serial.println("SPIFFS formatted.");
+        } else {
+            Serial.println("SPIFFS reset aborted.");
+        }
+    } else {
+        Serial.println("SPIFFS is functioning properly.");
+    }
+}
+
+
 void processSerialCommand(String command) {
   command.trim();
 
   if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-    if (command.startsWith("torque")) {
+    if (command == "config") {
+      enterConfigurationMode();  // Enter config mode directly
+    } else if (command == "resetSPIFFS") {
+      resetSPIFFS();
+    } else if (command.startsWith("torque")) {
       String params = command.substring(7); // Get parameters after "torque "
       int firstSpace = params.indexOf(' ');
       int secondSpace = params.indexOf(' ', firstSpace + 1);
@@ -249,8 +279,7 @@ void processSerialCommand(String command) {
     } else if (command == "calibrate") {
       calibrateSensors();
     } else if (command == "save") {
-      saveLegSide();
-      saveCalibration();
+      saveConfig();
     } else if (command == "saved") {
       printSavedOffsets();
     } else if (command == "play") {
@@ -262,8 +291,6 @@ void processSerialCommand(String command) {
       for (int i = 0; i < 12; i++) {
         stopCommandsSent[i] = false;  // Reset stop command tracking
       }
-    } else if (command == "config") {
-      enterConfigurationMode();
     } else if (command == "left" || command == "right" || command == "center") {
       if (command == "left") {
         isLeft = true;
@@ -274,43 +301,83 @@ void processSerialCommand(String command) {
       } else if (command == "center") {
         isCenter = true;
       }
-      saveLegSide();
+      saveConfig();
       Serial.println("Chirality set to: " + String(command));
-    } else if (command.startsWith("stop_actuator")) {
-      String params = command.substring(14); // Get parameters after "stop_actuator "
-      long unsigned int actuatorID = strtol(params.c_str(), NULL, 16); // Assume actuator ID is given as hex
-      if (actuatorID) {
-        sendStopCommand(actuatorID);
-        Serial.printf("Sent stop command to actuator ID: 0x%X\n", actuatorID);
-      } else {
-        Serial.println("Invalid actuator ID.");
-      }
-    } else if (command.startsWith("buzz_motor")) {
-      String params = command.substring(11); // Get parameters after "buzz_motor "
-      int firstSpace = params.indexOf(' ');
-      int secondSpace = params.indexOf(' ', firstSpace + 1);
-
-      if (firstSpace > 0 && secondSpace > firstSpace) {
-        long unsigned int actuatorID = strtol(params.substring(0, firstSpace).c_str(), NULL, 16);
-        int frequency = params.substring(firstSpace + 1, secondSpace).toInt();
-        float intensity = params.substring(secondSpace + 1).toFloat();
-
-        xTaskCreatePinnedToCore([](void *param) {
-          long unsigned int id = ((long unsigned int*)param)[0];
-          int freq = ((int*)param)[1];
-          float inten = ((float*)param)[2];
-          buzzMotorTask(id, freq, inten);
-          vTaskDelete(NULL);
-        }, "Buzz Motor Task", 4096, new long unsigned int[3]{actuatorID, frequency, (long unsigned int)intensity}, 1, NULL, 1);
-      } else {
-        Serial.println("Invalid buzz_motor command format.");
-      }
-    } else {
-      Serial.println("Unknown command: " + command);
     }
     xSemaphoreGive(serialMutex);
   }
 }
+
+// Save configuration function
+void saveConfig() {
+  File file = SPIFFS.open("/config.txt", FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+
+  // Save leg side and offsets in one file
+  file.printf("LegSide:%s\n", isCenter ? "center" : (isLeft ? "left" : "right"));
+  file.printf("LeftOffsets:%d,%d,%d,%d,%d\n", leftLegOffsets[0], leftLegOffsets[1], leftLegOffsets[2], leftLegOffsets[3], leftLegOffsets[4]);
+  file.printf("RightOffsets:%d,%d,%d,%d,%d\n", rightLegOffsets[0], rightLegOffsets[1], rightLegOffsets[2], rightLegOffsets[3], rightLegOffsets[4]);
+
+  file.close();
+  Serial.println("Configuration saved.");
+}
+
+// Load configuration function
+void loadConfig() {
+  if (!SPIFFS.exists("/config.txt")) {
+    // If no config file exists, use hardcoded defaults and prompt for leg side
+    Serial.println("No configuration file found. Using hardcoded offsets.");
+    promptLegSide();  // Ask the user for the leg side (left, right, or center)
+    return;
+  }
+
+  // File exists, load it
+  File file = SPIFFS.open("/config.txt");
+  if (!file) {
+    Serial.println("Failed to open configuration file. Using hardcoded offsets.");
+    return;
+  }
+
+  String line = file.readStringUntil('\n');
+  
+  // Determine leg side (left, right, center) from the config
+  if (line.startsWith("LegSide:")) {
+    String side = line.substring(8);
+    side.trim();
+    if (side == "left") {
+      isLeft = true;
+      isCenter = false;
+    } else if (side == "right") {
+      isLeft = false;
+      isCenter = false;
+    } else if (side == "center") {
+      isCenter = true;
+    }
+  }
+
+  // Load left leg offsets
+  line = file.readStringUntil('\n');
+  if (line.startsWith("LeftOffsets:")) {
+    sscanf(line.c_str(), "LeftOffsets:%d,%d,%d,%d,%d", &leftLegOffsets[0], &leftLegOffsets[1], &leftLegOffsets[2], &leftLegOffsets[3], &leftLegOffsets[4]);
+  } else {
+    Serial.println("No left offsets found in SPIFFS, using hardcoded left leg offsets.");
+  }
+
+  // Load right leg offsets
+  line = file.readStringUntil('\n');
+  if (line.startsWith("RightOffsets:")) {
+    sscanf(line.c_str(), "RightOffsets:%d,%d,%d,%d,%d", &rightLegOffsets[0], &rightLegOffsets[1], &rightLegOffsets[2], &rightLegOffsets[3], &rightLegOffsets[4]);
+  } else {
+    Serial.println("No right offsets found in SPIFFS, using hardcoded right leg offsets.");
+  }
+
+  file.close();
+  Serial.println("Configuration loaded successfully.");
+}
+
 
 void handleConfigurationCommand(String command) {
   command.trim();
@@ -326,14 +393,13 @@ void handleConfigurationCommand(String command) {
     } else if (command == "center") {
       isCenter = true;
     }
-    saveLegSide();
+    saveConfig();
     Serial.println("Chirality set to: " + String(command));
   } else if (command == "calibrate") {
     calibrateSensors();
     Serial.println("Sensors calibrated.");
   } else if (command == "save") {
-    saveLegSide();
-    saveCalibration();
+    saveConfig();
     Serial.println("Configuration saved.");
   } else {
     Serial.println("Unknown configuration command: " + command);
@@ -341,33 +407,24 @@ void handleConfigurationCommand(String command) {
 }
 
 void enterConfigurationMode() {
-  if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-    configMode = true;
-    Serial.println("Entered configuration mode. Type 'exit' to leave.");
-    xSemaphoreGive(serialMutex);
+  playMode = false;  // Ensure play mode is disabled
+  Serial.println("Entering Configuration Mode...");
+
+  // Stop all actuators three times to ensure they are stopped
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 12; j++) {
+      sendStopCommand(j);
+    }
   }
+  
+  configMode = true;
+  Serial.println("Configuration mode entered. Type 'exit' to leave.");
 }
 
 void exitConfigurationMode() {
-  if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-    configMode = false;
-    Serial.println("Exited configuration mode.");
-    xSemaphoreGive(serialMutex);
-  }
-}
-
-void buzzMotorTask(long unsigned int actuatorID, int frequency, float intensity) {
-  int delayTime = 1000 / (frequency * 2); // Time for each half of the cycle (in milliseconds)
-  int16_t torqueValue = constrain(intensity * 100, -MAX_TORQUE_LIMIT * 100, MAX_TORQUE_LIMIT * 100);
-
-  for (int i = 0; i < frequency * 5; ++i) { // Run for 5 seconds
-    sendTorqueCommand(actuatorID, torqueValue);
-    vTaskDelay(delayTime / portTICK_PERIOD_MS);
-    sendTorqueCommand(actuatorID, -torqueValue);
-    vTaskDelay(delayTime / portTICK_PERIOD_MS);
-  }
-
-  sendStopCommand(actuatorID);
+  Serial.println("Exiting Configuration Mode...");
+  configMode = false;
+  Serial.println("Configuration mode exited.");
 }
 
 void readSensors() {
@@ -400,36 +457,92 @@ void computeAverages() {
   averageButt = totalButt / numReadings;
 }
 
+// Function to normalize sensor readings and apply offsets based on chirality
 void normalizeReadings() {
-  normalizedOuter = wrapAngle(map(averageOuter, 0, 4096, 0, 360) + offsetOuter);
-  normalizedInner = wrapAngle(map(averageInner, 0, 4096, 0, 360) + offsetInner);
-  normalizedHip = wrapAngle(map(averageHip, 0, 4096, 0, 360) + offsetHip);
-  normalizedKnee = wrapAngle(map(averageKnee, 0, 4096, 0, 360) + offsetKnee);
-  normalizedButt = wrapAngle(map(averageButt, 0, 4096, 0, 360) + offsetButt);
+  const int* offsets = isLeft ? leftLegOffsets : rightLegOffsets; // Use the appropriate offsets array
+
+  // Apply offsets for each reading
+  normalizedOuter = wrapAngleFloat(map(averageOuter, 0, 4096, 0, 3600) / 10.0 + offsets[0]);
+  normalizedInner = wrapAngleFloat(map(averageInner, 0, 4096, 0, 3600) / 10.0 + offsets[1]);
+  normalizedHip = wrapAngleFloat(map(averageHip, 0, 4096, 0, 3600) / 10.0 + offsets[2]);
+  normalizedKnee = wrapAngleFloat(map(averageKnee, 0, 4096, 0, 3600) / 10.0 + offsets[3]);
+  normalizedButt = wrapAngleFloat(map(averageButt, 0, 4096, 0, 3600) / 10.0 + offsets[4]);
+}
+
+// Ensure angles are between 0.0 and 360.0 degrees, with tenths precision
+float wrapAngleFloat(float angle) {
+  if (angle >= 360.0) return angle - 360.0;
+  if (angle < 0.0) return angle + 360.0;
+  return angle;
 }
 
 void calibrateSensors() {
-  // Use raw (un-offset) values for calibration
-  offsetOuter = wrapAngle(180 - map(averageOuter, 0, 4096, 0, 360));
-  offsetInner = wrapAngle(180 - map(averageInner, 0, 4096, 0, 360));
-  offsetHip = wrapAngle(180 - map(averageHip, 0, 4096, 0, 360));
-  offsetKnee = wrapAngle(180 - map(averageKnee, 0, 4096, 0, 360));
-  offsetButt = wrapAngle(180 - map(averageButt, 0, 4096, 0, 360));
-  Serial.println("Sensors calibrated. Offsets applied:");
-  printSavedOffsets();
+    // Map sensor readings to 0-360 degrees with tenths precision
+    float rawOuter = map(averageOuter, 0, 4096, 0, 3600) / 10.0;
+    float rawInner = map(averageInner, 0, 4096, 0, 3600) / 10.0;
+    float rawHip = map(averageHip, 0, 4096, 0, 3600) / 10.0;
+    float rawKnee = map(averageKnee, 0, 4096, 0, 3600) / 10.0;
+    float rawButt = map(averageButt, 0, 4096, 0, 3600) / 10.0;
+
+    // Calculate the offsets needed to align the readings to 180 degrees
+    int offsetOuter = (rawOuter > 180.0) ? 180.0 - rawOuter : 180.0 - rawOuter;
+    int offsetInner = (rawInner > 180.0) ? 180.0 - rawInner : 180.0 - rawInner;
+    int offsetHip = (rawHip > 180.0) ? 180.0 - rawHip : 180.0 - rawHip;
+    int offsetKnee = (rawKnee > 180.0) ? 180.0 - rawKnee : 180.0 - rawKnee;
+    int offsetButt = (rawButt > 180.0) ? 180.0 - rawButt : 180.0 - rawButt;
+
+    // Assign the offsets to the correct array (left or right leg)
+    if (isLeft) {
+        leftLegOffsets[0] = offsetOuter;
+        leftLegOffsets[1] = offsetInner;
+        leftLegOffsets[2] = offsetHip;
+        leftLegOffsets[3] = offsetKnee;
+        leftLegOffsets[4] = offsetButt;
+    } else {
+        rightLegOffsets[0] = offsetOuter;
+        rightLegOffsets[1] = offsetInner;
+        rightLegOffsets[2] = offsetHip;
+        rightLegOffsets[3] = offsetKnee;
+        rightLegOffsets[4] = offsetButt;
+    }
+
+    // Print the calculated offsets
+    Serial.println("Calibration complete. Offsets to align readings to 180 degrees:");
+    Serial.printf("Outer Offset: %d\n", offsetOuter);
+    Serial.printf("Inner Offset: %d\n", offsetInner);
+    Serial.printf("Hip Offset: %d\n", offsetHip);
+    Serial.printf("Knee Offset: %d\n", offsetKnee);
+    Serial.printf("Butt Offset: %d\n", offsetButt);
+
+    // Prompt the user to save the calibration
+    Serial.println("Do you want to save these offsets? Type 'yes' to save, 'no' to discard.");
+    
+    // Wait for user input
+    while (!Serial.available()) delay(10);
+
+    String response = Serial.readStringUntil('\n');
+    response.trim();
+
+    if (response.equalsIgnoreCase("yes")) {
+        saveConfig();
+        Serial.println("Offsets saved.");
+    } else {
+        Serial.println("Offsets not saved.");
+    }
 }
 
+// Print normalized readings with tenths precision
 void printReadings() {
   if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-    Serial.print(normalizedOuter);
+    Serial.print(normalizedOuter, 1);  // Print with 1 decimal place
     Serial.print(",");
-    Serial.print(normalizedInner);
+    Serial.print(normalizedInner, 1);
     Serial.print(",");
-    Serial.print(normalizedHip);
+    Serial.print(normalizedHip, 1);
     Serial.print(",");
-    Serial.print(normalizedKnee);
+    Serial.print(normalizedKnee, 1);
     Serial.print(",");
-    Serial.println(normalizedButt);
+    Serial.println(normalizedButt, 1);
     xSemaphoreGive(serialMutex);
   }
 }
@@ -441,37 +554,22 @@ int wrapAngle(int angle) {
   return angle;
 }
 
-void saveCalibration() {
-  File file = SPIFFS.open("/calibration.txt", FILE_WRITE);
-  if (!file) {
-    Serial.println("Failed to open file for writing");
-    return;
-  }
-
-  file.printf("Outer:%d,Inner:%d,Hip:%d,Knee:%d,Butt:%d\n", offsetOuter, offsetInner, offsetHip, offsetKnee, offsetButt);
-  file.close();
-  Serial.println("Calibration data saved.");
-}
-
-void loadCalibration() {
-  File file = SPIFFS.open("/calibration.txt");
-  if (!file) {
-    Serial.println("No calibration file found");
-    return;
-  }
-
-  String line = file.readStringUntil('\n');
-  sscanf(line.c_str(), "Outer:%d,Inner:%d,Hip:%d,Knee:%d,Butt:%d", &offsetOuter, &offsetInner, &offsetHip, &offsetKnee, &offsetButt);
-  file.close();
-  Serial.println("Calibration data loaded.");
+void printSavedOffsets() {
+  Serial.printf("Offsets - Outer: %d, Inner: %d, Hip: %d, Knee: %d, Butt: %d\n", offsetOuter, offsetInner, offsetHip, offsetKnee, offsetButt);
 }
 
 void promptLegSide() {
   Serial.println("Enter 'left' for left leg, 'right' for right leg, or 'center' for IMU center.");
-  while (!Serial.available()) delay(10);
+  
+  // Wait for input from the user
+  while (!Serial.available()) {
+    delay(10);
+  }
 
   String side = Serial.readStringUntil('\n');
   side.trim();
+  
+  // Set the leg side based on user input
   if (side == "left") {
     isLeft = true;
     isCenter = false;
@@ -481,45 +579,8 @@ void promptLegSide() {
   } else if (side == "center") {
     isCenter = true;
   }
+
   Serial.println(isCenter ? "Center mode selected." : (isLeft ? "Left leg selected." : "Right leg selected."));
-}
-
-void saveLegSide() {
-  File file = SPIFFS.open("/legSide.txt", FILE_WRITE);
-  if (!file) {
-    Serial.println("Failed to open file for writing");
-    return;
-  }
-
-  file.println(isCenter ? "center" : (isLeft ? "left" : "right"));
-  file.close();
-  Serial.println("Leg side configuration saved.");
-}
-
-void loadLegSide() {
-  File file = SPIFFS.open("/legSide.txt");
-  if (!file) {
-    Serial.println("No leg side configuration found. Please set chirality or center mode.");
-    promptLegSide();
-    return;
-  }
-
-  String side = file.readStringUntil('\n');
-  if (side == "left") {
-    isLeft = true;
-    isCenter = false;
-  } else if (side == "right") {
-    isLeft = false;
-    isCenter = false;
-  } else if (side == "center") {
-    isCenter = true;
-  }
-  file.close();
-  Serial.println("Loaded leg side configuration: " + String(isCenter ? "center" : (isLeft ? "left" : "right")));
-}
-
-void printSavedOffsets() {
-  Serial.printf("Offsets - Outer: %d, Inner: %d, Hip: %d, Knee: %d, Butt: %d\n", offsetOuter, offsetInner, offsetHip, offsetKnee, offsetButt);
 }
 
 void printMACAddress() {
@@ -539,34 +600,37 @@ void sendStopCommand(long unsigned int actuatorID) {
 }
 
 void readIMU() {
-  // Example function for reading from multiple IMUs over I2C
-  for (int i = 0; i < IMU_COUNT; i++) {
-    Wire.beginTransmission(0x68 + i);  // Replace with actual I2C address of each IMU
-    Wire.write(0x3B);  // Start reading at a specific register, example for MPU-9250
-    Wire.endTransmission(false);
-    Wire.requestFrom(0x68 + i, 14, true);  // Request 14 bytes from the IMU
+    // Example function for reading from multiple IMUs over I2C
+    for (int i = 0; i < IMU_COUNT; i++) {
+        Wire.beginTransmission(0x68 + i);  // Replace with actual I2C address of each IMU
+        Wire.write(0x3B);  // Start reading at a specific register, example for MPU-9250
+        Wire.endTransmission(false);
+        Wire.requestFrom(0x68 + i, 14, true);  // Request 14 bytes from the IMU
 
-    int16_t ax = Wire.read() << 8 | Wire.read();
-    int16_t ay = Wire.read() << 8 | Wire.read();
-    int16_t az = Wire.read() << 8 | Wire.read();
-    int16_t gx = Wire.read() << 8 | Wire.read();
-    int16_t gy = Wire.read() << 8 | Wire.read();
-    int16_t gz = Wire.read() << 8 | Wire.read();
-    int16_t temp = Wire.read() << 8 | Wire.read();
+        int16_t ax = Wire.read() << 8 | Wire.read();
+        int16_t ay = Wire.read() << 8 | Wire.read();
+        int16_t az = Wire.read() << 8 | Wire.read();
+        int16_t gx = Wire.read() << 8 | Wire.read();
+        int16_t gy = Wire.read() << 8 | Wire.read();
+        int16_t gz = Wire.read() << 8 | Wire.read();
 
-    Serial.print("IMU ");
-    Serial.print(i);
-    Serial.print(" Acc: ");
-    Serial.print(ax);
-    Serial.print(", ");
-    Serial.print(ay);
-    Serial.print(", ");
-    Serial.print(az);
-    Serial.print(" Gyro: ");
-    Serial.print(gx);
-    Serial.print(", ");
-    Serial.print(gy);
-    Serial.print(", ");
-    Serial.println(gz);
-  }
+        // Removed 'temp' since it was unused
+        // int16_t temp = Wire.read() << 8 | Wire.read(); 
+
+        Serial.print("IMU ");
+        Serial.print(i);
+        Serial.print(" Acc: ");
+        Serial.print(ax);
+        Serial.print(", ");
+        Serial.print(ay);
+        Serial.print(", ");
+        Serial.print(az);
+        Serial.print(" Gyro: ");
+        Serial.print(gx);
+        Serial.print(", ");
+        Serial.print(gy);
+        Serial.print(", ");
+        Serial.println(gz);
+    }
 }
+

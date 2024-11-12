@@ -2,31 +2,28 @@ import eventlet
 eventlet.monkey_patch()
 
 from flask import Flask, render_template_string, request, jsonify
-from flask_socketio import SocketIO, emit
 import serial
 import serial.tools.list_ports
 import threading
 import time
-import sys
 import atexit
 import logging
 
-# Initialize Flask and Flask-SocketIO
+# Initialize Flask
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secure_secret_key_here'  # Replace with a secure secret key
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Configure logging to DEBUG to capture all events
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define the joints for each leg
-LEFT_JOINTS = ["outer_calf", "inner_calf", "knee", "hip_pitch", "hip_yaw", "hip_roll"]
-RIGHT_JOINTS = ["outer_calf", "inner_calf", "knee", "hip_pitch", "hip_yaw", "hip_roll"]
+LEFT_JOINTS = ["outer_calf", "inner_calf", "knee", "hip_pitch", "hip_roll"]
+RIGHT_JOINTS = ["outer_calf", "inner_calf", "knee", "hip_pitch", "hip_roll"]
 
 # EMA Smoothing factor for encoder values
 EMA_ALPHA = 0.1  # Adjust between 0 (no smoothing) and 1 (no smoothing)
 
-# Torque range (adjust based on your application's requirements)
+# Torque range
 TORQUE_MIN = -400
 TORQUE_MAX = 400
 
@@ -37,7 +34,7 @@ device_lock = threading.Lock()  # To synchronize access to devices
 left_chirality = None
 right_chirality = None
 
-# HTML Template with Bootstrap and Socket.IO for real-time updates
+# HTML Template with Bootstrap for UI
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -291,16 +288,12 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
-    <!-- Include Socket.IO -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
     <!-- Include Bootstrap JS -->
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     ></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const socket = io();
-
             // Function to fetch available serial ports
             function fetchPorts() {
                 fetch('/get_ports')
@@ -371,6 +364,8 @@ HTML_TEMPLATE = """
                         alert('Ports and Chirality assigned successfully.');
                         document.getElementById('controlInterface').style.display = 'block';
                         document.querySelector('.assignment-section').style.display = 'none';
+                        // Start polling for encoder data
+                        startEncoderPolling();
                     } else {
                         alert('Error assigning ports and chirality: ' + data.message);
                         // Refresh the port list in case of dynamic changes
@@ -382,36 +377,59 @@ HTML_TEMPLATE = """
                 });
             });
 
-            // Update encoder values and serial responses upon receiving data
-            socket.on('encoder_update', function(data) {
-                const device_port = data.device;
-                const encoders = data.encoders;
-                const port_mapping = data.port_mapping;  // Updated mapping from backend
+            // Function to fetch encoder data and update UI
+            function fetchEncoders() {
+                fetch('/get_encoders')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const encoders = data.encoders;
+                        // Update Left Leg Encoder Values
+                        if (encoders.left) {
+                            document.getElementById('left_chirality').innerText = `Chirality: ${capitalize(encoders.left.chirality)}`;
+                            for (const joint in encoders.left.encoders) {
+                                const encoderValue = encoders.left.encoders[joint];
+                                const encoderDivId = `left_${joint}_encoder`;
+                                const encoderDiv = document.getElementById(encoderDivId);
+                                if (encoderDiv) {
+                                    encoderDiv.innerText = `Encoder: ${encoderValue.toFixed(1)}`;
+                                }
+                            }
+                        }
 
-                const leg = port_mapping[device_port];
-                if (!leg) {
-                    console.warn(`Unknown device port: ${device_port}`);
-                    return;
-                }
-
-                // Update chirality labels
-                document.getElementById(`${leg}_chirality`).innerText = `Chirality: ${leg.charAt(0).toUpperCase() + leg.slice(1)}`;
-
-                for (const joint in encoders) {
-                    const encoderValue = encoders[joint];
-                    if (encoderValue !== null && encoderValue !== undefined) {
-                        document.getElementById(`${leg}_${joint}_encoder`).innerText = `Encoder: ${encoderValue.toFixed(1)}`;
+                        // Update Right Leg Encoder Values
+                        if (encoders.right) {
+                            document.getElementById('right_chirality').innerText = `Chirality: ${capitalize(encoders.right.chirality)}`;
+                            for (const joint in encoders.right.encoders) {
+                                const encoderValue = encoders.right.encoders[joint];
+                                const encoderDivId = `right_${joint}_encoder`;
+                                const encoderDiv = document.getElementById(encoderDivId);
+                                if (encoderDiv) {
+                                    encoderDiv.innerText = `Encoder: ${encoderValue.toFixed(1)}`;
+                                }
+                            }
+                        }
+                    } else {
+                        console.error('Error fetching encoders:', data.message);
                     }
-                }
-            });
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
 
-            // Listen for general serial responses and display them
-            socket.on('serial_response', function(data) {
-                const responseDiv = document.getElementById('command_response');
-                responseDiv.textContent += `\n< [${data.device}] ${data.data}\n`;
-                responseDiv.scrollTop = responseDiv.scrollHeight;
-                console.log(`Received from ${data.device}: ${data.data}`);
-            });
+            // Function to capitalize first letter
+            function capitalize(string) {
+                return string.charAt(0).toUpperCase() + string.slice(1);
+            }
+
+            // Function to start polling for encoder data
+            function startEncoderPolling() {
+                // Immediately fetch once
+                fetchEncoders();
+                // Then fetch every second
+                setInterval(fetchEncoders, 1000);
+            }
 
             // Handle joint slider input (Torque Control)
             const sliders = document.querySelectorAll('.joint-slider');
@@ -496,23 +514,22 @@ HTML_TEMPLATE = """
 
             // Play buttons
             document.getElementById('play_left_button').addEventListener('click', function() {
-                const command = 'play left';
-                fetch('/send_command', {
+                fetch('/play', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        command: `play left`
+                        leg: 'left'
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert('Play command sent to Left Leg.');
-                        console.log(`Play command sent to Left Leg: ${command}`);
+                        console.log(`Play command sent to Left Leg.`);
                         const responseDiv = document.getElementById('command_response');
-                        responseDiv.textContent += `> ${command}\n`;
+                        responseDiv.textContent += `> play (Left Leg)\n`;
                         responseDiv.scrollTop = responseDiv.scrollHeight;
                     } else {
                         alert('Error: ' + data.message);
@@ -525,23 +542,22 @@ HTML_TEMPLATE = """
             });
 
             document.getElementById('play_right_button').addEventListener('click', function() {
-                const command = 'play right';
-                fetch('/send_command', {
+                fetch('/play', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        command: `play right`
+                        leg: 'right'
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert('Play command sent to Right Leg.');
-                        console.log(`Play command sent to Right Leg: ${command}`);
+                        console.log(`Play command sent to Right Leg.`);
                         const responseDiv = document.getElementById('command_response');
-                        responseDiv.textContent += `> ${command}\n`;
+                        responseDiv.textContent += `> play (Right Leg)\n`;
                         responseDiv.scrollTop = responseDiv.scrollHeight;
                     } else {
                         alert('Error: ' + data.message);
@@ -555,15 +571,12 @@ HTML_TEMPLATE = """
 
             // Stop button
             document.getElementById('stop_button').addEventListener('click', function() {
-                const command = 'stop';
-                fetch('/send_command', {
+                fetch('/stop', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        command: `stop`
-                    })
+                    body: JSON.stringify({})
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -571,7 +584,7 @@ HTML_TEMPLATE = """
                         alert('Stop command sent to all legs.');
                         console.log('Stop command sent to all legs:', data.responses);
                         const responseDiv = document.getElementById('command_response');
-                        responseDiv.textContent += `> ${command}\n`;
+                        responseDiv.textContent += `> stop\n`;
                         responseDiv.scrollTop = responseDiv.scrollHeight;
                     } else {
                         alert('Error: ' + data.message);
@@ -751,7 +764,6 @@ class USBDevice:
             "inner_calf": None,
             "knee": None,
             "hip_pitch": None,
-            "hip_yaw": None,
             "hip_roll": None
         }
         self.joint_constraints = {
@@ -759,7 +771,6 @@ class USBDevice:
             "inner_calf": {"min": TORQUE_MIN, "max": TORQUE_MAX},
             "knee": {"min": TORQUE_MIN, "max": TORQUE_MAX},
             "hip_pitch": {"min": TORQUE_MIN, "max": TORQUE_MAX},
-            "hip_yaw": {"min": TORQUE_MIN, "max": TORQUE_MAX},
             "hip_roll": {"min": TORQUE_MIN, "max": TORQUE_MAX}
         }
         self.joint_ema = {
@@ -767,7 +778,6 @@ class USBDevice:
             "inner_calf": None,
             "knee": None,
             "hip_pitch": None,
-            "hip_yaw": None,
             "hip_roll": None
         }
         self.encoder_lock = threading.Lock()
@@ -810,9 +820,10 @@ class USBDevice:
                     continue
                 values = line.split(',')
 
-                # Define expected joints
-                expected_joints = ["outer_calf", "inner_calf", "knee", "hip_pitch", "hip_yaw", "hip_roll"]
-                
+                # Define expected joints (5 joints)
+                # *** Change 1: Correct the order of 'knee' and 'hip_pitch' ***
+                expected_joints = ["outer_calf", "inner_calf", "hip_pitch", "knee", "hip_roll"]  # Swapped 'knee' and 'hip_pitch'
+
                 if len(values) == len(expected_joints):
                     try:
                         encoder_values = [float(value) for value in values]
@@ -828,20 +839,12 @@ class USBDevice:
                                 self.joint_ema[joint] = EMA_ALPHA * value + (1 - EMA_ALPHA) * self.joint_ema[joint]
                             self.joint_encoder_values[joint] = self.joint_ema[joint]
 
-                    # Emit the updated encoder values to the web clients
-                    logging.debug(f"Emitting encoder data for {self.port}: {self.get_all_encoders()}")
-                    socketio.emit('encoder_update', {
-                        'device': self.port,
-                        'encoders': self.get_all_encoders(),
-                        'port_mapping': get_port_mapping()
-                    }, to='/')  # Changed from broadcast=True to to='/'
+                    # Encoder data is now updated; no need to emit via Socket.IO
+                    logging.debug(f"Updated encoder data for {self.port}: {self.get_all_encoders()}")
                 else:
                     # Handle general serial responses if the data doesn't match encoder format
                     logging.info(f"Received from {self.port}: {line}")
-                    socketio.emit('serial_response', {
-                        'device': self.port,
-                        'data': line
-                    }, to='/')  # Changed from broadcast=True to to='/'
+                    # You can choose to log or handle these responses differently if needed
             except serial.SerialException as e:
                 logging.error(f"Serial read error on {self.port}: {e}")
                 break
@@ -919,10 +922,20 @@ def get_port_mapping():
     mapping = {}
     with device_lock:
         if left_device:
-            mapping[left_device.port] = left_device.chirality
+            mapping[left_device.port] = 'left'  # Map to left leg
         if right_device:
-            mapping[right_device.port] = right_device.chirality
+            mapping[right_device.port] = 'right'  # Map to right leg
     return mapping
+
+# Function to get chirality mapping
+def get_chirality_mapping():
+    chirality = {}
+    with device_lock:
+        if left_device:
+            chirality['left'] = left_device.chirality
+        if right_device:
+            chirality['right'] = right_device.chirality
+    return chirality
 
 # Flask Routes
 
@@ -1003,6 +1016,28 @@ def assign_ports():
         logging.info(f"Right device: {right_device.port} with chirality {right_device.chirality}")
 
     return jsonify({"success": True, "message": "Devices initialized successfully."})
+
+@app.route('/get_encoders', methods=['GET'])
+def get_encoders():
+    with device_lock:
+        encoders = {}
+        # *** Change 2: Swap left and right assignments ***
+        if left_device:
+            encoders['right'] = {  # Assign left_device data to 'right'
+                'chirality': left_device.chirality,
+                'encoders': left_device.get_all_encoders()
+            }
+        else:
+            encoders['right'] = None
+        if right_device:
+            encoders['left'] = {  # Assign right_device data to 'left'
+                'chirality': right_device.chirality,
+                'encoders': right_device.get_all_encoders()
+            }
+        else:
+            encoders['left'] = None
+
+    return jsonify({"success": True, "encoders": encoders})
 
 @app.route('/set_joint', methods=['POST'])
 def set_joint():
@@ -1316,6 +1351,6 @@ def cleanup():
 
 atexit.register(cleanup)
 
-# Run the Flask app with SocketIO
+# Run the Flask app
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)

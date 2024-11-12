@@ -17,3 +17,5 @@
 *.fmesh filter=lfs diff=lfs merge=lfs -text
 *.fres filter=lfs diff=lfs merge=lfs -text
 *.fmsh filter=lfs diff=lfs merge=lfs -text
+*.f3d filter=lfs diff=lfs merge=lfs -text
+*.f3z filter=lfs diff=lfs merge=lfs -text

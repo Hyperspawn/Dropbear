@@ -1,0 +1,186 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 10
+    
+    stewart_slider_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_hand_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    
+    left_hand_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    waist_joint_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    right_leg_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    left_leg_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+stewart_slider_controller:
+  ros__parameters:
+    joints:
+      - head_Slider30
+      - head_Slider40
+      - head_Slider50
+      - head_Slider60
+      - head_Slider70
+      - head_Slider80
+
+    command_interfaces:
+      - position
+    
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+right_hand_controller:
+  ros__parameters:
+    joints:
+      - RH_yaw
+      - RH_pitch
+      - RH_roll
+      - RH_elbow_joint
+      # - RH_Revolute32
+      # - RH_Revolute33
+      # - RH_Revolute41
+      # - RH_Revolute42
+      # - RH_Revolute44
+      - RH_wrist_roll
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+
+left_hand_controller:
+  ros__parameters:
+    joints:
+      - LH_yaw
+      - LH_pitch
+      - LH_roll
+      - LH_elbow_joint
+      # - LH_Revolute32
+      # - LH_Revolute33
+      # - LH_Revolute41
+      # - LH_Revolute42
+      # - LH_Revolute44
+      - LH_wrist_roll
+
+    command_interfaces:
+      - position
+      # - velocity
+      # - acceleration
+      # - effort
+
+    state_interfaces:
+      - position
+      # - velocity
+      # - acceleration
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+waist_joint_controller:
+  ros__parameters:
+    joints:
+      - PG_left_leg_roll
+      - PG_left_leg_pitch
+      - PG_right_leg_roll
+      - PG_right_leg_pitch
+      - PG_Revolute31
+      - PG_Revolute32
+      - PG_Revolute33
+      - PG_Revolute34
+
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+
+right_leg_controller:
+  ros__parameters:
+    joints:
+      - RL_hip_joint
+      - RL_knee_actuator_joint
+      # - RL_Revolute28
+      # - RL_Revolute29
+      # - RL_Revolute33
+      # - RL_Revolute34
+      # - RL_Revolute37
+      # - RL_Revolute38
+      # - RL_Revolute46
+      # - RL_Revolute47
+      # - RL_Revolute48
+      # - RL_Revolute49
+      - RL_Revolute67
+      - RL_Revolute81
+      # - RL_Revolute87
+      - RL_Revolute88
+      # - RL_Revolute89
+      # - RL_Revolute111
+      # - RL_Revolute112
+
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+left_leg_controller:
+  ros__parameters:
+    joints:
+      - LL_hip_joint
+      - LL_knee_actuator_joint
+      # - LL_Revolute28
+      # - LL_Revolute29
+      # - LL_Revolute33
+      # - LL_Revolute34
+      # - LL_Revolute37
+      # - LL_Revolute38
+      # - LL_Revolute46
+      # - LL_Revolute47
+      # - LL_Revolute48
+      # - LL_Revolute49
+      - LL_Revolute67
+      - LL_Revolute81
+      # - LL_Revolute87
+      - LL_Revolute88
+      # - LL_Revolute89
+      # - LL_Revolute111
+      # - LL_Revolute112
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+
+

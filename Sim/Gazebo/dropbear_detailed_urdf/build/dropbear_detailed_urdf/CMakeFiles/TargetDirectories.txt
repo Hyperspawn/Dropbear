@@ -1,0 +1,9 @@
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/uninstall.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/dropbear_detailed_urdf_uninstall.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/test.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/edit_cache.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/rebuild_cache.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/list_install_components.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/install.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/install/local.dir
+/home/gateway/dropbear_detailed_urdf_wcontrollers/build/dropbear_detailed_urdf/CMakeFiles/install/strip.dir

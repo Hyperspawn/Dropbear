@@ -8,6 +8,7 @@ import threading
 import time
 import atexit
 import logging
+import eventlet.queue as queue
 
 # Initialize Flask
 app = Flask(__name__)
@@ -27,12 +28,10 @@ EMA_ALPHA = 0.1  # Adjust between 0 (no smoothing) and 1 (no smoothing)
 TORQUE_MIN = -400
 TORQUE_MAX = 400
 
-# Global Variables for Devices and Chirality Assignments
-left_device = None
-right_device = None
+# Global Variables for Devices and Port-to-Leg Mapping
+port_to_leg = {}  # Mapping from port to leg ('left' or 'right')
 device_lock = threading.Lock()  # To synchronize access to devices
-left_chirality = None
-right_chirality = None
+devices = {}  # Mapping from leg ('left'/'right') to USBDevice instances
 
 # HTML Template with Bootstrap for UI
 HTML_TEMPLATE = """
@@ -104,39 +103,23 @@ HTML_TEMPLATE = """
 <div class="container">
     <h1 class="mt-4">Robotic Leg Control Interface</h1>
 
-    <!-- Serial Port and Chirality Assignment Section -->
+    <!-- Serial Port Assignment Section -->
     <div class="assignment-section">
-        <h3>Assign Serial Ports and Chirality to Legs</h3>
+        <h3>Assign Serial Ports to Legs</h3>
         <form id="assignmentForm">
             <div class="mb-3">
-                <label for="left_port" class="form-label">Left Leg Serial Port:</label>
-                <select class="form-select" id="left_port" required>
-                    <option value="" disabled selected>Select Left Leg Port</option>
+                <label for="first_port" class="form-label">First Serial Port:</label>
+                <select class="form-select" id="first_port" required>
+                    <option value="" disabled selected>Select First Port</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label for="left_chirality_select" class="form-label">Left Leg Chirality:</label>
-                <select class="form-select" id="left_chirality_select" required>
-                    <option value="" disabled selected>Select Chirality</option>
-                    <option value="left">Left</option>
-                    <option value="right">Right</option>
+                <label for="second_port" class="form-label">Second Serial Port:</label>
+                <select class="form-select" id="second_port" required>
+                    <option value="" disabled selected>Select Second Port</option>
                 </select>
             </div>
-            <div class="mb-3">
-                <label for="right_port" class="form-label">Right Leg Serial Port:</label>
-                <select class="form-select" id="right_port" required>
-                    <option value="" disabled selected>Select Right Leg Port</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="right_chirality_select" class="form-label">Right Leg Chirality:</label>
-                <select class="form-select" id="right_chirality_select" required>
-                    <option value="" disabled selected>Select Chirality</option>
-                    <option value="left">Left</option>
-                    <option value="right">Right</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Assign Ports and Chirality</button>
+            <button type="submit" class="btn btn-primary">Initialize Legs</button>
         </form>
     </div>
 
@@ -300,8 +283,8 @@ HTML_TEMPLATE = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        populatePortDropdown('left_port', data.ports);
-                        populatePortDropdown('right_port', data.ports);
+                        populatePortDropdown('first_port', data.ports);
+                        populatePortDropdown('second_port', data.ports);
                     } else {
                         alert('Error fetching serial ports: ' + data.message);
                     }
@@ -315,7 +298,7 @@ HTML_TEMPLATE = """
             function populatePortDropdown(elementId, ports) {
                 const dropdown = document.getElementById(elementId);
                 // Clear existing options except the first
-                dropdown.innerHTML = `<option value="" disabled selected>Select ${elementId === 'left_port' ? 'Left' : 'Right'} Leg Port</option>`;
+                dropdown.innerHTML = `<option value="" disabled selected>Select ${elementId === 'first_port' ? 'First' : 'Second'} Port</option>`;
                 ports.forEach(port => {
                     const option = document.createElement('option');
                     option.value = port;
@@ -327,22 +310,14 @@ HTML_TEMPLATE = """
             // Fetch ports on page load
             fetchPorts();
 
-            // Handle Port and Chirality Assignment Form Submission
+            // Handle Port Assignment Form Submission
             document.getElementById('assignmentForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                const leftPort = document.getElementById('left_port').value;
-                const leftChirality = document.getElementById('left_chirality_select').value;
-                const rightPort = document.getElementById('right_port').value;
-                const rightChirality = document.getElementById('right_chirality_select').value;
+                const firstPort = document.getElementById('first_port').value;
+                const secondPort = document.getElementById('second_port').value;
 
-                if (leftPort === rightPort) {
-                    alert('Left and Right ports must be different.');
-                    return;
-                }
-
-                // Ensure chirality assignments are valid
-                if (leftChirality === rightChirality) {
-                    alert('Chirality assignments must be different for Left and Right legs.');
+                if (firstPort === secondPort) {
+                    alert('Please select two different ports.');
                     return;
                 }
 
@@ -352,22 +327,19 @@ HTML_TEMPLATE = """
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        left_port: leftPort,
-                        left_chirality: leftChirality,
-                        right_port: rightPort,
-                        right_chirality: rightChirality
+                        ports: [firstPort, secondPort]
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Ports and Chirality assigned successfully.');
+                        alert('Legs initialized successfully.');
                         document.getElementById('controlInterface').style.display = 'block';
                         document.querySelector('.assignment-section').style.display = 'none';
                         // Start polling for encoder data
                         startEncoderPolling();
                     } else {
-                        alert('Error assigning ports and chirality: ' + data.message);
+                        alert('Error initializing legs: ' + data.message);
                         // Refresh the port list in case of dynamic changes
                         fetchPorts();
                     }
@@ -392,7 +364,7 @@ HTML_TEMPLATE = """
                                 const encoderDivId = `left_${joint}_encoder`;
                                 const encoderDiv = document.getElementById(encoderDivId);
                                 if (encoderDiv) {
-                                    encoderDiv.innerText = `Encoder: ${encoderValue.toFixed(1)}`;
+                                    encoderDiv.innerText = `Encoder: ${encoderValue !== null ? encoderValue.toFixed(1) : '--'}`;
                                 }
                             }
                         }
@@ -405,7 +377,7 @@ HTML_TEMPLATE = """
                                 const encoderDivId = `right_${joint}_encoder`;
                                 const encoderDiv = document.getElementById(encoderDivId);
                                 if (encoderDiv) {
-                                    encoderDiv.innerText = `Encoder: ${encoderValue.toFixed(1)}`;
+                                    encoderDiv.innerText = `Encoder: ${encoderValue !== null ? encoderValue.toFixed(1) : '--'}`;
                                 }
                             }
                         }
@@ -482,24 +454,60 @@ HTML_TEMPLATE = """
                     const pid_d = parseFloat(document.getElementById(`${leg}_${joint}_pid_d`).value);
                     const invert = document.getElementById(`${leg}_${joint}_invert`).checked;
 
-                    // Construct the impedance command as per serial command handler
-                    const command = `impedance ${leg} ${joint} 1 ${parseInt(setpoint)} 0 ${pid_p} ${pid_i} ${pid_d} ${invert ? 1 : 0}`;
-
+                    // Send impedance command in the format: impedance <legSide> <appendage> <enable> <desiredPosition> <desiredVelocity>
+                    // For simplicity, we'll assume enable=1 and desiredVelocity=0
+                    const enable = 1;
+                    const desiredVelocity = 0;
+                    const impedanceCommand = `impedance ${leg} ${joint} ${enable} ${Math.round(setpoint)} ${desiredVelocity}`;
+                    
+                    // Send the impedance command
                     fetch('/send_command', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            command: command
+                            command: impedanceCommand
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            console.log(`Sent command: ${command}`);
+                            console.log(`Sent command: ${impedanceCommand}`);
                             const responseDiv = document.getElementById('command_response');
-                            responseDiv.textContent += `> ${command}\n`;
+                            responseDiv.textContent += `> ${impedanceCommand}\n`;
+                            responseDiv.scrollTop = responseDiv.scrollHeight;
+                        } else {
+                            alert('Error sending impedance command: ' + data.message);
+                            console.error('Error sending impedance command:', data.message);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+
+                    // Additionally, send PID parameters
+                    fetch('/set_pid', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            leg: leg,
+                            joint: joint,
+                            pid_p: pid_p,
+                            pid_i: pid_i,
+                            pid_d: pid_d,
+                            invert: invert
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const responseDiv = document.getElementById('command_response');
+                        if (data.success) {
+                            const pidCommand = `pid ${joint} ${pid_p} ${pid_i} ${pid_d} ${invert ? 1 : 0}`;
+                            console.log(`Sent PID command: ${pidCommand}`);
+                            responseDiv.textContent += `> ${pidCommand}\n`;
                             responseDiv.scrollTop = responseDiv.scrollHeight;
                         } else {
                             alert('Error sending PID command: ' + data.message);
@@ -606,17 +614,33 @@ HTML_TEMPLATE = """
                 this.disabled = true;
                 this.innerText = 'Refreshing...';
 
-                // Fetch new list of ports
-                fetchPorts();
+                // Show the assignment section again
+                document.querySelector('.assignment-section').style.display = 'block';
+                document.getElementById('controlInterface').style.display = 'none';
 
-                // Optionally, you can reset UI elements or take other actions here
+                // Clear previous responses
+                document.getElementById('command_response').textContent = '';
 
-                // Re-enable the refresh button after a short delay
-                setTimeout(() => {
-                    const refreshButton = document.getElementById('refresh_button');
-                    refreshButton.disabled = false;
-                    refreshButton.innerText = 'Refresh';
-                }, 3000);
+                // Re-initialize devices by sending stop commands
+                fetch('/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(() => {
+                    // Fetch new list of ports
+                    fetchPorts();
+                })
+                .finally(() => {
+                    // Re-enable the refresh button after a short delay
+                    setTimeout(() => {
+                        const refreshButton = document.getElementById('refresh_button');
+                        refreshButton.disabled = false;
+                        refreshButton.innerText = 'Refresh';
+                    }, 3000);
+                });
             });
 
             // Set Constraints Button
@@ -670,7 +694,7 @@ HTML_TEMPLATE = """
                     return;
                 }
 
-                // Construct the constrain command as per serial command handler
+                // Construct the constrain command as per Arduino command handler
                 const command = `constrain ${joint} ${minAngle} ${maxAngle}`;
 
                 fetch('/send_command', {
@@ -726,7 +750,11 @@ HTML_TEMPLATE = """
                 .then(data => {
                     const responseDiv = document.getElementById('command_response');
                     if (data.success) {
-                        responseDiv.textContent += `> ${command}\nLeft Response: ${data.responses.left}\nRight Response: ${data.responses.right}\n\n`;
+                        responseDiv.textContent += `> ${command}\n`;
+                        for (const [leg, resp] of Object.entries(data.responses)) {
+                            responseDiv.textContent += `${leg.capitalize()} Response: ${resp}\n`;
+                        }
+                        responseDiv.textContent += `\n`;
                         console.log(`Sent command: ${command}`);
                     } else {
                         responseDiv.textContent += `> ${command}\nError: ${data.message}\n\n`;
@@ -744,6 +772,11 @@ HTML_TEMPLATE = """
                     responseDiv.scrollTop = responseDiv.scrollHeight;
                 });
             });
+
+            // Capitalize function added to String prototype for command responses
+            String.prototype.capitalize = function() {
+                return this.charAt(0).toUpperCase() + this.slice(1);
+            };
         });
     </script>
 </div>
@@ -753,12 +786,10 @@ HTML_TEMPLATE = """
 
 # USBDevice Class
 class USBDevice:
-    def __init__(self, port, chirality, baudrate=115200, timeout=1):
+    def __init__(self, port, baudrate=115200, timeout=1):
         self.port = port
-        self.chirality = chirality  # 'left' or 'right'
         self.baudrate = baudrate
         self.timeout = timeout
-        self.lock = threading.Lock()
         self.joint_encoder_values = {
             "outer_calf": None,
             "inner_calf": None,
@@ -784,73 +815,120 @@ class USBDevice:
         self.running = True
         self.serial = None
 
+        # Command and response queues
+        self.command_queue = queue.Queue()
+        self.response_queue = queue.Queue()
+
         try:
             self.serial = serial.Serial(port, baudrate, timeout=timeout)
             time.sleep(2)  # Wait for the serial connection to initialize
-            logging.info(f"Connected to {port} with chirality {chirality}")
+            logging.info(f"Connected to {port}")
         except serial.SerialException as e:
             logging.error(f"Error connecting to {port}: {e}")
             self.serial = None
 
         if self.serial and self.serial.is_open:
-            # Start a thread to read serial data
-            self.read_thread = threading.Thread(target=self.read_serial_data, daemon=True)
-            self.read_thread.start()
+            # Start a green thread to handle serial communication
+            eventlet.spawn_n(self.read_serial_data)
 
     def send_command(self, command):
-        with self.lock:
-            if self.serial and self.serial.is_open:
-                try:
-                    self.serial.write((command + '\n').encode())
-                    self.serial.flush()
-                    logging.debug(f"Sent to {self.port}: {command}")
-                    return True
-                except serial.SerialException as e:
-                    logging.error(f"Serial communication error on {self.port}: {e}")
-                    return False
+        if self.serial and self.serial.is_open:
+            self.command_queue.put(command)
+            return True
+        else:
+            logging.warning(f"Serial port {self.port} is not open.")
+            return False
+
+    def send_command_and_wait_response(self, command, expected_prefix=None, timeout=5):
+        if not self.serial or not self.serial.is_open:
+            logging.error(f"Serial port {self.port} is not open.")
+            return None
+
+        # Create an Event to wait for the response
+        response_event = eventlet.event.Event()
+        self.response_queue.put((expected_prefix, response_event))
+
+        # Send the command
+        self.command_queue.put(command)
+
+        try:
+            response = response_event.wait(timeout=timeout)
+            return response
+        except eventlet.timeout.Timeout:
+            logging.error(f"Timeout waiting for response to command '{command}' on {self.port}.")
+            return None
+
+    def get_chirality(self):
+        response = self.send_command_and_wait_response("chirality", expected_prefix="Current chirality:")
+        if response:
+            chirality = response.split(":")[1].strip().lower()
+            if chirality in ['left', 'right', 'center']:
+                return chirality
             else:
-                logging.warning(f"Serial port {self.port} is not open.")
-                return False
+                logging.error(f"Invalid chirality response from {self.port}: {response}")
+                return None
+        else:
+            return None
 
     def read_serial_data(self):
         while self.running and self.serial and self.serial.is_open:
             try:
-                line = self.serial.readline().decode().strip()
-                if not line:
-                    continue
-                values = line.split(',')
+                # Check if there is a command to send
+                try:
+                    command = self.command_queue.get_nowait()
+                    # Send the command followed by newline
+                    self.serial.write((command + '\n').encode())
+                    self.serial.flush()
+                    logging.debug(f"Sent to {self.port}: {command}")
+                except queue.Empty:
+                    pass
 
-                # Define expected joints (5 joints)
-                # *** Change 1: Correct the order of 'knee' and 'hip_pitch' ***
-                expected_joints = ["outer_calf", "inner_calf", "hip_pitch", "knee", "hip_roll"]  # Swapped 'knee' and 'hip_pitch'
-
-                if len(values) == len(expected_joints):
-                    try:
-                        encoder_values = [float(value) for value in values]
-                    except ValueError as e:
-                        logging.error(f"Error converting values to float from {self.port}: {line} - {e}")
+                # Read incoming data
+                if self.serial.in_waiting:
+                    line = self.serial.readline().decode().strip()
+                    if not line:
                         continue
+                    logging.debug(f"Received from {self.port}: {line}")
 
-                    with self.encoder_lock:
-                        for joint, value in zip(expected_joints, encoder_values):
-                            if self.joint_ema[joint] is None:
-                                self.joint_ema[joint] = value
-                            else:
-                                self.joint_ema[joint] = EMA_ALPHA * value + (1 - EMA_ALPHA) * self.joint_ema[joint]
-                            self.joint_encoder_values[joint] = self.joint_ema[joint]
+                    # Check if it's a chirality response
+                    if line.lower().startswith("current chirality:"):
+                        try:
+                            expected_prefix, event = self.response_queue.get_nowait()
+                            response = line
+                            event.send(response)
+                            logging.debug(f"Chirality response from {self.port}: {response}")
+                        except queue.Empty:
+                            logging.warning(f"Received unexpected chirality response without waiting event: {line}")
+                    elif ',' in line:
+                        # Assume it's encoder data
+                        values = line.split(',')
+                        expected_joints = ["outer_calf", "inner_calf", "hip_pitch", "knee", "hip_roll"]  # Correct order
+                        if len(values) == len(expected_joints):
+                            try:
+                                encoder_values = [float(value) for value in values]
+                            except ValueError as e:
+                                logging.error(f"Error converting values to float from {self.port}: {line} - {e}")
+                                continue
 
-                    # Encoder data is now updated; no need to emit via Socket.IO
-                    logging.debug(f"Updated encoder data for {self.port}: {self.get_all_encoders()}")
-                else:
-                    # Handle general serial responses if the data doesn't match encoder format
-                    logging.info(f"Received from {self.port}: {line}")
-                    # You can choose to log or handle these responses differently if needed
-            except serial.SerialException as e:
-                logging.error(f"Serial read error on {self.port}: {e}")
+                            with self.encoder_lock:
+                                for joint, value in zip(expected_joints, encoder_values):
+                                    if self.joint_ema[joint] is None:
+                                        self.joint_ema[joint] = value
+                                    else:
+                                        self.joint_ema[joint] = EMA_ALPHA * value + (1 - EMA_ALPHA) * self.joint_ema[joint]
+                                    self.joint_encoder_values[joint] = self.joint_ema[joint]
+                            logging.debug(f"Updated encoder data for {self.port}: {self.get_all_encoders()}")
+                        else:
+                            logging.info(f"Unexpected encoder data format from {self.port}: {line}")
+                    else:
+                        # Handle other unsolicited messages
+                        logging.info(f"Unrecognized message from {self.port}: {line}")
+
+                # Yield control to allow other green threads to run
+                eventlet.sleep(0.1)
+            except Exception as e:
+                logging.error(f"Error reading from {self.port}: {e}")
                 break
-            except UnicodeDecodeError:
-                logging.error(f"Unicode decode error on {self.port}. Ignoring line.")
-                continue
 
     def get_encoder_values(self, joint):
         with self.encoder_lock:
@@ -880,32 +958,23 @@ class USBDevice:
             logging.warning(f"Joint {joint} not recognized.")
             return False
 
-    def set_pid(self, joint, setpoint, pid_p, pid_i, pid_d, invert):
+    def set_impedance(self, leg, appendage, enable, desired_position, desired_velocity):
+        # Ensure the command aligns with Arduino's expected format
+        command = f"impedance {leg} {appendage} {enable} {int(desired_position)} {int(desired_velocity)}"
+        success = self.send_command(command)
+        return success
+
+    def set_pid(self, leg, joint, pid_p, pid_i, pid_d, invert):
         if joint in self.joint_constraints:
-            # Invert logic: multiply torque values by -1 if invert is True
+            # Send PID parameters as per Arduino's expected command format
             invert_str = "1" if invert else "0"
-            # Assuming the Arduino expects the impedance command with PID parameters and inversion
-            command = f"impedance {self.chirality} {joint} 1 {int(setpoint)} 0 {pid_p} {pid_i} {pid_d} {invert_str}"
+            command = f"pid {joint} {pid_p} {pid_i} {pid_d} {invert_str}"
             success = self.send_command(command)
             if success:
-                logging.info(f"Set PID for {joint}: setpoint={setpoint}, P={pid_p}, I={pid_i}, D={pid_d}, invert={invert}")
+                logging.info(f"Set PID for {joint}: P={pid_p}, I={pid_i}, D={pid_d}, invert={invert}")
                 return True
             else:
                 logging.error(f"Failed to set PID for {joint}")
-                return False
-        else:
-            logging.warning(f"Joint {joint} not recognized.")
-            return False
-
-    def calibrate_direction(self, joint):
-        if joint in self.joint_constraints:
-            command = f"calibrateDirection {joint}"
-            success = self.send_command(command)
-            if success:
-                logging.info(f"Calibrated direction for {joint}")
-                return True
-            else:
-                logging.error(f"Failed to calibrate direction for {joint}")
                 return False
         else:
             logging.warning(f"Joint {joint} not recognized.")
@@ -916,26 +985,6 @@ class USBDevice:
         if self.serial and self.serial.is_open:
             self.serial.close()
             logging.info(f"Closed connection to {self.port}")
-
-# Function to get current port mapping
-def get_port_mapping():
-    mapping = {}
-    with device_lock:
-        if left_device:
-            mapping[left_device.port] = 'left'  # Map to left leg
-        if right_device:
-            mapping[right_device.port] = 'right'  # Map to right leg
-    return mapping
-
-# Function to get chirality mapping
-def get_chirality_mapping():
-    chirality = {}
-    with device_lock:
-        if left_device:
-            chirality['left'] = left_device.chirality
-        if right_device:
-            chirality['right'] = right_device.chirality
-    return chirality
 
 # Flask Routes
 
@@ -955,93 +1004,144 @@ def get_ports():
 
 @app.route('/assign_ports', methods=['POST'])
 def assign_ports():
-    global left_device, right_device, left_chirality, right_chirality
+    global devices, port_to_leg
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
 
-    left_port = data.get('left_port')
-    left_chirality = data.get('left_chirality')
-    right_port = data.get('right_port')
-    right_chirality = data.get('right_chirality')
+    ports = data.get('ports')
+    if not ports or not isinstance(ports, list) or len(ports) != 2:
+        return jsonify({"success": False, "message": "Please provide exactly two ports."}), 400
 
-    if not left_port or not right_port or not left_chirality or not right_chirality:
-        return jsonify({"success": False, "message": "All fields must be provided."}), 400
+    first_port, second_port = ports
 
-    if left_port == right_port:
-        return jsonify({"success": False, "message": "Left and Right ports must be different."}), 400
-
-    if left_chirality == right_chirality:
-        return jsonify({"success": False, "message": "Chirality assignments must be different for Left and Right legs."}), 400
+    if first_port == second_port:
+        return jsonify({"success": False, "message": "Both ports must be different."}), 400
 
     # Check if ports are available
     available_ports = list_serial_ports()
-    if left_port not in available_ports:
-        return jsonify({"success": False, "message": f"Left port {left_port} is not available."}), 400
-    if right_port not in available_ports:
-        return jsonify({"success": False, "message": f"Right port {right_port} is not available."}), 400
+    if first_port not in available_ports:
+        return jsonify({"success": False, "message": f"First port {first_port} is not available."}), 400
+    if second_port not in available_ports:
+        return jsonify({"success": False, "message": f"Second port {second_port} is not available."}), 400
 
     # Initialize devices
     with device_lock:
         # Close existing devices if any
-        if left_device:
-            left_device.close()
-            left_device = None
-        if right_device:
-            right_device.close()
-            right_device = None
+        for leg, device in list(devices.items()):
+            if device.port in ports:
+                device.close()
+                del devices[leg]
+                del port_to_leg[device.port]
 
         # Initialize new devices
-        left_device = USBDevice(left_port, left_chirality)
-        right_device = USBDevice(right_port, right_chirality)
+        device1 = USBDevice(first_port)
+        device2 = USBDevice(second_port)
 
-        # Check if both devices are successfully connected
-        if not left_device.serial or not left_device.serial.is_open:
-            logging.error(f"Failed to connect to left device on {left_port}.")
-            left_device = None
-        if not right_device.serial or not right_device.serial.is_open:
-            logging.error(f"Failed to connect to right device on {right_port}.")
-            right_device = None
+        if not device1.serial or not device1.serial.is_open:
+            logging.error(f"Failed to connect to device on {first_port}.")
+            device1 = None
+        if not device2.serial or not device2.serial.is_open:
+            logging.error(f"Failed to connect to device on {second_port}.")
+            device2 = None
 
-        if not left_device or not right_device:
-            logging.error("Error: Could not initialize both left and right devices.")
+        if not device1 or not device2:
+            logging.error("Error: Could not initialize both devices.")
             # Close any opened serial connections
-            if left_device:
-                left_device.close()
-            if right_device:
-                right_device.close()
+            if device1:
+                device1.close()
+            if device2:
+                device2.close()
             return jsonify({"success": False, "message": "Failed to initialize both devices."}), 500
 
-        logging.info(f"Left device: {left_device.port} with chirality {left_device.chirality}")
-        logging.info(f"Right device: {right_device.port} with chirality {right_device.chirality}")
+        # Send stop commands twice with 2-second intervals
+        device1.send_command("stop")
+        device2.send_command("stop")
+        time.sleep(2)
+        device1.send_command("stop")
+        device2.send_command("stop")
+        time.sleep(2)
 
-    return jsonify({"success": True, "message": "Devices initialized successfully."})
+        # Get chirality for each device
+        chirality1 = device1.get_chirality()
+        chirality2 = device2.get_chirality()
+
+        logging.debug(f"Chirality responses: Device1: {chirality1}, Device2: {chirality2}")
+
+        if chirality1 is None or chirality2 is None:
+            logging.error("Failed to retrieve chirality from one or both devices.")
+            device1.close()
+            device2.close()
+            return jsonify({"success": False, "message": "Failed to retrieve chirality from devices."}), 500
+
+        # Assign legs based on chirality
+        if chirality1 == chirality2:
+            logging.error("Both devices reported the same chirality.")
+            device1.close()
+            device2.close()
+            return jsonify({"success": False, "message": "Both devices reported the same chirality. Please ensure one is left and the other is right."}), 500
+
+        if chirality1 == 'left':
+            devices['left'] = device1
+            devices['right'] = device2
+            port_to_leg[first_port] = 'left'
+            port_to_leg[second_port] = 'right'
+        elif chirality1 == 'right':
+            devices['right'] = device1
+            devices['left'] = device2
+            port_to_leg[first_port] = 'right'
+            port_to_leg[second_port] = 'left'
+        elif chirality1 == 'center':
+            # If a device is center, assign based on chirality2
+            if chirality2 == 'left':
+                devices['left'] = device2
+                devices['right'] = device1
+                port_to_leg[second_port] = 'left'
+                port_to_leg[first_port] = 'right'
+            elif chirality2 == 'right':
+                devices['right'] = device2
+                devices['left'] = device1
+                port_to_leg[second_port] = 'right'
+                port_to_leg[first_port] = 'left'
+            else:
+                logging.error(f"Invalid chirality response from devices: {chirality1}, {chirality2}")
+                device1.close()
+                device2.close()
+                return jsonify({"success": False, "message": "Invalid chirality responses from devices."}), 500
+        else:
+            logging.error(f"Invalid chirality response from {first_port}: {chirality1}")
+            device1.close()
+            device2.close()
+            return jsonify({"success": False, "message": f"Invalid chirality response from {first_port}: {chirality1}"}), 500
+
+        logging.info(f"Assigned {first_port} as {chirality1} leg and {second_port} as {chirality2} leg.")
+
+    return jsonify({"success": True, "message": "Devices have been initialized and assigned successfully."})
 
 @app.route('/get_encoders', methods=['GET'])
 def get_encoders():
     with device_lock:
         encoders = {}
-        # *** Change 2: Swap left and right assignments ***
-        if left_device:
-            encoders['right'] = {  # Assign left_device data to 'right'
-                'chirality': left_device.chirality,
-                'encoders': left_device.get_all_encoders()
-            }
-        else:
-            encoders['right'] = None
-        if right_device:
-            encoders['left'] = {  # Assign right_device data to 'left'
-                'chirality': right_device.chirality,
-                'encoders': right_device.get_all_encoders()
+        if 'left' in devices:
+            encoders['left'] = {
+                'chirality': 'left',
+                'encoders': devices['left'].get_all_encoders()
             }
         else:
             encoders['left'] = None
+        if 'right' in devices:
+            encoders['right'] = {
+                'chirality': 'right',
+                'encoders': devices['right'].get_all_encoders()
+            }
+        else:
+            encoders['right'] = None
 
     return jsonify({"success": True, "encoders": encoders})
 
 @app.route('/set_joint', methods=['POST'])
 def set_joint():
-    global left_device, right_device
+    global devices, port_to_leg
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
@@ -1060,7 +1160,7 @@ def set_joint():
         return jsonify({"success": False, "message": f"Invalid value for joint. Must be between {TORQUE_MIN} and {TORQUE_MAX}."}), 400
 
     # Determine which device to send the command to
-    device = left_device if leg == 'left' else right_device
+    device = devices.get(leg, None)
 
     if not device:
         return jsonify({"success": False, "message": f"{leg.capitalize()} device is not initialized."}), 400
@@ -1078,7 +1178,7 @@ def set_joint():
 
 @app.route('/play', methods=['POST'])
 def play():
-    global left_device, right_device
+    global devices
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
@@ -1087,7 +1187,7 @@ def play():
     if leg not in ['left', 'right']:
         return jsonify({"success": False, "message": "Invalid leg specified."}), 400
 
-    device = left_device if leg == 'left' else right_device
+    device = devices.get(leg, None)
 
     if not device:
         return jsonify({"success": False, "message": f"{leg.capitalize()} device is not initialized."}), 400
@@ -1102,10 +1202,10 @@ def play():
 
 @app.route('/stop', methods=['POST'])
 def stop():
-    global left_device, right_device
+    global devices
     responses = {}
     with device_lock:
-        for leg, device in [('left', left_device), ('right', right_device)]:
+        for leg, device in devices.items():
             if device:
                 success = device.send_command("stop")
                 if success:
@@ -1121,14 +1221,13 @@ def stop():
 
 @app.route('/set_pid', methods=['POST'])
 def set_pid():
-    global left_device, right_device
+    global devices
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
 
     leg = data.get('leg')
     joint = data.get('joint')
-    setpoint = data.get('setpoint')
     pid_p = data.get('pid_p')
     pid_i = data.get('pid_i')
     pid_d = data.get('pid_d')
@@ -1140,25 +1239,21 @@ def set_pid():
     if joint not in LEFT_JOINTS and joint not in RIGHT_JOINTS:
         return jsonify({"success": False, "message": "Invalid joint specified."}), 400
 
-    if not isinstance(setpoint, (int, float)):
-        return jsonify({"success": False, "message": "Setpoint must be a number."}), 400
-
-    if not all(isinstance(x, (int, float)) for x in [pid_p, pid_i, pid_d]):
+    if not isinstance(pid_p, (int, float)) or not isinstance(pid_i, (int, float)) or not isinstance(pid_d, (int, float)):
         return jsonify({"success": False, "message": "PID parameters must be numbers."}), 400
 
     if not isinstance(invert, bool):
         return jsonify({"success": False, "message": "Invert must be a boolean."}), 400
 
     # Determine which device to send the command to
-    device = left_device if leg == 'left' else right_device
+    device = devices.get(leg, None)
 
     if not device:
         return jsonify({"success": False, "message": f"{leg.capitalize()} device is not initialized."}), 400
 
     # Construct the PID control command
-    # Example: impedance left knee 1 180 0 1.0 0.0 0.0 0
-    invert_str = "1" if invert else "0"
-    command = f"impedance {leg} {joint} 1 {int(setpoint)} 0 {pid_p} {pid_i} {pid_d} {invert_str}"
+    # Assuming a hypothetical "pid" command: "pid <joint> <P> <I> <D> <invert>"
+    command = f"pid {joint} {pid_p} {pid_i} {pid_d} {int(invert)}"
     success = device.send_command(command)
 
     if success:
@@ -1170,7 +1265,7 @@ def set_pid():
 
 @app.route('/send_command', methods=['POST'])
 def send_command():
-    global left_device, right_device
+    global devices
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No command provided."}), 400
@@ -1181,7 +1276,7 @@ def send_command():
 
     responses = {}
     with device_lock:
-        for leg, device in [('left', left_device), ('right', right_device)]:
+        for leg, device in devices.items():
             if device:
                 success = device.send_command(command)
                 if success:
@@ -1198,7 +1293,7 @@ def send_command():
 
 @app.route('/set_constraints', methods=['POST'])
 def set_constraints():
-    global left_device, right_device
+    global devices
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
@@ -1221,7 +1316,7 @@ def set_constraints():
         return jsonify({"success": False, "message": f"Angles must be between {TORQUE_MIN} and {TORQUE_MAX}."}), 400
 
     # Determine which device to send the command to
-    device = left_device if leg == 'left' else right_device
+    device = devices.get(leg, None)
 
     if not device:
         return jsonify({"success": False, "message": f"{leg.capitalize()} device is not initialized."}), 400
@@ -1242,7 +1337,7 @@ def set_constraints():
 
 @app.route('/get_constraints', methods=['POST'])
 def get_constraints():
-    global left_device, right_device
+    global devices
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided."}), 400
@@ -1257,7 +1352,7 @@ def get_constraints():
         return jsonify({"success": False, "message": "Invalid joint specified."}), 400
 
     # Determine which device
-    device = left_device if leg == 'left' else right_device
+    device = devices.get(leg, None)
 
     if not device:
         return jsonify({"success": False, "message": f"{leg.capitalize()} device is not initialized."}), 400
@@ -1265,73 +1360,6 @@ def get_constraints():
     constraints = device.get_constraints(joint)
 
     return jsonify({"success": True, "constraints": constraints})
-
-@app.route('/refresh', methods=['POST'])
-def refresh():
-    """
-    Refreshes the device assignments by stopping all devices and re-initializing them.
-    """
-    global left_device, right_device, left_chirality, right_chirality
-    data = request.get_json()
-    if not data:
-        return jsonify({"success": False, "message": "No data provided."}), 400
-
-    left_port = data.get('left_port')
-    left_chirality = data.get('left_chirality')
-    right_port = data.get('right_port')
-    right_chirality = data.get('right_chirality')
-
-    if not left_port or not right_port or not left_chirality or not right_chirality:
-        return jsonify({"success": False, "message": "All fields must be provided."}), 400
-
-    if left_port == right_port:
-        return jsonify({"success": False, "message": "Left and Right ports must be different."}), 400
-
-    if left_chirality == right_chirality:
-        return jsonify({"success": False, "message": "Chirality assignments must be different for Left and Right legs."}), 400
-
-    # Check if ports are available
-    available_ports = list_serial_ports()
-    if left_port not in available_ports:
-        return jsonify({"success": False, "message": f"Left port {left_port} is not available."}), 400
-    if right_port not in available_ports:
-        return jsonify({"success": False, "message": f"Right port {right_port} is not available."}), 400
-
-    # Initialize devices
-    with device_lock:
-        # Close existing devices if any
-        if left_device:
-            left_device.close()
-            left_device = None
-        if right_device:
-            right_device.close()
-            right_device = None
-
-        # Initialize new devices
-        left_device = USBDevice(left_port, left_chirality)
-        right_device = USBDevice(right_port, right_chirality)
-
-        # Check if both devices are successfully connected
-        if not left_device.serial or not left_device.serial.is_open:
-            logging.error(f"Failed to connect to left device on {left_port}.")
-            left_device = None
-        if not right_device.serial or not right_device.serial.is_open:
-            logging.error(f"Failed to connect to right device on {right_port}.")
-            right_device = None
-
-        if not left_device or not right_device:
-            logging.error("Error: Could not initialize both left and right devices.")
-            # Close any opened serial connections
-            if left_device:
-                left_device.close()
-            if right_device:
-                right_device.close()
-            return jsonify({"success": False, "message": "Failed to initialize both devices."}), 500
-
-        logging.info(f"Left device: {left_device.port} with chirality {left_device.chirality}")
-        logging.info(f"Right device: {right_device.port} with chirality {right_device.chirality}")
-
-    return jsonify({"success": True, "message": "Devices have been refreshed and reassigned successfully."})
 
 # Function to list available serial ports
 def list_serial_ports():
@@ -1342,12 +1370,12 @@ def list_serial_ports():
 
 # Gracefully close serial connections on exit
 def cleanup():
-    global left_device, right_device
+    global devices, port_to_leg
     with device_lock:
-        if left_device:
-            left_device.close()
-        if right_device:
-            right_device.close()
+        for leg, device in devices.items():
+            device.close()
+    devices.clear()
+    port_to_leg.clear()
 
 atexit.register(cleanup)
 

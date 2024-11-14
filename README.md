@@ -2,6 +2,9 @@
 
 [![Group 2](https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/bd13c6f5-7a3f-4262-9891-4259f17abbe0)](https://t.me/fractionalrobots)
 
+![2024-11-1211-44-42-ezgif com-optimize](https://github.com/user-attachments/assets/3b87bff4-a530-43d1-a155-d4568508a4a4)
+
+
 Welcome to the official repository of the Dropbear Humanoid Robot! Developed by [Hyperspawn](https://www.hyperspawn.co/) & [Pointblank](https://www.pointblankllc.com/). Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
 
 ## Overview

@@ -1,0 +1,4 @@
+source;share/dropbear/local_setup.bash
+source;share/dropbear/local_setup.dsv
+source;share/dropbear/local_setup.sh
+source;share/dropbear/local_setup.zsh

@@ -1,0 +1,1960 @@
+<?xml version="1.0" ?>
+<robot name="dropbear hand"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- 
+ Regular Expressions
+    Find - xyz="(.+)\s(.+)\s(.+)" r
+    Replace - xyz="$1 $2 ${sign*$3}" r
+   -->
+
+  <xacro:macro name="arm_macro" params="prefix folder parent sign *origin">
+
+    <link name="${prefix}_base_link">
+      <inertial>
+        <origin xyz="-6.496817022290221e-15 0.0 ${sign*0.005}" rpy="0 0 0"/>
+        <mass value="0.49623462441732974"/>
+        <inertia ixx="0.000272" iyy="0.000272" izz="0.000536" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 ${sign*0}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/base_link.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${sign*0}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/base_link.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-roll-al-mot_MIR1__1__1">
+      <inertial>
+        <origin xyz="-0.01659232442569455 1.1139623568467982e-07 ${sign*0.013349013943229465}" rpy="0 0 0"/>
+        <mass value="0.016359268258045713"/>
+        <inertia ixx="3e-06" iyy="1e-06" izz="2e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-roll-al-mot_MIR1__2__1">
+      <inertial>
+        <origin xyz="0.016592324425693906 -1.1139623519396125e-07 ${sign*0.013349013943229461}" rpy="0 0 0"/>
+        <mass value="0.016359268258045713"/>
+        <inertia ixx="3e-06" iyy="1e-06" izz="2e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_yaw-cap_1">
+      <inertial>
+        <origin xyz="2.2162578884901502e-14 2.2140731002778117e-16 ${sign*-0.006586829858195156}" rpy="0 0 0"/>
+        <mass value="0.017312584943862036"/>
+        <inertia ixx="5e-06" iyy="3e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.0 ${sign*-0.11}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-cap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.0 ${sign*-0.11}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-cap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1_1">
+      <inertial>
+        <origin xyz="0.00723403458529202 -3.5971225997855074e-16 ${sign*0.0499999999999884}" rpy="0 0 0"/>
+        <mass value="0.043773488134739254"/>
+        <inertia ixx="1.7e-05" iyy="8e-06" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-waist-adapter-motor-exal_MIR1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-waist-adapter-motor-exal_MIR1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_front-bearing-adapter-shoulder_1">
+      <inertial>
+        <origin xyz="0.007601634210069975 -0.015587999999998516 ${sign*-0.00900000000001975}" rpy="0 0 0"/>
+        <mass value="0.027709236054798532"/>
+        <inertia ixx="9e-06" iyy="4e-06" izz="6e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.02 -0.015588 ${sign*-0.069}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/front-bearing-adapter-shoulder_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.02 -0.015588 ${sign*-0.069}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/front-bearing-adapter-shoulder_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-ex-al-interface__2__1">
+      <inertial>
+        <origin xyz="-0.008272088271638172 -0.015588000000004406 ${sign*-0.008999999999990647}" rpy="0 0 0"/>
+        <mass value="0.03263560284613005"/>
+        <inertia ixx="1e-05" iyy="4e-06" izz="7e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.01 -0.015588 ${sign*-0.069}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="0.01 -0.015588 ${sign*-0.069}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1">
+      <inertial>
+        <origin xyz="-0.02188091903208703 -3.219454781594442e-06 ${sign*0.0004617607023024439}" rpy="0 0 0"/>
+        <mass value="0.7802158461808613"/>
+        <inertia ixx="0.001111" iyy="0.000765" izz="0.000753" ixy="0.0" iyz="0.0" ixz="9e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.027 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque13110895"/>
+      </visual>
+      <collision>
+        <origin xyz="0.027 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-motor-bicep-rotor-bracket_1">
+      <inertial>
+        <origin xyz="-0.005500000000001365 -0.010394566089843876 ${sign*0.006894585665480776}" rpy="0 0 0"/>
+        <mass value="0.0283879289585321"/>
+        <inertia ixx="1.2e-05" iyy="8e-06" izz="5e-06" ixy="0.0" iyz="2e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0645 0.042 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-motor-bicep-rotor-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0645 0.042 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-motor-bicep-rotor-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-rear-motor-adapter_1">
+      <inertial>
+        <origin xyz="0.015923392949308564 -0.003183487341080926 ${sign*0.0155000000000022}" rpy="0 0 0"/>
+        <mass value="0.03295670352506347"/>
+        <inertia ixx="5e-06" iyy="9e-06" izz="7e-06" ixy="-1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0645 0.06 ${sign*-0.0585}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-rear-motor-adapter_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0645 0.06 ${sign*-0.0585}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-rear-motor-adapter_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-shoulder-bracket-exal__1__1">
+      <inertial>
+        <origin xyz="-0.00799999999999938 -0.009999999999990211 ${sign*0.005535150009386841}" rpy="0 0 0"/>
+        <mass value="0.013923035092591882"/>
+        <inertia ixx="2e-06" iyy="1e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0265 0.06 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0265 0.06 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-shoulder-bracket-exal__2__1">
+      <inertial>
+        <origin xyz="-0.00799999999999845 -0.009999999999987075 ${sign*-0.005464849990612884}" rpy="0 0 0"/>
+        <mass value="0.013923035092591882"/>
+        <inertia ixx="2e-06" iyy="1e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0265 0.06 ${sign*-0.064}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0265 0.06 ${sign*-0.064}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_2020_100mm__8___1__1">
+      <inertial>
+        <origin xyz="0.03999999999997527 0.009999999999997691 ${sign*-0.009999999999981204}" rpy="0 0 0"/>
+        <mass value="0.05289771810031747"/>
+        <inertia ixx="4e-06" iyy="4.6e-05" izz="4.6e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.04 0.09 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__8___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0.04 0.09 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__8___1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_yaw-waist-adapter-motor-exal_MIR1__5__1">
+      <inertial>
+        <origin xyz="-0.04999999999998893 0.007234034585292329 ${sign*2.0539125955565396e-15}" rpy="0 0 0"/>
+        <mass value="0.043773488134739254"/>
+        <inertia ixx="1.5e-05" iyy="1.7e-05" izz="8e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.05 0.08 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-waist-adapter-motor-exal_MIR1__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.05 0.08 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/yaw-waist-adapter-motor-exal_MIR1__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-shoulder-bracket-exal_1">
+      <inertial>
+        <origin xyz="-0.01550000000000154 0.020000000000012313 ${sign*-0.007214849990613059}" rpy="0 0 0"/>
+        <mass value="0.013923035092591882"/>
+        <inertia ixx="2e-06" iyy="1e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.05 0.09 ${sign*-0.06575}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.05 0.09 ${sign*-0.06575}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-front_1">
+      <inertial>
+        <origin xyz="-0.007736652232246094 0.010361414448293069 ${sign*0.010000000000001535}" rpy="0 0 0"/>
+        <mass value="0.03345047019066647"/>
+        <inertia ixx="7e-06" iyy="6e-06" izz="6e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.0425 0.06 ${sign*-0.064}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-front_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.0425 0.06 ${sign*-0.064}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-front_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-shoulder-bracket-exal__3__1">
+      <inertial>
+        <origin xyz="-0.008000000000001208 -0.00999999999998867 ${sign*0.005535150009387327}" rpy="0 0 0"/>
+        <mass value="0.013923035092591882"/>
+        <inertia ixx="2e-06" iyy="1e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.0425 0.06 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.0425 0.06 ${sign*-0.084}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-shoulder-bracket-exal__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-cap_1">
+      <inertial>
+        <origin xyz="0.004917614424534554 0.03505255276075949 ${sign*-0.025722563916740007}" rpy="0 0 0"/>
+        <mass value="0.05408638346963585"/>
+        <inertia ixx="4.4e-05" iyy="1.8e-05" izz="2.6e-05" ixy="0.0" iyz="5e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.05 0.042 ${sign*-0.089}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-cap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.05 0.042 ${sign*-0.089}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-cap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-front-bearing-adapter_1">
+      <inertial>
+        <origin xyz="-0.007720854302206356 1.4675767796906362e-15 ${sign*-2.1421753260142395e-13}" rpy="0 0 0"/>
+        <mass value="0.06058583892971603"/>
+        <inertia ixx="4.1e-05" iyy="2.2e-05" izz="2.2e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.05 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-front-bearing-adapter_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.05 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-front-bearing-adapter_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_skateboard-bearing__7__1">
+      <inertial>
+        <origin xyz="-0.003500427124746859 9.925393840148899e-16 ${sign*6.552397513459596e-14}" rpy="0 0 0"/>
+        <mass value="0.002701612602454526"/>
+        <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.046172 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/skateboard-bearing__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.046172 0.0 ${sign*-0.06}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/skateboard-bearing__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-ex-al-interface__1__1">
+      <inertial>
+        <origin xyz="0.009000000000008309 -0.008272088271638098 ${sign*-0.01558800000000271}" rpy="0 0 0"/>
+        <mass value="0.03263560284613005"/>
+        <inertia ixx="7e-06" iyy="1e-05" izz="4e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.009 0.09 ${sign*-0.089588}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="0.009 0.09 ${sign*-0.089588}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1">
+      <inertial>
+        <origin xyz="-3.2194544748872734e-06 -0.02188091903285745 ${sign*-0.0004617607034973631}" rpy="0 0 0"/>
+        <mass value="0.7802158462059968"/>
+        <inertia ixx="0.000765" iyy="0.001111" izz="0.000753" ixy="0.0" iyz="-9e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.107 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque13110895"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.107 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-rotational-cuff-second-motor-bracket_1">
+      <inertial>
+        <origin xyz="-0.033978987607059224 -0.016080679496792427 ${sign*0.011692978353793536}" rpy="0 0 0"/>
+        <mass value="0.037531416691209164"/>
+        <inertia ixx="6e-06" iyy="4.4e-05" izz="4.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.033979 0.1445 ${sign*-0.049313}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-rotational-cuff-second-motor-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.033979 0.1445 ${sign*-0.049313}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-rotational-cuff-second-motor-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_arm-cuff-bicep-bracket_1">
+      <inertial>
+        <origin xyz="-0.033979393966011476 -0.017084104800040023 ${sign*0.010976523865579207}" rpy="0 0 0"/>
+        <mass value="0.04634036346407298"/>
+        <inertia ixx="7e-06" iyy="2.2e-05" izz="2.4e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.033979 0.1445 ${sign*-0.098687}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/arm-cuff-bicep-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.033979 0.1445 ${sign*-0.098687}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/arm-cuff-bicep-bracket_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1">
+      <inertial>
+        <origin xyz="-0.00046176070351495026 -0.041996780545524526 ${sign*-0.015619080967140236}" rpy="0 0 0"/>
+        <mass value="0.7802158462059968"/>
+        <inertia ixx="0.000753" iyy="0.000765" izz="0.001111" ixy="0.0" iyz="0.0" ixz="9e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.1665 ${sign*-0.102}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque13110895"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.1665 ${sign*-0.102}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-hangar_1">
+      <inertial>
+        <origin xyz="0.005265304298907771 -0.011277107816589804 ${sign*0.005345403003916699}" rpy="0 0 0"/>
+        <mass value="0.023870437534756973"/>
+        <inertia ixx="5e-06" iyy="7e-06" izz="1.2e-05" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.2505 ${sign*-0.102}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-hangar_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.2505 ${sign*-0.102}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-hangar_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-hangar1_1">
+      <inertial>
+        <origin xyz="0.005380513267402049 -0.011463196997355096 ${sign*-0.005352531151967405}" rpy="0 0 0"/>
+        <mass value="0.02416670089885775"/>
+        <inertia ixx="5e-06" iyy="8e-06" izz="1.2e-05" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-8.9e-05 0.2505 ${sign*-0.067}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-hangar1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-8.9e-05 0.2505 ${sign*-0.067}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-hangar1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_power-mount-arm_1">
+      <inertial>
+        <origin xyz="0.0005659694928435155 -0.02118381634567837 ${sign*-0.0075641910491581615}" rpy="0 0 0"/>
+        <mass value="0.010772908797143082"/>
+        <inertia ixx="3e-06" iyy="0.0" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.039972 0.195606 ${sign*-0.067}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/power-mount-arm_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.039972 0.195606 ${sign*-0.067}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/power-mount-arm_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_fan-mount_1">
+      <inertial>
+        <origin xyz="-0.0015578096635837577 -0.007500647575580305 ${sign*0.016620580449611774}" rpy="0 0 0"/>
+        <mass value="0.007535585538418549"/>
+        <inertia ixx="5e-06" iyy="1e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.049027 0.201084 ${sign*-0.0605}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/fan-mount_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.049027 0.201084 ${sign*-0.0605}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/fan-mount_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep-motor-mate_1">
+      <inertial>
+        <origin xyz="0.01627296537372195 -0.009115804390395527 ${sign*-0.005357773320266886}" rpy="0 0 0"/>
+        <mass value="0.027378314921932972"/>
+        <inertia ixx="6e-06" iyy="1.3e-05" izz="1.8e-05" ixy="6e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.2085 ${sign*-0.065}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-motor-mate_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.2085 ${sign*-0.065}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep-motor-mate_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing_1">
+      <inertial>
+        <origin xyz="3.0067933010080594e-07 -4.514541435685082e-07 ${sign*0.0025000000000662548}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.052346 0.237823 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.052346 0.237823 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_bicep_1">
+      <inertial>
+        <origin xyz="-0.004501322778096249 -0.02507818045237381 ${sign*-0.002467989334993856}" rpy="0 0 0"/>
+        <mass value="0.005289691132623189"/>
+        <inertia ixx="2e-06" iyy="0.0" izz="2e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.052346 0.237823 ${sign*-0.0725}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.052346 0.237823 ${sign*-0.0725}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/bicep_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__9__1">
+      <inertial>
+        <origin xyz="7.024925836179863e-08 -1.7358376386278351e-07 ${sign*0.0025000000000867523}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.045993 0.287418 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.045993 0.287418 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_straight-tendon_1">
+      <inertial>
+        <origin xyz="-0.03387086911923143 -0.006850606168940843 ${sign*0.011870768566948839}" rpy="0 0 0"/>
+        <mass value="0.03848915304566222"/>
+        <inertia ixx="1.4e-05" iyy="2.2e-05" izz="3.2e-05" ixy="-1.2e-05" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.045993 0.287418 ${sign*-0.0725}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/straight-tendon_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.045993 0.287418 ${sign*-0.0725}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/straight-tendon_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__1__1">
+      <inertial>
+        <origin xyz="1.5023622727816655e-07 2.8225565540385134e-07 ${sign*-0.0024999999999983508}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.028008 0.270076 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.028008 0.270076 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__5__1">
+      <inertial>
+        <origin xyz="-3.43434128045883e-08 3.76162596904539e-07 ${sign*0.0025000000000015288}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.028097 0.270076 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.028097 0.270076 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__2__1">
+      <inertial>
+        <origin xyz="1.4995815077558684e-07 -3.310962337632617e-08 ${sign*-0.0024999999999983508}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-bridge-rear__1__1">
+      <inertial>
+        <origin xyz="-0.0007014437261218269 -0.00016914076333035544 ${sign*-0.012000384647695761}" rpy="0 0 0"/>
+        <mass value="0.0033585279582303566"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.0965}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-bridge-rear__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.0965}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-bridge-rear__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__6__1">
+      <inertial>
+        <origin xyz="-3.462138343352482e-08 6.079737324693468e-08 ${sign*0.0025000000000017786}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.001437 0.283853 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.001437 0.283853 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-rear-hanger__1__1">
+      <inertial>
+        <origin xyz="-0.0005173605648576027 -0.03068611869294674 ${sign*-0.004053673616637665}" rpy="0 0 0"/>
+        <mass value="0.010281646529262634"/>
+        <inertia ixx="4e-06" iyy="1e-06" izz="4e-06" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-rear-hanger__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque808080"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.001348 0.283853 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-rear-hanger__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-rear-hanger_1">
+      <inertial>
+        <origin xyz="-0.0005349140144733694 -0.030687105459771158 ${sign*0.004053673616640996}" rpy="0 0 0"/>
+        <mass value="0.010281646529262634"/>
+        <inertia ixx="4e-06" iyy="1e-06" izz="4e-06" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.001437 0.283853 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-rear-hanger_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque808080"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.001437 0.283853 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-rear-hanger_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__7__1">
+      <inertial>
+        <origin xyz="-1.30050141874255e-07 -3.89144360235516e-07 ${sign*0.0025000000001076383}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.019189 0.319045 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="0.019189 0.319045 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__4__1">
+      <inertial>
+        <origin xyz="-1.3005014696046424e-07 -3.8914426414571324e-07 ${sign*-0.00249999999989238}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.019189 0.319045 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="0.019189 0.319045 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_forearm-elbow-motor-bracket-inner2_1">
+      <inertial>
+        <origin xyz="0.014109539680702861 -0.01731239070342261 ${sign*0.0060002107356171425}" rpy="0 0 0"/>
+        <mass value="0.022472125475631318"/>
+        <inertia ixx="3e-06" iyy="7e-06" izz="1e-05" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.019189 0.319045 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/forearm-elbow-motor-bracket-inner2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="0.019189 0.319045 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/forearm-elbow-motor-bracket-inner2_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__3__1">
+      <inertial>
+        <origin xyz="1.239805898570201e-09 8.370368326238165e-08 ${sign*-0.002499999999896668}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.013048 0.342726 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.013048 0.342726 ${sign*-0.1015}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_elbow-bridge-rear_1">
+      <inertial>
+        <origin xyz="0.0006123708628285231 -0.00038179918552844194 ${sign*-0.012000384647594495}" rpy="0 0 0"/>
+        <mass value="0.0033585279582303566"/>
+        <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.013048 0.342726 ${sign*-0.0965}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-bridge-rear_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.013048 0.342726 ${sign*-0.0965}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/elbow-bridge-rear_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_second-forearm-motor-strap_1">
+      <inertial>
+        <origin xyz="-0.024341797177582752 -0.007557108441825444 ${sign*0.002509257258481362}" rpy="0 0 0"/>
+        <mass value="0.015379539400534015"/>
+        <inertia ixx="2e-06" iyy="4e-06" izz="6e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.023048 0.342724 ${sign*-0.113}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/second-forearm-motor-strap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.023048 0.342724 ${sign*-0.113}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/second-forearm-motor-strap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1">
+      <inertial>
+        <origin xyz="-0.012981586090492152 -0.015614144505653293 ${sign*-0.04040576070339705}" rpy="0 0 0"/>
+        <mass value="0.7802158462059968"/>
+        <inertia ixx="0.000765" iyy="0.001111" izz="0.000753" ixy="0.0" iyz="9e-06" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.012964 0.367517 ${sign*-0.113944}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque13110895"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.012964 0.367517 ${sign*-0.113944}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/RMD-X8-Pro_MIR8_MIR1__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_fore-arm-bicep-motor-attatch_1">
+      <inertial>
+        <origin xyz="-0.0340979234925639 0.021227629310018037 ${sign*0.00035796122303764083}" rpy="0 0 0"/>
+        <mass value="0.02451696606358365"/>
+        <inertia ixx="2e-06" iyy="1.3e-05" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.033964 0.367525 ${sign*-0.049313}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/fore-arm-bicep-motor-attatch_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.033964 0.367525 ${sign*-0.049313}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/fore-arm-bicep-motor-attatch_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_forearm-elbow-motor-bracket-inner_1">
+      <inertial>
+        <origin xyz="-0.028097214791209014 0.00645470057921349 ${sign*0.005494237705660113}" rpy="0 0 0"/>
+        <mass value="0.022768388482805414"/>
+        <inertia ixx="3e-06" iyy="7e-06" izz="1e-05" ixy="1e-06" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.023047 0.342724 ${sign*-0.056}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/forearm-elbow-motor-bracket-inner_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.023047 0.342724 ${sign*-0.056}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/forearm-elbow-motor-bracket-inner_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_6mm-bearing__8__1">
+      <inertial>
+        <origin xyz="2.3269067660203202e-07 9.564553549168409e-08 ${sign*0.002500000000171587}" rpy="0 0 0"/>
+        <mass value="0.008795084983265406"/>
+        <inertia ixx="1.119e-03" iyy="8.7859e-05" izz="1.035e-03" ixy="3.933e-05" iyz="2.984e-04" ixz="-1.1361e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.013047 0.34272 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__8__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque244244244"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.013047 0.34272 ${sign*-0.0675}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/6mm-bearing__8__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-ex-al-interface_1">
+      <inertial>
+        <origin xyz="-3.2728948960875906e-06 -0.009227971912655453 ${sign*1.051103648563867e-13}" rpy="0 0 0"/>
+        <mass value="0.03263560284613005"/>
+        <inertia ixx="7e-06" iyy="1e-05" izz="4e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="2.9e-05 0.404512 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque22122113"/>
+      </visual>
+      <collision>
+        <origin xyz="2.9e-05 0.404512 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-ex-al-interface_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-roll-al-mot_MIR1__3__1">
+      <inertial>
+        <origin xyz="-0.009005484461701413 -0.013346072568456768 ${sign*-0.0010043671574740468}" rpy="0 0 0"/>
+        <mass value="0.016359268258045713"/>
+        <inertia ixx="1e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.008965 0.422015 ${sign*-0.058412}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.008965 0.422015 ${sign*-0.058412}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_shoulder-roll-al-mot_MIR1_1">
+      <inertial>
+        <origin xyz="-0.009005261669245517 -0.013346072651925167 ${sign*0.001003367157674212}" rpy="0 0 0"/>
+        <mass value="0.016359268258045713"/>
+        <inertia ixx="1e-06" iyy="2e-06" izz="3e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.008965 0.422015 ${sign*-0.089589}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque245245245"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.008965 0.422015 ${sign*-0.089589}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/shoulder-roll-al-mot_MIR1_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_2020_100mm__10__1">
+      <inertial>
+        <origin xyz="-1.910406007693991e-05 -0.05000005609485908 ${sign*9.899026043314052e-14}" rpy="0 0 0"/>
+        <mass value="0.052897718100317556"/>
+        <inertia ixx="4.6e-05" iyy="4e-06" izz="4.6e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__10__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__10__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_top-bracket-servo-strap_1">
+      <inertial>
+        <origin xyz="-3.480379936662118e-05 -0.03585414266535236 ${sign*1.2044206411779279e-05}" rpy="0 0 0"/>
+        <mass value="0.02056602380320786"/>
+        <inertia ixx="6e-06" iyy="1.1e-05" izz="6e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/top-bracket-servo-strap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/top-bracket-servo-strap_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995_1">
+      <inertial>
+        <origin xyz="-0.009069915238274063 -0.023782577154890072 ${sign*-0.004850007599143107}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="9e-06" iyy="9e-06" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.019551 0.459003 ${sign*-0.05885}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.019551 0.459003 ${sign*-0.05885}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__4__1">
+      <inertial>
+        <origin xyz="-0.004859144989096568 -0.023784135879376167 ${sign*0.009060775705327144}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="1.5e-05" iyy="9e-06" izz="9e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.015199 0.45899 ${sign*-0.0544}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="0.015199 0.45899 ${sign*-0.0544}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__4__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__3__1">
+      <inertial>
+        <origin xyz="0.009051637651431646 -0.023788680285102393 ${sign*0.004850007599340331}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="9e-06" iyy="9e-06" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.019649 0.458989 ${sign*-0.08915}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="0.019649 0.458989 ${sign*-0.08915}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__3__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__5__1">
+      <inertial>
+        <origin xyz="0.00484086740225494 -0.023787121560615798 ${sign*-0.009060775705130114}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="1.5e-05" iyy="9e-06" izz="9e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.015101 0.459002 ${sign*-0.0936}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.015101 0.459002 ${sign*-0.0936}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__5__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_2020_100mm__11__1">
+      <inertial>
+        <origin xyz="-3.783053492940631e-05 -0.09998505258699814 ${sign*9.71445146547012e-14}" rpy="0 0 0"/>
+        <mass value="0.05289771810031747"/>
+        <inertia ixx="4.6e-05" iyy="4e-06" izz="4.6e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__11__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="3.5e-05 0.422012 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__11__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_top-bracket-servo-strap__1__1">
+      <inertial>
+        <origin xyz="-1.6864267301180816e-05 0.009870051541510216 ${sign*-1.204420621642166e-05}" rpy="0 0 0"/>
+        <mass value="0.02056602380320786"/>
+        <inertia ixx="6e-06" iyy="1.1e-05" izz="6e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="9.2e-05 0.571997 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/top-bracket-servo-strap__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="9.2e-05 0.571997 ${sign*-0.074}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/top-bracket-servo-strap__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__2__1">
+      <inertial>
+        <origin xyz="0.004858475699240385 0.02378402902103316 ${sign*0.009060775705325548}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="1.5e-05" iyy="9e-06" izz="9e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.015063 0.561003 ${sign*-0.0544}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.015063 0.561003 ${sign*-0.0544}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__2__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__6__1">
+      <inertial>
+        <origin xyz="0.009069245948417614 0.02378247029654812 ${sign*-0.004850007599145348}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="9e-06" iyy="9e-06" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.019687 0.56099 ${sign*-0.05885}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="0.019687 0.56099 ${sign*-0.05885}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__6__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__1__1">
+      <inertial>
+        <origin xyz="-0.004841536692112472 0.02378701470227207 ${sign*-0.009060775705132404}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="1.5e-05" iyy="9e-06" izz="9e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.015237 0.560991 ${sign*-0.0936}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="0.015237 0.560991 ${sign*-0.0936}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__1__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_MG995__7__1">
+      <inertial>
+        <origin xyz="-0.009052306941289648 0.023788573426757553 ${sign*0.004850007599338624}" rpy="0 0 0"/>
+        <mass value="0.05503731974130738"/>
+        <inertia ixx="9e-06" iyy="9e-06" izz="1.5e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="-0.019513 0.561004 ${sign*-0.08915}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque636363"/>
+      </visual>
+      <collision>
+        <origin xyz="-0.019513 0.561004 ${sign*-0.08915}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/MG995__7__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_multiplex-stack-flat_1">
+      <inertial>
+        <origin xyz="0.03332563082389307 7.422160111514309e-08 ${sign*0.0075024086533960616}" rpy="0 0 0"/>
+        <mass value="0.023031674197712796"/>
+        <inertia ixx="3e-06" iyy="2.8e-05" izz="3.1e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0345 0.07 ${sign*-0.095}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/multiplex-stack-flat_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque191191191"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0345 0.07 ${sign*-0.095}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/multiplex-stack-flat_1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}_2020_100mm__9__1">
+      <inertial>
+        <origin xyz="1.1509303757180628e-17 -1.666308025195601e-14 ${sign*0.050000000000000565}" rpy="0 0 0"/>
+        <mass value="0.05289771810031747"/>
+        <inertia ixx="4.6e-05" iyy="4.6e-05" izz="4e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="opaque727161"/>
+      </visual>
+      <collision>
+        <origin xyz="0.0 0.0 ${sign*-0.01}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://dropbear/meshes/${folder}/2020_100mm__9__1.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <joint name="${prefix}_torso_connection" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}"/>
+      <child link="${prefix}_2020_100mm__9__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid2" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__9__1"/>
+      <child link="${prefix}_shoulder-roll-al-mot_MIR1__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid3" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__9__1"/>
+      <child link="${prefix}_shoulder-roll-al-mot_MIR1__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid4" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.1}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__9__1"/>
+      <child link="${prefix}_yaw-cap_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid5" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__9__1"/>
+      <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid6" type="fixed">
+      <origin xyz="0.02 0.015588 ${sign*0.059}" rpy="0 0 0"/>
+      <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1_1"/>
+      <child link="${prefix}_front-bearing-adapter-shoulder_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid7" type="fixed">
+      <origin xyz="-0.01 0.015588 ${sign*0.059}" rpy="0 0 0"/>
+      <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1_1"/>
+      <child link="${prefix}_shoulder-ex-al-interface__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_pitch" type="revolute">
+      <origin xyz="-0.017 -0.015588 ${sign*-0.009}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-ex-al-interface__2__1"/>
+      <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1"/>
+      <axis xyz="-1.0 0.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid9" type="fixed">
+      <origin xyz="-0.0375 -0.042 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__1__1"/>
+      <child link="${prefix}_shoulder-motor-bicep-rotor-bracket_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid10" type="fixed">
+      <origin xyz="0.0 -0.018 ${sign*-0.0015}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-motor-bicep-rotor-bracket_1"/>
+      <child link="${prefix}_bicep-rear-motor-adapter_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid11" type="fixed">
+      <origin xyz="0.038 0.0 ${sign*0.0255}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-rear-motor-adapter_1"/>
+      <child link="${prefix}_bicep-shoulder-bracket-exal__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid12" type="fixed">
+      <origin xyz="0.038 0.0 ${sign*0.0055}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-rear-motor-adapter_1"/>
+      <child link="${prefix}_bicep-shoulder-bracket-exal__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid13" type="fixed">
+      <origin xyz="-0.0135 -0.03 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-shoulder-bracket-exal__1__1"/>
+      <child link="${prefix}_2020_100mm__8___1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid14" type="fixed">
+      <origin xyz="0.09 0.01 ${sign*-0.01}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__8___1__1"/>
+      <child link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__5__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid15" type="fixed">
+      <origin xyz="0.09 0.0 ${sign*-0.01825}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__8___1__1"/>
+      <child link="${prefix}_bicep-shoulder-bracket-exal_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid16" type="fixed">
+      <origin xyz="-0.0075 0.03 ${sign*-0.00175}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-shoulder-bracket-exal_1"/>
+      <child link="${prefix}_shoulder-front_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid17" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.02}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-front_1"/>
+      <child link="${prefix}_bicep-shoulder-bracket-exal__3__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid18" type="fixed">
+      <origin xyz="0.0075 0.018 ${sign*0.025}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-front_1"/>
+      <child link="${prefix}_shoulder-cap_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid19" type="fixed">
+      <origin xyz="0.0 0.042 ${sign*-0.029}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-cap_1"/>
+      <child link="${prefix}_shoulder-front-bearing-adapter_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid20" type="fixed">
+      <origin xyz="-0.003828 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-front-bearing-adapter_1"/>
+      <child link="${prefix}_skateboard-bearing__7__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid21" type="fixed">
+      <origin xyz="-0.059 -0.01 ${sign*0.015588}" rpy="0 0 0"/>
+      <parent link="${prefix}_yaw-waist-adapter-motor-exal_MIR1__5__1"/>
+      <child link="${prefix}_shoulder-ex-al-interface__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_roll" type="revolute">
+      <origin xyz="0.009 -0.017 ${sign*-0.015588}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-ex-al-interface__1__1"/>
+      <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+      <axis xyz="0.0 -1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid23" type="fixed">
+      <origin xyz="0.033979 -0.0375 ${sign*-0.024687}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+      <child link="${prefix}_bicep-rotational-cuff-second-motor-bracket_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid24" type="fixed">
+      <origin xyz="0.033979 -0.0375 ${sign*0.024687}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1"/>
+      <child link="${prefix}_arm-cuff-bicep-bracket_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid25" type="fixed">
+      <origin xyz="-0.033979 -0.022 ${sign*0.003313}" rpy="0 0 0"/>
+      <parent link="${prefix}_arm-cuff-bicep-bracket_1"/>
+      <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid26" type="fixed">
+      <origin xyz="0.0 -0.084 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1"/>
+      <child link="${prefix}_elbow-hangar_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid27" type="fixed">
+      <origin xyz="8.9e-05 -0.084 ${sign*-0.035}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1"/>
+      <child link="${prefix}_elbow-hangar1_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid28" type="fixed">
+      <origin xyz="-0.039972 -0.029106 ${sign*-0.035}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1"/>
+      <child link="${prefix}_power-mount-arm_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid29" type="fixed">
+      <origin xyz="-0.009055 -0.005478 ${sign*-0.0065}" rpy="0 0 0"/>
+      <parent link="${prefix}_power-mount-arm_1"/>
+      <child link="${prefix}_fan-mount_1"/>
+    </joint>
+
+    <joint name="${prefix}_elbow_joint" type="revolute">
+      <origin xyz="0.0 -0.042 ${sign*-0.037}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__2__1"/>
+      <child link="${prefix}_bicep-motor-mate_1"/>
+      <axis xyz="0.0 0.0 -1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid31" type="fixed">
+      <origin xyz="0.052346 -0.029323 ${sign*0.0025}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-motor-mate_1"/>
+      <child link="${prefix}_6mm-bearing_1"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute32" type="revolute">
+      <origin xyz="0.0 0.0 ${sign*0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing_1"/>
+      <child link="${prefix}_bicep_1"/>
+      <axis xyz="0.0 0.0 1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute33" type="revolute">
+      <origin xyz="-0.006353 -0.049595 ${sign*-0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep_1"/>
+      <child link="${prefix}_6mm-bearing__9__1"/>
+      <axis xyz="0.0 0.0 -1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid34" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__9__1"/>
+      <child link="${prefix}_straight-tendon_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid35" type="fixed">
+      <origin xyz="0.028008 -0.019576 ${sign*-0.0005}" rpy="0 0 0"/>
+      <parent link="${prefix}_elbow-hangar_1"/>
+      <child link="${prefix}_6mm-bearing__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid36" type="fixed">
+      <origin xyz="0.028008 -0.019576 ${sign*0.0005}" rpy="0 0 0"/>
+      <parent link="${prefix}_elbow-hangar1_1"/>
+      <child link="${prefix}_6mm-bearing__5__1"/>
+    </joint>
+
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      <joint name="${prefix}_Revolute37_gz" type="revolute">
+        <pose relative_to="${prefix}_RMD-X8-Pro_MIR8_MIR1__3__1">0.02809 -0.1631 ${sign*0.0} 0 0 0</pose>
+        <parent>${prefix}_straight-tendon_1</parent>
+        <child>${prefix}_6mm-bearing__5__1</child>
+
+        <axis>
+          <xyz> 0 0 1</xyz>
+        </axis>
+        <limit>
+          <lower>${-PI}</lower>
+          <upper>${PI}</upper>
+          <effort>10.0</effort>
+          <velocity>10.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.10</damping>
+          <friction>0.10</friction>
+        </dynamics>
+      </joint>
+    </gazebo>
+
+    <joint name="${prefix}_Rigid38" type="fixed">
+      <origin xyz="0.001348 -0.033353 ${sign*-0.0005}" rpy="0 0 0"/>
+      <parent link="${prefix}_elbow-hangar_1"/>
+      <child link="${prefix}_6mm-bearing__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid39" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*-0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__2__1"/>
+      <child link="${prefix}_elbow-bridge-rear__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid40" type="fixed">
+      <origin xyz="0.001348 -0.033353 ${sign*0.0005}" rpy="0 0 0"/>
+      <parent link="${prefix}_elbow-hangar1_1"/>
+      <child link="${prefix}_6mm-bearing__6__1"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute41" type="revolute">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__2__1"/>
+      <child link="${prefix}_elbow-rear-hanger__1__1"/>
+      <axis xyz="0.0 0.0 1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute42" type="revolute">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__6__1"/>
+      <child link="${prefix}_elbow-rear-hanger_1"/>
+      <axis xyz="0.0 0.0 -1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute43" type="revolute">
+      <origin xyz="-0.065182 -0.031627 ${sign*-0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_straight-tendon_1"/>
+      <child link="${prefix}_6mm-bearing__7__1"/>
+      <axis xyz="0.0 0.0 -1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Revolute44" type="revolute">
+      <origin xyz="-0.065182 -0.031627 ${sign*0.029}" rpy="0 0 0"/>
+      <parent link="${prefix}_straight-tendon_1"/>
+      <child link="${prefix}_6mm-bearing__4__1"/>
+      <axis xyz="0.0 0.0 1.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid45" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__4__1"/>
+      <child link="${prefix}_forearm-elbow-motor-bracket-inner2_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid46" type="fixed">
+      <origin xyz="0.032237 -0.023681 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_forearm-elbow-motor-bracket-inner2_1"/>
+      <child link="${prefix}_6mm-bearing__3__1"/>
+    </joint>
+
+
+    <gazebo>
+      <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+      <joint name="${prefix}_Revolute47_gz" type="revolute">
+        <pose relative_to="${prefix}_elbow-rear-hanger__1__1">0.01161 -0.05887 ${sign*-0.034} 0 0 0</pose>
+        <!-- <pose relative_to="${prefix}_elbow-rear-hanger_1">0.01163 -0.05886 0 0 0 0</pose> -->
+        <parent>${prefix}_elbow-rear-hanger_1</parent>
+        <child>${prefix}_6mm-bearing__8__1</child>
+
+        <axis>
+          <xyz> 0 0 1</xyz>
+        </axis>
+        <limit>
+          <lower>${-PI}</lower>
+          <upper>${PI}</upper>
+          <effort>0.0</effort>
+          <velocity>0.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+
+      <joint name="${prefix}_Recolute48_gz" type="revolute">
+      <pose relative_to="${prefix}_elbow-rear-hanger__1__1">0.01161 -0.05887 ${sign*0.0} 0 0 0</pose>
+          <parent>${prefix}_elbow-rear-hanger__1__1</parent>
+          <child>${prefix}_6mm-bearing__3__1</child>
+
+        <axis>
+          <xyz> 0 0 -1</xyz>
+        </axis>
+        <limit>
+          <lower>${-PI}</lower>
+          <upper>${PI}</upper>
+          <effort>0.0</effort>
+          <velocity>0.0</velocity>
+        </limit>
+
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0.0</friction>
+        </dynamics>
+      </joint>
+    </gazebo>
+
+    <joint name="${prefix}_Rigid48" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*-0.005}" rpy="0 0 0"/>
+      <parent link="${prefix}_6mm-bearing__3__1"/>
+      <child link="${prefix}_elbow-bridge-rear_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid49" type="fixed">
+      <origin xyz="0.042237 -0.023679 ${sign*0.0115}" rpy="0 0 0"/>
+      <parent link="${prefix}_forearm-elbow-motor-bracket-inner2_1"/>
+      <child link="${prefix}_second-forearm-motor-strap_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid50" type="fixed">
+      <origin xyz="-0.010084 -0.024793 ${sign*0.000944}" rpy="0 0 0"/>
+      <parent link="${prefix}_second-forearm-motor-strap_1"/>
+      <child link="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid51" type="fixed">
+      <origin xyz="0.021 -8e-06 ${sign*-0.064631}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1"/>
+      <child link="${prefix}_fore-arm-bicep-motor-attatch_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid52" type="fixed">
+      <origin xyz="-0.010917 0.024801 ${sign*0.006687}" rpy="0 0 0"/>
+      <parent link="${prefix}_fore-arm-bicep-motor-attatch_1"/>
+      <child link="${prefix}_forearm-elbow-motor-bracket-inner_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid53" type="fixed">
+      <origin xyz="-0.01 4e-06 ${sign*0.0115}" rpy="0 0 0"/>
+      <parent link="${prefix}_forearm-elbow-motor-bracket-inner_1"/>
+      <child link="${prefix}_6mm-bearing__8__1"/>
+    </joint>
+
+    <!-- <gazebo>
+  <plugin name="gazebo_ros" filename="libgazebo_ros_api_plugin.so"/>
+  <joint name="${prefix}_Revolute54_gz" type="revolute">
+    <pose relative_to="${prefix}_elbow-rear-hanger_1">0.01161 -0.05887 ${sign*-0.02} 0 0 0</pose>
+    <parent>${prefix}_elbow-rear-hanger_1</parent>
+    <child>${prefix}_6mm-bearing__8__1</child>
+
+    <axis>
+      <xyz> 0 0 1</xyz>
+    </axis>
+    <limit>
+      <lower>${-PI}</lower>
+      <upper>${PI}</upper>
+      <effort>10.0</effort>
+      <velocity>10.0</velocity>
+    </limit>
+    <dynamics>
+      <damping>10.0</damping>
+      <friction>10.0</friction>
+    </dynamics>
+
+  </joint>
+</gazebo> -->
+
+    <joint name="${prefix}_wrist_roll" type="revolute">
+      <origin xyz="-0.012993 -0.036995 ${sign*-0.039944}" rpy="0 0 0"/>
+      <parent link="${prefix}_RMD-X8-Pro_MIR8_MIR1__4__1"/>
+      <child link="${prefix}_shoulder-ex-al-interface_1"/>
+      <axis xyz="-0.000375 -1.0 0.0"/>
+      <limit upper="${PI}" lower="${-PI}" velocity="10.0" effort="10.0"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid56" type="fixed">
+      <origin xyz="0.008994 -0.017503 ${sign*-0.015588}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-ex-al-interface_1"/>
+      <child link="${prefix}_shoulder-roll-al-mot_MIR1__3__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid57" type="fixed">
+      <origin xyz="0.008994 -0.017503 ${sign*0.015589}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-ex-al-interface_1"/>
+      <child link="${prefix}_shoulder-roll-al-mot_MIR1_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid58" type="fixed">
+      <origin xyz="-6e-06 -0.0175 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_shoulder-ex-al-interface_1"/>
+      <child link="${prefix}_2020_100mm__10__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid59" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__10__1"/>
+      <child link="${prefix}_top-bracket-servo-strap_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid60" type="fixed">
+      <origin xyz="0.019586 -0.036991 ${sign*-0.01515}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap_1"/>
+      <child link="${prefix}_MG995_1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid61" type="fixed">
+      <origin xyz="-0.015164 -0.036978 ${sign*-0.0196}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap_1"/>
+      <child link="${prefix}_MG995__4__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid62" type="fixed">
+      <origin xyz="-0.019614 -0.036977 ${sign*0.01515}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap_1"/>
+      <child link="${prefix}_MG995__3__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid63" type="fixed">
+      <origin xyz="0.015136 -0.03699 ${sign*0.0196}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap_1"/>
+      <child link="${prefix}_MG995__5__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid64" type="fixed">
+      <origin xyz="0.0 0.0 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__10__1"/>
+      <child link="${prefix}_2020_100mm__11__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid65" type="fixed">
+      <origin xyz="-5.7e-05 -0.149985 ${sign*0.0}" rpy="0 0 0"/>
+      <parent link="${prefix}_2020_100mm__11__1"/>
+      <child link="${prefix}_top-bracket-servo-strap__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid66" type="fixed">
+      <origin xyz="0.015155 0.010994 ${sign*-0.0196}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap__1__1"/>
+      <child link="${prefix}_MG995__2__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid67" type="fixed">
+      <origin xyz="-0.019595 0.011007 ${sign*-0.01515}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap__1__1"/>
+      <child link="${prefix}_MG995__6__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid68" type="fixed">
+      <origin xyz="-0.015145 0.011006 ${sign*0.0196}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap__1__1"/>
+      <child link="${prefix}_MG995__1__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid69" type="fixed">
+      <origin xyz="0.019605 0.010993 ${sign*0.01515}" rpy="0 0 0"/>
+      <parent link="${prefix}_top-bracket-servo-strap__1__1"/>
+      <child link="${prefix}_MG995__7__1"/>
+    </joint>
+
+    <joint name="${prefix}_Rigid70" type="fixed">
+      <origin xyz="-0.008 -0.01 ${sign*0.011}" rpy="0 0 0"/>
+      <parent link="${prefix}_bicep-shoulder-bracket-exal__1__1"/>
+      <child link="${prefix}_multiplex-stack-flat_1"/>
+    </joint>
+
+
+  </xacro:macro>
+
+</robot>

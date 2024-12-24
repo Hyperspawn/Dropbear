@@ -1,0 +1,1839 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Status1
+        - /RobotModel1
+        - /RobotModel1/Status1
+      Splitter Ratio: 0.5
+    Tree Height: 756
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Expanded:
+      - /2D Goal Pose1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.5886790156364441
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz_common/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        PG_100m_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_100m__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_100m__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_100m__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_100m__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__1___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__2___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__3___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__5___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__6___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_100mm__7___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_2020_200mm__1___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_6band__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_6band__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-S2_MIR4__1_Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-S2_MIR4__1_Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-S2_MIR4__2_Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-S2_MIR4__2_Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-V3Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-V3Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-V3__1_Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_RMD-X10-V3__1_Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_bearing-rocker-rear_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_bearing-rocker-rear__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_bearing-torso-rocker-mount-rear_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_bearing-torso-rocker-mount-rear_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_butt-adapter-large-motor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_butt-adapter-large-motor__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_butt-center-rear-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_butt-mag_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_butt-mag__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_center-band-brick__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_center-band-brick__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_center-bracket-waist-hips_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_center-waist-aluminum-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_encoder-butt_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_encoder-butt__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_encoder-magnet-leg_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_encoder-magnet-leg__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_front-bearing-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_front-bearing-strap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_front-bearing-strap__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_front-motor-roll-nut_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_front-motor-roll-nut__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_groin-square_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_groin-square__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hard-limit_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hard-limit_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-motor-bracket-v5-right_MIR_MIR2_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-bracket_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-bracket_MIR__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-bracket__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-mot_MIR2_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-mot_MIR2__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-mot_MIR2__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-al-mot_MIR2__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-front-bracket-strap-motor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-front-bracket-strap-motor__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-front-bracket-strap-motor__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-roll-front-bracket-strap-motor__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hip-yaw-chromatic-encoder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_hips-front-mount_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_inner-rear-rocker-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_inner-rear-rocker-bracket_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_lumbare_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_motor-yaw-cap__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_naval__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_side-band-brick-double_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_side-band-brick-double__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_side-band-brick-double__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_side-band-brick-double__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_skateboard-bearing__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_yaw-waist-adapter-motor-exal_MIR1__1___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_yaw-waist-adapter-motor-exal_MIR1__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_yaw-waist-adapter-motor-exal_MIR1__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PG_yaw-waist-adapter-motor-exal_MIR1__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_2020_100mm__10__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_2020_100mm__11__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_2020_100mm__8___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_2020_100mm__9__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__7__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__8__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_6mm-bearing__9__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_MG995__7__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_RMD-X8-Pro_MIR8_MIR1__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_RMD-X8-Pro_MIR8_MIR1__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_RMD-X8-Pro_MIR8_MIR1__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_RMD-X8-Pro_MIR8_MIR1__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_arm-cuff-bicep-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-motor-mate_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-rear-motor-adapter_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-rotational-cuff-second-motor-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-shoulder-bracket-exal_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-shoulder-bracket-exal__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-shoulder-bracket-exal__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep-shoulder-bracket-exal__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_bicep_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-bridge-rear_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-bridge-rear__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-hangar1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-hangar_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-rear-hanger_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_elbow-rear-hanger__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_fan-mount_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_fore-arm-bicep-motor-attatch_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_forearm-elbow-motor-bracket-inner2_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_forearm-elbow-motor-bracket-inner_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_front-bearing-adapter-shoulder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_multiplex-stack-flat_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_power-mount-arm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_second-forearm-motor-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-cap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-ex-al-interface_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-ex-al-interface__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-ex-al-interface__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-front-bearing-adapter_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-front_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-motor-bicep-rotor-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-roll-al-mot_MIR1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-roll-al-mot_MIR1__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-roll-al-mot_MIR1__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_shoulder-roll-al-mot_MIR1__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_skateboard-bearing__7__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_straight-tendon_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_top-bracket-servo-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_top-bracket-servo-strap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_yaw-cap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_yaw-waist-adapter-motor-exal_MIR1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RH_yaw-waist-adapter-motor-exal_MIR1__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_100mm__12__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_150mm__1___1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_150mm__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_150mm__6__2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_300mm__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_300mm__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_2020_400mm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_210mm-tie-rod_v1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_290mm-tie-rod_v1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_400mmexal_MIR2_MIR3_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_6band__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_NO-NC_Bump_Switch_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_NO-NC_Bump_Switch__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X10-S2_MIR4Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X10-S2_MIR4Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X10-S2_MIR4__3_Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X10-S2_MIR4__3_Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X8-Pro_MIR8_MIR1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_RMD-X8-Pro_MIR8_MIR1_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_ankle-motor-driver-bracket_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_ankle-motor-driver-bracketleft_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_ankle-side-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_ankle-side-bracket_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_ankle-thick_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_basis_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearing-sensor-adapter-arm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearing-sensor-adapter-arm_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearing-sensor-adapter_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearing-sensor-adapter_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearingstrap-inner-thigh_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearingstrap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_bearingstrap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-cover_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-cover_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-lower-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-lower-bracket_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-motor-driver-ext_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-motor-driver-ext_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-skin_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_calf-skin_flip_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_conjstraint-knee-test-oute_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_conjstraint-knee-test-oute_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_double-bracket-10deg_MIR_MIR_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_double-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_flank-front-flipped_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_flank-front_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_flank-front__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_flank_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_flank__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_foot-imu-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_foot-top_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-bracket_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-bracketleft_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-connector_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-roller_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-top_MIRleft_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_heel-topleft_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_hip-ex-al-base_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_hip-motor-bracket-v5-right_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_hip-motor-bracket-v5-right_MIR__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_innner-thigh-magnet-encoder__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_knee-bend-motor-bracket-hip_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_knee-bend-motor-bracket-hip__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_knee-lock-2-b_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_knee-lock-2_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        RL_knee-strap-second-test_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_knee-strap-second-test__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_leg-pitch-elastic_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_leg-pitch-elastic__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_leg-pitch-elastic__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_leg-pitch-elastic__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_leg-thigh-knee-support-bottom_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_limit-bracket-knee_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_magmount__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_motor-calf-exal-mount_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_motor-calf-exal-mount_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_motor-calf-exal-mount_3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_motor-calf-exal-mount_4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_motorcap-KNEE_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_mpu1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_multiplex-stack_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_new-heel-opposing_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_new-heel_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__10__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__11__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__12__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__13__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__14__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__15__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__16__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__17__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__18__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__19__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__20__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__8__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing__9__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_skateboard-bearing_left_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_thigh-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_thigh-nub_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_thigh-outer-encoder-mount__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_tie-rod-ankle-brackket_left1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_tie-rod-ankle-brackket_left_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_toes-rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_toes_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        RL_wire-clip_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__7__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_100mm__8__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_150mm__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__3__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__4__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__5__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__6__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__7__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__8__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_200mm__9__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_300mm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_2020_350mm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_6band__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_6band__2__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_Power_Converter__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_RMD-X10Rotot_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_RMD-X10Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_RMD-X10__1_Rotor_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_RMD-X10__1_Stator_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-bottom-strap-spine_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-bottom-strap-spine__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-middle-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-middle-strap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-top_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_back-top__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_battery-monitor-holder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_button-holder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_dumLeftArm_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_front-left-shoulder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_front-right-shoulder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_handle__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_head-power-supply-bracket_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_killswitch-spine-interface_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_left-battery-mount_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_left-front-rib-lower_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_left-lower-rib-side_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_left-middle-rib_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_lumbar-strap_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_naval-strap__1__1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_neck-chest-interface2_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-left-rib_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-left-spine-support_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-left-spine-support_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-right-rib_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-right-shoulder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_rear-right-shoulder_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-battery-mount_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-front-rib-lower_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-lower-rib-side_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-middle-rib_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-rear-shoulder_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-rear-shoulder_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-motor-adapter_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-motor-adapter_MIR_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-top1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-top_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-under1_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_right-shoulder-under_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_voltage-meter_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.1867396831512451
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: -0.5788735151290894
+        Y: -0.018277406692504883
+        Z: 0.5274097323417664
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.4597967863082886
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 6.1885833740234375
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1047
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000001560000037dfc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003b0000037d000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f0000037dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b0000037d000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007740000003efc0100000002fb0000000800540069006d00650100000000000007740000025300fffffffb0000000800540069006d00650100000000000004500000000000000000000005030000037d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1908
+  X: 1920
+  Y: 0

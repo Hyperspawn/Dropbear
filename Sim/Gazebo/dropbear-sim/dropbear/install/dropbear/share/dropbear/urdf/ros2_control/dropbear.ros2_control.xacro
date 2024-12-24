@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dropbear_robot">
+
+    <xacro:include filename="$(find dropbear)/urdf/ros2_control/dropbear.macro.xacro"/>
+
+    <xacro:include filename="$(find dropbear)/urdf/ros2_control/arm.ros2_control.xacro"/>
+
+    <xacro:include filename="$(find dropbear)/urdf/ros2_control/leg.ros2_control.xacro"/>
+
+    <xacro:include filename="$(find dropbear)/urdf/ros2_control/pelvicgirdle.ros2_control.xacro"/>
+
+    <!-- <xacro:include filename="$(find dropbear)/urdf/ros2_control/stewart_platform.ros2_control.xacro"/> -->
+
+
+        <ros2_control name = "dropbear_system" type = "System">
+            <hardware>
+                <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+            </hardware>
+            
+            <!-- <xacro:stewart_platform_ros2_control prefix="head"></xacro:stewart_platform_ros2_control> -->
+            <xacro:arm_ros2_control prefix="RH"></xacro:arm_ros2_control> 
+            <xacro:arm_ros2_control prefix="LH"></xacro:arm_ros2_control>  
+            
+            <xacro:leg_ros2_control prefix="RL"></xacro:leg_ros2_control>
+            <xacro:leg_ros2_control prefix="LL"></xacro:leg_ros2_control>
+            
+            <xacro:pelvicgirdle_ros2_control prefix="PG"></xacro:pelvicgirdle_ros2_control>
+        </ros2_control>
+
+    <gazebo>
+        <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+            <robot_param>robot_description</robot_param>
+            <robot_param_node>robot_state_publisher</robot_param_node>
+            <parameters>$(find dropbear)/config/controllers.yaml</parameters>
+        </plugin>
+    </gazebo>
+</robot>

@@ -1,0 +1,8 @@
+source;share/dropbear/hook/cmake_prefix_path.ps1
+source;share/dropbear/hook/cmake_prefix_path.dsv
+source;share/dropbear/hook/cmake_prefix_path.sh
+source;share/dropbear/local_setup.bash
+source;share/dropbear/local_setup.dsv
+source;share/dropbear/local_setup.ps1
+source;share/dropbear/local_setup.sh
+source;share/dropbear/local_setup.zsh

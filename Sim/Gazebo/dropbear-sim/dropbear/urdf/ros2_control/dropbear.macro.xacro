@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dropbear_detailed">
+
+    
+<xacro:macro name="joint" params="prefix name min_value max_value">
+    <joint name="${prefix}_${name}">
+        <command_interface name = "position">
+            <param name = "min">${min_value}</param>
+            <param name = "max">${max_value}</param>
+        </command_interface>
+        <state_interface name = "position"/>
+    </joint>
+</xacro:macro>
+
+</robot>

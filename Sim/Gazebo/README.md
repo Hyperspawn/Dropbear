@@ -63,5 +63,6 @@ Here I'm working on Dropbear's simulation in Gazebo. I wrote a few ROS nodes to 
     Publishes joint trajectory commands for the legs of the robot, controlling how it moves according to user input.
 
 ## Video Demo:
-    Check out the demo video showing the simulation in action!
-    [JointFixes_WalkSimTry2.mp4](./JointFixes_WalkSimTry2.mp4)
+Check out the video showing the simulation in action!
+
+![Demo Video](./JointFixes_WalkSimTry2.mp4)

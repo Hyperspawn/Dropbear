@@ -43,6 +43,8 @@ This script is designed for the ESP32 to interface with up to four HX711 load ce
 
 Refer to the [GPIO Pin Table](#gpio-pin-table) above for complete details.
 
+---
+
 ### GPIO Pin Table
 
 | GPIO Pin | Peripheral/Module            | Description / Usage                                              |
@@ -63,6 +65,7 @@ Refer to the [GPIO Pin Table](#gpio-pin-table) above for complete details.
 | **33**   | Analog Input (Butt/Hip Roll) | Reads analog sensor data for the butt/hip roll joint.            |
 
 ---
+
 
 ## Usage Instructions
 1. **Upload the Code:**  

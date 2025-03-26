@@ -5,7 +5,6 @@
 #define SHARED_HX711_SCK 4
 
 // Define individual data pins for each HX711 load cell
-// (These pins are chosen to avoid conflicts with the already occupied pins.)
 #define LOADCELL_DOUT_PIN0 32
 #define LOADCELL_DOUT_PIN1 12
 #define LOADCELL_DOUT_PIN2 13
@@ -26,12 +25,24 @@ float calibrationFactor3 = 2280.0;
 // Threshold for detecting a “pressed” load cell (adjust as needed)
 #define PRESS_THRESHOLD 0.5
 
+// Filtering configuration: use the last 5 samples to filter out spikes
+#define NUM_SAMPLES 5
+float lastReadings0[NUM_SAMPLES] = {0};
+float lastReadings1[NUM_SAMPLES] = {0};
+float lastReadings2[NUM_SAMPLES] = {0};
+float lastReadings3[NUM_SAMPLES] = {0};
+int sampleIndex0 = 0, sampleCount0 = 0;
+int sampleIndex1 = 0, sampleCount1 = 0;
+int sampleIndex2 = 0, sampleCount2 = 0;
+int sampleIndex3 = 0, sampleCount3 = 0;
+
 // Function prototypes
 void calibrate();
 float getStableReading(int cell, const char* phase);
 float getWeightInput(String prompt);
 void saveCalibrationToSPIFFS();
 void loadCalibrationFromSPIFFS();
+float filterSpike(int cell, float newVal);
 
 void setup() {
   Serial.begin(115200);
@@ -85,13 +96,21 @@ void loop() {
     }
   }
   
-  // Normal operation: get and print calibrated weight readings
+  // Normal operation: get raw calibrated weight readings
   float weight0 = scale0.get_units();
   float weight1 = scale1.get_units();
   float weight2 = scale2.get_units();
   float weight3 = scale3.get_units();
   
-  // Print the readings as CSV for the Serial Plotter
+  // Filter out transient spikes:
+  // For each cell, if the new reading differs from the average of the last 5 readings by > 500,
+  // then replace it with the average.
+  weight0 = filterSpike(0, weight0);
+  weight1 = filterSpike(1, weight1);
+  weight2 = filterSpike(2, weight2);
+  weight3 = filterSpike(3, weight3);
+  
+  // Print the filtered readings as CSV for the Serial Plotter
   Serial.print(weight0, 2);
   Serial.print(",");
   Serial.print(weight1, 2);
@@ -306,4 +325,85 @@ void loadCalibrationFromSPIFFS() {
   calibrationFactor2 = data.substring(secondComma + 1, thirdComma).toFloat();
   calibrationFactor3 = data.substring(thirdComma + 1).toFloat();
   Serial.println("Calibration factors loaded from SPIFFS.");
+}
+
+//
+// filterSpike() - Filters out transient spikes for a given load cell.
+// It maintains the last 5 readings and computes their average.
+// If the new reading differs from the average by more than 500 units,
+// the reading is replaced with the average.
+//
+float filterSpike(int cell, float newVal) {
+  float avg = 0;
+  int i;
+  if (cell == 0) {
+    if (sampleCount0 < NUM_SAMPLES) {
+      lastReadings0[sampleIndex0] = newVal;
+      sampleIndex0 = (sampleIndex0 + 1) % NUM_SAMPLES;
+      sampleCount0++;
+      return newVal;
+    }
+    for (i = 0; i < NUM_SAMPLES; i++) {
+      avg += lastReadings0[i];
+    }
+    avg /= NUM_SAMPLES;
+    if (abs(newVal - avg) > 200) {
+      newVal = avg;
+    }
+    lastReadings0[sampleIndex0] = newVal;
+    sampleIndex0 = (sampleIndex0 + 1) % NUM_SAMPLES;
+    return newVal;
+  } else if (cell == 1) {
+    if (sampleCount1 < NUM_SAMPLES) {
+      lastReadings1[sampleIndex1] = newVal;
+      sampleIndex1 = (sampleIndex1 + 1) % NUM_SAMPLES;
+      sampleCount1++;
+      return newVal;
+    }
+    for (i = 0; i < NUM_SAMPLES; i++) {
+      avg += lastReadings1[i];
+    }
+    avg /= NUM_SAMPLES;
+    if (abs(newVal - avg) > 200) {
+      newVal = avg;
+    }
+    lastReadings1[sampleIndex1] = newVal;
+    sampleIndex1 = (sampleIndex1 + 1) % NUM_SAMPLES;
+    return newVal;
+  } else if (cell == 2) {
+    if (sampleCount2 < NUM_SAMPLES) {
+      lastReadings2[sampleIndex2] = newVal;
+      sampleIndex2 = (sampleIndex2 + 1) % NUM_SAMPLES;
+      sampleCount2++;
+      return newVal;
+    }
+    for (i = 0; i < NUM_SAMPLES; i++) {
+      avg += lastReadings2[i];
+    }
+    avg /= NUM_SAMPLES;
+    if (abs(newVal - avg) > 200) {
+      newVal = avg;
+    }
+    lastReadings2[sampleIndex2] = newVal;
+    sampleIndex2 = (sampleIndex2 + 1) % NUM_SAMPLES;
+    return newVal;
+  } else if (cell == 3) {
+    if (sampleCount3 < NUM_SAMPLES) {
+      lastReadings3[sampleIndex3] = newVal;
+      sampleIndex3 = (sampleIndex3 + 1) % NUM_SAMPLES;
+      sampleCount3++;
+      return newVal;
+    }
+    for (i = 0; i < NUM_SAMPLES; i++) {
+      avg += lastReadings3[i];
+    }
+    avg /= NUM_SAMPLES;
+    if (abs(newVal - avg) > 200) {
+      newVal = avg;
+    }
+    lastReadings3[sampleIndex3] = newVal;
+    sampleIndex3 = (sampleIndex3 + 1) % NUM_SAMPLES;
+    return newVal;
+  }
+  return newVal;
 }

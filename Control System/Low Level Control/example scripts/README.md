@@ -3,6 +3,10 @@
 ## Overview
 This script is designed for the ESP32 to interface with up to four HX711 load cell modules using a shared clock pin and individual data pins. It includes a guided calibration routine and saves the calibration factors to SPIFFS, allowing for persistent calibration across device restarts. The script is integrated into a system that also uses other peripherals, so non-conflicting GPIO pins have been selected.
 
+
+https://github.com/user-attachments/assets/f911e795-2ed4-4077-9165-cb4e07b29ae3
+
+
 ## Features
 - **Multiple HX711 Load Cells:**  
   Supports four load cells with a shared clock (GPIO 4) and dedicated data pins (GPIOs 32, 12, 13, and 15).

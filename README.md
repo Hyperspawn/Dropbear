@@ -57,10 +57,12 @@ Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transform
 
 UNDER CONSTRUCTION
 
-For the *foot* assembly [Click Here!](https://github.com/robit-man/dropbear-foot)
+### For the *foot* assembly [Click Here!](https://github.com/robit-man/dropbear-foot)
+
 <img src="https://github.com/user-attachments/assets/4cb30ee8-01fa-418d-aa52-2bbe6a1f1e2b" height="200px">
 
-For the *Head* and *Neck* assemblies, [click here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
+### For the *Head* and *Neck* assemblies, [click here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
+
 <img src="https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/d8ad1fae-21bd-44cc-b0aa-567115c87615" height="200px">
 
 For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide (TBA)](URL).

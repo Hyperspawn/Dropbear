@@ -1,5 +1,7 @@
 # ESP32 Bipedal Control System
-![Frame 2](https://github.com/user-attachments/assets/ff3d16a2-2a08-48e1-a70d-30c5e61fc7a5)
+
+![Frame 2(3)](https://github.com/user-attachments/assets/1a4015b7-2bcd-48eb-9b44-fc3f3899f1f7)
+
 
 ## Overview
 This project involves an ESP32-based control system designed to manage bipedal robot locomotion. The system handles multiple tasks, including torque control for actuators, sensor readings, IMU data processing, and CAN bus communication. The control logic ensures stability and smooth operation for the robot's legs by continuously adjusting torque based on sensor inputs and predefined commands.

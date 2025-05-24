@@ -59,11 +59,11 @@ UNDER CONSTRUCTION
 
 ### For the *foot* assembly [Click Here!](https://github.com/robit-man/dropbear-foot)
 
-<img src="https://github.com/user-attachments/assets/4cb30ee8-01fa-418d-aa52-2bbe6a1f1e2b" height="200px">
+[<img src="https://github.com/user-attachments/assets/4cb30ee8-01fa-418d-aa52-2bbe6a1f1e2b" width="200px">](https://github.com/robit-man/dropbear-foot)
 
-### For the *Head* and *Neck* assemblies, [click here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
+### For the *Head* and *Neck* assemblies, [Click Here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
 
-<img src="https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/d8ad1fae-21bd-44cc-b0aa-567115c87615" height="200px">
+[<img src="https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/d8ad1fae-21bd-44cc-b0aa-567115c87615" width="200px">](https://github.com/robit-man/Dropbear-Neck-Assembly/)
 
 For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide (TBA)](URL).
 To Explore Low Level Control, [Check out the folder in this repo!](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control)

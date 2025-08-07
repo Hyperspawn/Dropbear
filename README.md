@@ -7,6 +7,8 @@
 
 Welcome to the official repository of the Dropbear Humanoid Robot! Developed by [Hyperspawn](https://www.hyperspawn.co/) & [Pointblank](https://www.pointblankllc.com/). Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
 
+![IMG_0859-ezgif com-resize](https://github.com/user-attachments/assets/1e2d6ed1-090e-4ebf-a1b0-c3ef8a440b59)
+
 ## Overview
 Dropbear Humanoid is a cutting-edge robot featuring advanced AI and superior hardware, designed for seamless human interaction, exploration, and task execution in extreme conditions. This project encapsulates our vision at Hyperspawn Robotics for the future of humanoid robots.
 

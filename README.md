@@ -1,85 +1,105 @@
-<img src="https://github.com/Hyperspawn/Dropbear/blob/main/Media/Flows/dropbear.png" width="1024">
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Hyperspawn/Dropbear/main/Media/Flows/dropbear.png" alt="Dropbear humanoid robot" width="1024">
+</p>
 
-[![Group 2](https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/bd13c6f5-7a3f-4262-9891-4259f17abbe0)](https://t.me/fractionalrobots)
+# Dropbear
 
-![2024-11-1211-44-42-ezgif com-optimize](https://github.com/user-attachments/assets/3b87bff4-a530-43d1-a155-d4568508a4a4)
+### A humanoid you can build, understand, and make your own.
 
+Dropbear is a full-size humanoid robotics project by [Hyperspawn](https://hyperspawn.org) and [Pointblank](https://www.pointblankllc.com/). Mechanical designs, printable parts, robot models, and control research give you places to start across the whole robot—from a single assembly on your workbench to locomotion experiments in simulation.
 
-Welcome to the official repository of the Dropbear Humanoid Robot! Developed by [Hyperspawn](https://www.hyperspawn.co/) & [Pointblank](https://www.pointblankllc.com/). Dropbear is an advanced humanoid robot designed to operate in varied environments, showcasing agility, precision, and intelligence.
+The aim is to make building and using a humanoid feel approachable: find the parts, see how they fit, try a movement, understand what happened, and keep improving it. The [platform](https://hyperspawn.org/platform) brings the build and robot tools into one place.
 
-![IMG_0859-ezgif com-resize](https://github.com/user-attachments/assets/1e2d6ed1-090e-4ebf-a1b0-c3ef8a440b59)
+**[Open the platform →](https://hyperspawn.org/platform)** · [Try the simulator](https://hyperspawn.org/sim) · [Explore the hardware](https://github.com/Hyperspawn/dropbear_hardware) · [Join the community](https://hyperspawn.org/community)
 
-## Overview
-Dropbear Humanoid is a cutting-edge robot featuring advanced AI and superior hardware, designed for seamless human interaction, exploration, and task execution in extreme conditions. This project encapsulates our vision at Hyperspawn Robotics for the future of humanoid robots.
+## Start with something you can do today
 
-## Technical Specifications
-- **Height:** 6 feet and 2.02 inches (1880 mm)
-- **Weight:** 45 kg
-- **Actuators:** Brushless Lightweight DC Servo Motor - Precise Planetary Rotation MCX500 Driver 
-- **Sensors:** Vision, Audio, IMU, Pressure.
+| I want to… | Start here | First step |
+|---|---|---|
+| Explore Dropbear | [Browser simulator](https://hyperspawn.org/sim) | Open the scene and explore the robot before setting up a development environment. |
+| Build my own | [Build platform](https://hyperspawn.org/platform) | Open the Workshop, choose an assembly, and review its parts and prints. |
+| Print a part or assemble a limb | [Printable parts](https://github.com/Hyperspawn/dropbear_printables) | Choose a subassembly and open its prepared `.3mf` plates or individual STL files. |
+| Work on walking | [Locomotion](https://github.com/Hyperspawn/dropbear-locomotion) | Follow the setup guide, load a published checkpoint, and use the interactive viewer. |
+| Change the mechanical design | [Hardware](https://github.com/Hyperspawn/dropbear_hardware) | Open the full assembly or a component in CAD. |
 
-## Hardware Components
-Detailed specifications, CAD models, and schematics of the hardware components can be found here:
-- Actuator [MyActuator RMD-X8, X-10](https://www.myactuator.com/product-page/rmd-x8-pro)
-- Sensors
-  - Vision Sensors: Cameras: For visual perception, object recognition, and navigation.
-  - IMU (Inertial Measurement Unit): Combining accelerometers and gyroscopes for orientation and balance.
-  - Pressure Sensors: To detect the force exerted on the robot, aiding in gripping and interaction with objects.
-  - Audio Sensors - Microphones: For voice recognition and environmental sound detection.
-- Control Units
-  - [Nvidia Jetson Orin](https://www.nvidia.com/en-in/autonomous-machines/embedded-systems/jetson-orin/)
-  - Custom FPGAs
-- Body Frame Material: 3D-printed ABS, Extruded Aluminium
+You can begin with a head, an arm, or a simulated robot. Each is a useful project in its own right.
 
-## Software Components
+## From files to a robot on your workbench
 
-### Autonomous mode
-#### Vision Large Language Models (VLLMs)
-Dropbear uses Large Language Models for it's ability to process and understand human language. Vision LLMs extend the capabilities of traditional LLMs by integrating visual data processing, enabling dropbear to not just "see" but understand and interpret visual information in a contextually relevant manner.
-![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/d34ad4ca-2385-4377-8852-23f5e13de1cf)
+The design is split into subassemblies so you can inspect, print, assemble, and revise one part at a time. The hardware repository includes full-robot STEP and Fusion archives, alongside separate arms, legs, head, pelvis, and torso designs. The print repository organizes parts and plates by assembly.
 
-- **Natural Language Understanding**: Dropbear understands spoken or written instructions.
-- **Object Recognition**: Dropbear can identify and categorize objects within it's visual field.
-- **Navigation**: Dropbear can navigate complex environments by recognizing landmarks and obstacles.
-- **Interaction**: Dropbear can engage in conversational AI, providing responses and acting on user commands.
-- **Learning**: Continuously improves through interactions, adapting to new phrases and contexts.
+<p align="center">
+  <a href="https://github.com/Hyperspawn/dropbear_hardware">
+    <img src="https://media.githubusercontent.com/media/Hyperspawn/dropbear_hardware/main/Images/Right%20Arm.png" alt="CAD render of the Dropbear right arm assembly" width="280">
+    <img src="https://media.githubusercontent.com/media/Hyperspawn/dropbear_hardware/main/Images/Right%20Leg.png" alt="CAD render of the Dropbear right leg assembly" width="280">
+  </a>
+</p>
 
-##### Dropbear utilizes a pre-trained model (LLaVA-1.6 8B), finetuned for robotic applications, enhanced by continuous learning from interactions.
+*Right arm and right leg CAD renders from the hardware repository.*
 
-#### Utilization of Open X-Embodiment Data
-Open X-Embodiment RT-2 shows that vision-language models (VLMs) can be transformed into powerful vision-language-action (VLA) models, which can directly control a robot by combining VLM pre-training with robotic data.
-![image](https://github.com/Hyperspawn/Dropbear/assets/37779762/1c9407b2-da29-4758-a568-7aa9bf914ed4)
+1. **Choose your assembly.** Use the [Workshop](https://hyperspawn.org/platform/build) and [CAD files](https://github.com/Hyperspawn/dropbear_hardware) to understand the parts and how they connect.
+2. **Plan the parts and prints.** Review the [bill of materials](https://github.com/Hyperspawn/dropbear_bom/blob/main/bom.md), then select the matching [print files and settings](https://github.com/Hyperspawn/dropbear_printables). You can print them yourself or use a print service.
+3. **Assemble and document.** Follow the relevant [assembly documentation](https://github.com/Hyperspawn/dropbear_docs/tree/main/docs/03-assembly). Keep track of the design revision, substitutions, and anything the next builder should know.
+4. **Bring up one subsystem at a time.** Review the [low-level control source](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) and [firmware project](https://github.com/Hyperspawn/dropbear_firmware) against your hardware. Establish wiring, joint directions, limits, and calibration before attempting coordinated motion.
 
-### Teleoperation mode
-#### Dropbear can be used as a proxy avatar by controlling the robot using VR gear like a motion-tracking suit, etc. The robot precisely mimics your actions. While interacting with physical objects, VR gloves give you sensation feedback for an immersive teleportation-like experience.
-![Dropbear Teleoperation](https://github.com/user-attachments/assets/7d74c8da-ae27-4cde-bb03-05f5a6bca405)
+Build files, documentation, and control software are evolving at different speeds. Match revisions across them before ordering parts or powering an assembly. Use the BOM to develop a budget for your chosen configuration and local suppliers.
 
+## Walking you can inspect and reproduce
 
-## Assembly Instructions
+The [Dropbear locomotion project](https://github.com/Hyperspawn/dropbear-locomotion) publishes an Isaac Lab training environment, robot USD, policy checkpoints, evaluation reports, and an interactive viewer. You can load a policy, steer a simulated Dropbear, inspect its motion, and continue training.
 
-UNDER CONSTRUCTION
+[![Dropbear locomotion training shown in the interactive viewer](https://raw.githubusercontent.com/Hyperspawn/dropbear-locomotion/main/media/dropbear_train_live_domain_randomization.png)](https://github.com/Hyperspawn/dropbear-locomotion)
 
-### For the *foot* assembly [Click Here!](https://github.com/robit-man/dropbear-foot)
+*Isaac Lab simulation, with a training environment mirrored into the live viewer.*
 
-[<img src="https://github.com/user-attachments/assets/4cb30ee8-01fa-418d-aa52-2bbe6a1f1e2b" width="200px">](https://github.com/robit-man/dropbear-foot)
+The published **v0.1.0 flat-ground policy completed 128 simulation trials with zero falls**: 32 each for forward, backward, left, and right commands. Each trial ran for 20 seconds on a plane, with pushes disabled and a commanded speed of 0.20 m/s. Backward and lateral speed tracking remain areas for improvement. [Read the evaluation results](https://github.com/Hyperspawn/dropbear-locomotion/blob/main/evaluation/cardinal_0.20_strict_128.json).
 
-### For the *Head* and *Neck* assemblies, [Click Here!](https://github.com/robit-man/Dropbear-Neck-Assembly/)
+The **v0.2.0 terrain checkpoint is experimental**, adding terrain observations and low-obstacle training. These are simulation releases; physical walking and robustness require separate validation.
 
-[<img src="https://github.com/robit-man/dropbear-neck-assembly/assets/36677806/d8ad1fae-21bd-44cc-b0aa-567115c87615" width="200px">](https://github.com/robit-man/Dropbear-Neck-Assembly/)
+**[Run the locomotion quick start →](https://github.com/Hyperspawn/dropbear-locomotion#quick-start)**
 
-For a step-by-step guide on assembling the Dropbear Humanoid Robot, refer to the [Assembly Guide (TBA)](URL).
-To Explore Low Level Control, [Check out the folder in this repo!](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control)
+## Find the part of the project you need
 
-## Usage
-Instructions and guidelines for operating the Dropbear Humanoid Robot can be found in the [User Manual](URL).
+This repository is the project’s front door and contains the original hardware, software, and media. More focused work lives in the repositories below.
 
-## Contribution
-Contributions are welcome! Please refer to the [Contribution Guide](URL) for details.
+| Area | Repository | What you will find |
+|---|---|---|
+| Mechanical design | [dropbear_hardware](https://github.com/Hyperspawn/dropbear_hardware) | Full assembly CAD and mechanical subassemblies. |
+| 3D printing | [dropbear_printables](https://github.com/Hyperspawn/dropbear_printables) | Prepared print plates, individual parts, and print guidance. |
+| Parts and sourcing | [dropbear_bom](https://github.com/Hyperspawn/dropbear_bom) | Purchased components and assembly-level cost estimates. |
+| Build documentation | [dropbear_docs](https://github.com/Hyperspawn/dropbear_docs) | Assembly guides and sections for electronics, calibration, testing, and operation. |
+| Robot descriptions | [dropbear_urdf](https://github.com/Hyperspawn/dropbear_urdf) · [dropbear_mjcf](https://github.com/Hyperspawn/dropbear_mjcf) | Robot models and meshes for visualization and simulation. |
+| Simulation workspace | [dropbear_sim](https://github.com/Hyperspawn/dropbear_sim) | Links and submodules for the simulation projects. |
+| Locomotion research | [dropbear-locomotion](https://github.com/Hyperspawn/dropbear-locomotion) | Training, published policies, live viewing, and evaluations. |
+| Embedded control | [dropbear_firmware](https://github.com/Hyperspawn/dropbear_firmware) · [Original low-level control](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) | ESP32/CAN development and the original controller implementation. |
+| Motor tools | [myactuator-can](https://github.com/Hyperspawn/myactuator-can) | MyActuator driver and diagnostics work. |
 
-## License
-Dropbear Humanoid Robot is licensed under the [MIT License](URL).
+[Browse all Hyperspawn repositories →](https://github.com/orgs/Hyperspawn/repositories)
 
-## Contact
-For additional information and inquiries, please visit [Hyperspawn Robotics](http://www.hyperspawn-robotics.com) or contact us at contact@hyperspawn-robotics.com.
+## What we are working toward
 
-*Join us in advancing humanoid robotics!*
+We want a humanoid that people can understand well enough to repair, adapt, teach, and put to use. That means connecting the practical details—parts, wiring, calibration, and control—with simulation, teleoperation, and learned behavior.
+
+The next steps include more complete build guidance, better locomotion across terrain, and bringing control and learning workflows onto physical hardware. Teleoperation and language-driven behavior are development directions; their integration into a dependable whole-robot system is ongoing.
+
+The useful unit of progress is something another person can try: a better joint, a clearer assembly step, a reproducible policy, or a physical test with enough detail to repeat it.
+
+## Build with us
+
+Share a build photo, improve a part, reproduce an experiment, or fix the instruction that slowed you down. Small improvements travel a long way when the next person builds from the same files.
+
+- **Building hardware?** Include the assembly revision, material, print settings, and photos of the fit or failure.
+- **Working on software or policies?** Include the environment, configuration, and results; say whether the test ran in simulation or on hardware.
+- **Improving documentation?** Show the missing step, the corrected part, or the explanation you wish you had.
+
+Open an issue or pull request in the relevant repository. For general project questions, use [Dropbear issues](https://github.com/Hyperspawn/Dropbear/issues) or the [community](https://hyperspawn.org/community). The documentation project also has [contribution guidelines](https://github.com/Hyperspawn/dropbear_docs/blob/main/CONTRIBUTING.md).
+
+## Credits and licensing
+
+Dropbear is developed by **Hyperspawn and Pointblank**, with contributions from builders and researchers across the project. Locomotion training lineage and contributor credits are documented in the [locomotion repository](https://github.com/Hyperspawn/dropbear-locomotion#training-lineage-and-credits).
+
+This repository uses the [Hyperspawn License](https://github.com/Hyperspawn/Dropbear/blob/main/LICENSE), which restricts use to non-commercial purposes and requires a separate license for commercial use. Related repositories and assets carry their own terms; check the license supplied with the files you use.
+
+---
+
+[Start a build](https://hyperspawn.org/platform) · [Try the simulator](https://hyperspawn.org/sim) · [Meet the community](https://hyperspawn.org/community)

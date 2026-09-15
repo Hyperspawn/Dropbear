@@ -49,8 +49,53 @@ const long unsigned int ACTUATOR_ID_LEFT_HIP_YAW = 0x149;
 const long unsigned int ACTUATOR_ID_RIGHT_HIP_ROLL = 0x14B;
 const long unsigned int ACTUATOR_ID_LEFT_HIP_ROLL = 0x14A;
 
+const size_t ACTUATOR_COUNT = 12;
+const long unsigned int ACTUATOR_IDS[ACTUATOR_COUNT] = {
+  ACTUATOR_ID_RIGHT_CALF_OUTER,
+  ACTUATOR_ID_LEFT_CALF_OUTER,
+  ACTUATOR_ID_RIGHT_CALF_INNER,
+  ACTUATOR_ID_LEFT_CALF_INNER,
+  ACTUATOR_ID_RIGHT_KNEE,
+  ACTUATOR_ID_LEFT_KNEE,
+  ACTUATOR_ID_RIGHT_HIP_PITCH,
+  ACTUATOR_ID_LEFT_HIP_PITCH,
+  ACTUATOR_ID_RIGHT_HIP_YAW,
+  ACTUATOR_ID_LEFT_HIP_YAW,
+  ACTUATOR_ID_RIGHT_HIP_ROLL,
+  ACTUATOR_ID_LEFT_HIP_ROLL,
+};
+
+// Motion stays unavailable through the legacy text console. A future typed,
+// leased gateway must replace this path before physical output is re-enabled.
+const bool OBSERVATION_ONLY_FIRMWARE = true;
+const bool LEGACY_SERIAL_MOTION_ALLOWED = false;
+// A 0x92 angle request transmits on CAN even though it cannot command motion.
+// Keep this false on the installed robot until the motor tuple and response ID
+// have been verified on an isolated, unloaded actuator.
+const bool MOTOR_FEEDBACK_QUERY_ALLOWED = false;
+bool canReady = false;
+bool chiralityConfigured = false;
+
+const uint32_t TELEMETRY_PERIOD_MS = 20;  // 50 Hz; values are degrees on the wire.
+const uint32_t MOTOR_QUERY_PERIOD_MS = 20;
+const uint32_t MOTOR_FEEDBACK_STALE_MS = 500;
+const size_t OWNED_ACTUATOR_COUNT = 6;
+const size_t RIGHT_TELEMETRY_INDICES[OWNED_ACTUATOR_COUNT] = { 0, 2, 6, 4, 8, 10 };
+const size_t LEFT_TELEMETRY_INDICES[OWNED_ACTUATOR_COUNT] = { 1, 3, 7, 5, 9, 11 };
+
+float motorNativeDegrees[ACTUATOR_COUNT] = { 0 };
+uint32_t motorNativeReceivedMs[ACTUATOR_COUNT] = { 0 };
+bool motorNativeValid[ACTUATOR_COUNT] = { false };
+
+bool isKnownActuatorId(long unsigned int actuatorID) {
+  for (size_t i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (ACTUATOR_IDS[i] == actuatorID) return true;
+  }
+  return false;
+}
+
 // Variables to store torque values for each actuator
-int16_t torqueValues[12] = { 0 };
+int16_t torqueValues[ACTUATOR_COUNT] = { 0 };
 
 // Maximum torque limit in amps (adjustable via command)
 float maxTorqueLimit = 3.0;
@@ -70,12 +115,61 @@ const int numReadings = 10;
 int readingsOuter[numReadings], readingsInner[numReadings], readingsHip[numReadings], readingsKnee[numReadings], readingsButt[numReadings];
 int totalOuter = 0, totalInner = 0, totalHip = 0, totalKnee = 0, totalButt = 0;
 int averageOuter = 0, averageInner = 0, averageHip = 0, averageKnee = 0, averageButt = 0;
-int normalizedOuter = 0, normalizedInner = 0, normalizedHip = 0, normalizedKnee = 0, normalizedButt = 0;
+float normalizedOuter = 0, normalizedInner = 0, normalizedHip = 0, normalizedKnee = 0, normalizedButt = 0;
 int offsetOuter = 0, offsetInner = 0, offsetHip = 0, offsetKnee = 0, offsetButt = 0;
 int readIndex = 0;
 bool playMode = false;
 bool configMode = false;
-bool stopCommandsSent[12] = { false };  // To track if stop command was printed for each actuator
+bool stopCommandsSent[ACTUATOR_COUNT] = { false };  // To track if stop command was printed for each actuator
+
+bool actuatorBelongsToThisController(size_t index) {
+  if (index >= ACTUATOR_COUNT || isCenter) return false;
+  // ACTUATOR_IDS is arranged right, left for each physical joint pair.
+  return isLeft ? (index % 2 == 1) : (index % 2 == 0);
+}
+
+const size_t *ownedTelemetryIndices() {
+  return isLeft ? LEFT_TELEMETRY_INDICES : RIGHT_TELEMETRY_INDICES;
+}
+
+int actuatorIndexFromMotorResponseId(long unsigned int responseID) {
+  if (responseID < 0x100) return -1;
+  const long unsigned int requestID = responseID - 0x100;
+  for (size_t i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (ACTUATOR_IDS[i] == requestID && actuatorBelongsToThisController(i)) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+void ingestMotorFeedbackFrames() {
+  while (CAN.checkReceive() == CAN_MSGAVAIL) {
+    long unsigned int responseID = 0;
+    unsigned char length = 0;
+    unsigned char frame[8] = { 0 };
+    if (CAN.readMsgBuf(&responseID, &length, frame) != CAN_OK) return;
+    const int index = actuatorIndexFromMotorResponseId(responseID);
+    if (index < 0 || length != 8 || frame[0] != 0x92) continue;
+
+    const uint32_t unsignedRaw = static_cast<uint32_t>(frame[4])
+      | (static_cast<uint32_t>(frame[5]) << 8)
+      | (static_cast<uint32_t>(frame[6]) << 16)
+      | (static_cast<uint32_t>(frame[7]) << 24);
+    int32_t signedRaw = 0;
+    memcpy(&signedRaw, &unsignedRaw, sizeof(signedRaw));
+    motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
+    motorNativeReceivedMs[index] = millis();
+    motorNativeValid[index] = true;
+  }
+}
+
+void requestMotorNativeAngle(size_t actuatorIndex) {
+  if (!MOTOR_FEEDBACK_QUERY_ALLOWED || !canReady
+      || !actuatorBelongsToThisController(actuatorIndex)) return;
+  byte frame[8] = { 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+  CAN.sendMsgBuf(ACTUATOR_IDS[actuatorIndex], 0, 8, frame);
+}
 
 SemaphoreHandle_t serialMutex;
 
@@ -220,61 +314,61 @@ void impedanceControlTask(void *parameter) {
     unsigned long currentTime = millis();
 
     // Outer Calf Right (with direction multiplier)
-    if (impedanceEnabledRightOuterCalf) {
+    if (playMode && canReady && !isLeft && impedanceEnabledRightOuterCalf) {
       outerCalfControlRight.update(normalizedOuter, currentTime, outerCalfConstraintsRight.minAngle, outerCalfConstraintsRight.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_RIGHT_CALF_OUTER, outerCalfControlRight.torqueOutput * directionMultiplierRightOuterCalf);
     }
 
     // Outer Calf Left (with direction multiplier)
-    if (impedanceEnabledLeftOuterCalf) {
+    if (playMode && canReady && isLeft && impedanceEnabledLeftOuterCalf) {
       outerCalfControlLeft.update(normalizedOuter, currentTime, outerCalfConstraintsLeft.minAngle, outerCalfConstraintsLeft.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_LEFT_CALF_OUTER, outerCalfControlLeft.torqueOutput * directionMultiplierLeftOuterCalf);
     }
 
     // Inner Calf Right (with direction multiplier)
-    if (impedanceEnabledRightInnerCalf) {
+    if (playMode && canReady && !isLeft && impedanceEnabledRightInnerCalf) {
       innerCalfControlRight.update(normalizedInner, currentTime, innerCalfConstraintsRight.minAngle, innerCalfConstraintsRight.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_RIGHT_CALF_INNER, innerCalfControlRight.torqueOutput * directionMultiplierRightInnerCalf);
     }
 
     // Inner Calf Left (with direction multiplier)
-    if (impedanceEnabledLeftInnerCalf) {
+    if (playMode && canReady && isLeft && impedanceEnabledLeftInnerCalf) {
       innerCalfControlLeft.update(normalizedInner, currentTime, innerCalfConstraintsLeft.minAngle, innerCalfConstraintsLeft.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_LEFT_CALF_INNER, innerCalfControlLeft.torqueOutput * directionMultiplierLeftInnerCalf);
     }
 
     // Knee Right (with direction multiplier)
-    if (impedanceEnabledRightKnee) {
+    if (playMode && canReady && !isLeft && impedanceEnabledRightKnee) {
       kneeControlRight.update(normalizedKnee, currentTime, kneeConstraintsRight.minAngle, kneeConstraintsRight.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_RIGHT_KNEE, kneeControlRight.torqueOutput * directionMultiplierRightKnee);
     }
 
     // Knee Left (with direction multiplier)
-    if (impedanceEnabledLeftKnee) {
+    if (playMode && canReady && isLeft && impedanceEnabledLeftKnee) {
       kneeControlLeft.update(normalizedKnee, currentTime, kneeConstraintsLeft.minAngle, kneeConstraintsLeft.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_LEFT_KNEE, kneeControlLeft.torqueOutput * directionMultiplierLeftKnee);
     }
 
     // Hip Pitch Right (with direction multiplier)
-    if (impedanceEnabledRightHipPitch) {
+    if (playMode && canReady && !isLeft && impedanceEnabledRightHipPitch) {
       hipPitchControlRight.update(normalizedHip, currentTime, hipPitchConstraintsRight.minAngle, hipPitchConstraintsRight.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_RIGHT_HIP_PITCH, hipPitchControlRight.torqueOutput * directionMultiplierRightHipPitch);
     }
 
     // Hip Pitch Left (with direction multiplier)
-    if (impedanceEnabledLeftHipPitch) {
+    if (playMode && canReady && isLeft && impedanceEnabledLeftHipPitch) {
       hipPitchControlLeft.update(normalizedHip, currentTime, hipPitchConstraintsLeft.minAngle, hipPitchConstraintsLeft.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_LEFT_HIP_PITCH, hipPitchControlLeft.torqueOutput * directionMultiplierLeftHipPitch);
     }
 
     // Hip Roll Right (with direction multiplier)
-    if (impedanceEnabledRightHipRoll) {
+    if (playMode && canReady && !isLeft && impedanceEnabledRightHipRoll) {
       hipRollControlRight.update(normalizedButt, currentTime, hipRollConstraintsRight.minAngle, hipRollConstraintsRight.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_RIGHT_HIP_ROLL, hipRollControlRight.torqueOutput * directionMultiplierRightHipRoll);
     }
 
     // Hip Roll Left (with direction multiplier)
-    if (impedanceEnabledLeftHipRoll) {
+    if (playMode && canReady && isLeft && impedanceEnabledLeftHipRoll) {
       hipRollControlLeft.update(normalizedButt, currentTime, hipRollConstraintsLeft.minAngle, hipRollConstraintsLeft.maxAngle);
       sendTorqueCommand(ACTUATOR_ID_LEFT_HIP_ROLL, hipRollControlLeft.torqueOutput * directionMultiplierLeftHipRoll);
     }
@@ -296,26 +390,33 @@ void setup() {
 
   loadConfig();
 
-  // Initialize CAN bus if not in center mode
-  if (!isCenter) {
+  // Observation-only builds deliberately leave the MCP2515 untouched. A missing
+  // chirality configuration also prevents CAN ownership from being assumed.
+  if ((MOTOR_FEEDBACK_QUERY_ALLOWED || !OBSERVATION_ONLY_FIRMWARE)
+      && chiralityConfigured && !isCenter) {
     if (CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK) {
       Serial.println("CAN bus initialized at 1000kbps.");
+      CAN.setMode(MCP_NORMAL);
+      canReady = true;
     } else {
       Serial.println("CAN bus initialization failed.");
-      while (1)
-        ;
+      Serial.println("Actuation locked; passive sensor telemetry remains available.");
     }
-    CAN.setMode(MCP_NORMAL);
+  } else if (OBSERVATION_ONLY_FIRMWARE && !MOTOR_FEEDBACK_QUERY_ALLOWED) {
+    Serial.println("OBSERVATION_ONLY: CAN initialization and output are disabled.");
+  } else if (!chiralityConfigured) {
+    Serial.println("UNCONFIGURED: CAN disabled; passive sensor telemetry remains available.");
   }
 
-  // Activate play mode to start impedance control at startup
-  playMode = true;
+  // Always boot in a guarded pause. Sensor telemetry is independent below.
+  playMode = false;
 
   // Create tasks for different functionalities
   xTaskCreatePinnedToCore(readAndComputeTask, "Read and Compute Task", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(torqueControlTask, "Torque Control Task", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(checkChiralityTask, "Check Chirality Task", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(impedanceControlTask, "Impedance Control Task", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(motorFeedbackTask, "Motor Feedback Task", 4096, NULL, 1, NULL, 1);
 }
 
 void loop() {
@@ -338,42 +439,57 @@ void checkChiralityTask(void *parameter) {
 }
 
 void readAndComputeTask(void *parameter) {
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  uint32_t lastTelemetryMs = 0;
+
   while (true) {
-    if (playMode && !isCenter) {
+    if (!isCenter) {
       readSensors();
       computeAverages();
       normalizeReadings();
-      printReadings();
+      const uint32_t now = millis();
+      if (now - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+        printReadings();
+        lastTelemetryMs = now;
+      }
     }
-    vTaskDelay(1 / portTICK_PERIOD_MS);  // Small delay to prevent CPU hogging
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
+  }
+}
+
+void motorFeedbackTask(void *parameter) {
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  size_t nextMotor = 0;
+
+  while (true) {
+    if (MOTOR_FEEDBACK_QUERY_ALLOWED && canReady && !isCenter) {
+      ingestMotorFeedbackFrames();
+      requestMotorNativeAngle(ownedTelemetryIndices()[nextMotor]);
+      nextMotor = (nextMotor + 1) % OWNED_ACTUATOR_COUNT;
+    }
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(MOTOR_QUERY_PERIOD_MS));
   }
 }
 
 void torqueControlTask(void *parameter) {
   while (true) {
-    if (playMode && !isCenter) {
-      // Send torque commands to all actuators periodically
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_CALF_OUTER, torqueValues[0]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_CALF_OUTER, torqueValues[1]);
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_CALF_INNER, torqueValues[2]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_CALF_INNER, torqueValues[3]);
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_KNEE, torqueValues[4]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_KNEE, torqueValues[5]);
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_HIP_PITCH, torqueValues[6]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_HIP_PITCH, torqueValues[7]);
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_HIP_YAW, torqueValues[8]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_HIP_YAW, torqueValues[9]);
-      sendTorqueCommand(ACTUATOR_ID_RIGHT_HIP_ROLL, torqueValues[10]);
-      sendTorqueCommand(ACTUATOR_ID_LEFT_HIP_ROLL, torqueValues[11]);
-    } else {
-      // Automatically stop all actuators if playMode is false
-      for (int i = 0; i < 12; i++) {
+    if (!OBSERVATION_ONLY_FIRMWARE && playMode && canReady && !isCenter) {
+      // Each ESP32 owns only the six IDs for its configured leg.
+      for (size_t i = 0; i < ACTUATOR_COUNT; ++i) {
+        if (!actuatorBelongsToThisController(i)) continue;
+        stopCommandsSent[i] = false;
+        sendTorqueCommand(ACTUATOR_IDS[i], torqueValues[i]);
+      }
+    } else if (!OBSERVATION_ONLY_FIRMWARE && canReady && !isCenter) {
+      // Send one correctly addressed stop per owned actuator on each
+      // play-to-pause transition and on guarded startup.
+      for (size_t i = 0; i < ACTUATOR_COUNT; ++i) {
+        if (!actuatorBelongsToThisController(i)) continue;
         if (!stopCommandsSent[i]) {
-          sendStopCommand(i);
+          sendStopCommand(ACTUATOR_IDS[i]);
           stopCommandsSent[i] = true;
-          // Print a single line indicating stop command sent for this actuator
           if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
-            Serial.printf("Sent stop command to actuator index: %d\n", i);
+            Serial.printf("Sent stop command to actuator ID: 0x%03lX\n", ACTUATOR_IDS[i]);
             xSemaphoreGive(serialMutex);
           }
         }
@@ -603,6 +719,16 @@ void processSerialCommand(String command) {
   command.trim();
 
   if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
+    const bool legacyMotionCommand = command == "play"
+      || command.startsWith("torque")
+      || command.startsWith("impedance")
+      || command.startsWith("calibrateDirection");
+    if (legacyMotionCommand && !LEGACY_SERIAL_MOTION_ALLOWED) {
+      Serial.println("DENIED: legacy serial motion is disabled; use the reviewed leased gateway.");
+      xSemaphoreGive(serialMutex);
+      return;
+    }
+
     if (command == "config") {
       enterConfigurationMode();  // Enter config mode directly
     } else if (command.startsWith("calibrateDirection")) {
@@ -635,6 +761,7 @@ void processSerialCommand(String command) {
           multiplier = 1.0;
         } else {
           Serial.println("Invalid direction format. Use + or -.");
+          xSemaphoreGive(serialMutex);
           return;
         }
 
@@ -654,13 +781,14 @@ void processSerialCommand(String command) {
       int firstSpace = params.indexOf(' ');
       int secondSpace = params.indexOf(' ', firstSpace + 1);
       int thirdSpace = params.indexOf(' ', secondSpace + 1);
+      int fourthSpace = params.indexOf(' ', thirdSpace + 1);
 
-      if (firstSpace > 0 && secondSpace > firstSpace && thirdSpace > secondSpace) {
+      if (firstSpace > 0 && secondSpace > firstSpace && thirdSpace > secondSpace && fourthSpace > thirdSpace) {
         String legSide = params.substring(0, firstSpace);
         String appendage = params.substring(firstSpace + 1, secondSpace);
         bool enable = params.substring(secondSpace + 1, thirdSpace).toInt();  // 1 to enable, 0 to disable
-        float desiredPosition = params.substring(thirdSpace + 1).toFloat();   // Desired position
-        float desiredVelocity = params.substring(thirdSpace + 2).toFloat();   // Desired velocity
+        float desiredPosition = params.substring(thirdSpace + 1, fourthSpace).toFloat();
+        float desiredVelocity = params.substring(fourthSpace + 1).toFloat();
 
         // Enable/disable impedance for the specified joint and set desired position and velocity
         ImpedanceControl *control = nullptr;
@@ -773,7 +901,7 @@ void processSerialCommand(String command) {
     } else if (command == "stop") {
       playMode = false;
       Serial.println("Play mode disabled. Stopping all actuators.");
-      for (int i = 0; i < 12; i++) {
+      for (size_t i = 0; i < ACTUATOR_COUNT; i++) {
         stopCommandsSent[i] = false;  // Reset stop command tracking
       }
     } else if (command == "left" || command == "right" || command == "center") {
@@ -786,8 +914,10 @@ void processSerialCommand(String command) {
       } else if (command == "center") {
         isCenter = true;
       }
+      chiralityConfigured = true;
+      canReady = false;
       saveConfig();
-      Serial.println("Chirality set to: " + String(command));
+      Serial.println("Chirality saved as " + String(command) + "; reboot required.");
     } else if (command == "setJointConstraints") {
       configureJointConstraintsViaSerial();
     }
@@ -854,9 +984,9 @@ void saveConfig() {
 
 void loadConfig() {
   if (!SPIFFS.exists("/config.txt")) {
-    // If no config file exists, use hardcoded defaults and prompt for leg side
-    Serial.println("No configuration file found. Using hardcoded offsets and constraints.");
-    promptLegSide();  // Ask the user for the leg side (left, right, or center)
+    // Do not block sensor telemetry waiting for an interactive answer. CAN stays
+    // disabled until chirality has been explicitly saved and the board reboots.
+    Serial.println("No configuration file found. CAN disabled; streaming sensor degrees with default offsets.");
     return;
   }
 
@@ -876,11 +1006,16 @@ void loadConfig() {
     if (side == "left") {
       isLeft = true;
       isCenter = false;
+      chiralityConfigured = true;
     } else if (side == "right") {
       isLeft = false;
       isCenter = false;
+      chiralityConfigured = true;
     } else if (side == "center") {
       isCenter = true;
+      chiralityConfigured = true;
+    } else {
+      Serial.println("Invalid chirality in configuration. CAN remains disabled.");
     }
   }
 
@@ -946,8 +1081,10 @@ void handleConfigurationCommand(String command) {
     } else if (command == "center") {
       isCenter = true;
     }
+    chiralityConfigured = true;
+    canReady = false;
     saveConfig();
-    Serial.println("Chirality set to: " + String(command));
+    Serial.println("Chirality saved as " + String(command) + "; reboot required.");
   } else if (command == "calibrate") {
     calibrateSensors();
     Serial.println("Sensors calibrated.");
@@ -965,8 +1102,8 @@ void enterConfigurationMode() {
 
   // Stop all actuators three times to ensure they are stopped
   for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 12; j++) {
-      sendStopCommand(j);
+    for (size_t j = 0; j < ACTUATOR_COUNT; j++) {
+      if (actuatorBelongsToThisController(j)) sendStopCommand(ACTUATOR_IDS[j]);
     }
   }
 
@@ -1099,6 +1236,12 @@ void calibrateSensors() {
 
 void printReadings() {
   if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
+    const uint32_t now = millis();
+    if (MOTOR_FEEDBACK_QUERY_ALLOWED) {
+      Serial.print("DB2,");
+      Serial.print(now);
+      Serial.print(",");
+    }
     Serial.print(normalizedOuter, 1);
     Serial.print(",");
     Serial.print(normalizedInner, 1);
@@ -1107,7 +1250,21 @@ void printReadings() {
     Serial.print(",");
     Serial.print(normalizedKnee, 1);
     Serial.print(",");
-    Serial.println(normalizedButt, 1);
+    Serial.print(normalizedButt, 1);
+    if (MOTOR_FEEDBACK_QUERY_ALLOWED) {
+      const size_t *indices = ownedTelemetryIndices();
+      for (size_t i = 0; i < OWNED_ACTUATOR_COUNT; ++i) {
+        const size_t index = indices[i];
+        Serial.print(",");
+        if (motorNativeValid[index]
+            && now - motorNativeReceivedMs[index] <= MOTOR_FEEDBACK_STALE_MS) {
+          Serial.print(motorNativeDegrees[index], 2);
+        } else {
+          Serial.print("NA");
+        }
+      }
+    }
+    Serial.println();
     xSemaphoreGive(serialMutex);
   }
 }
@@ -1152,11 +1309,13 @@ void printMACAddress() {
 }
 
 void sendTorqueCommand(long unsigned int actuatorID, int16_t torqueValue) {
+  if (OBSERVATION_ONLY_FIRMWARE || !canReady || !playMode || !isKnownActuatorId(actuatorID)) return;
   byte buf[8] = { 0xA1, 0x00, 0x00, 0x00, (byte)(torqueValue & 0xFF), (byte)(torqueValue >> 8), 0x00, 0x00 };
   CAN.sendMsgBuf(actuatorID, 0, 8, buf);
 }
 
 void sendStopCommand(long unsigned int actuatorID) {
+  if (OBSERVATION_ONLY_FIRMWARE || !canReady || !isKnownActuatorId(actuatorID)) return;
   byte buf[8] = { 0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   CAN.sendMsgBuf(actuatorID, 0, 8, buf);
 }
@@ -1284,7 +1443,7 @@ void printHelp() {
   Serial.println("   Example: direction right_outer_calf +");
   
   Serial.println("5. impedance");
-  Serial.println("   Enable or disable impedance control for a joint and set desired position and velocity.");
+  Serial.println("   LOCKED in this observation-only build.");
   Serial.println("   Usage: impedance <legSide> <appendage> <enable (1 or 0)> <desiredPosition> <desiredVelocity>");
   Serial.println("   Example: impedance left knee 1 180 0");
 
@@ -1294,12 +1453,12 @@ void printHelp() {
   Serial.println("   Example: constrain right_knee 0 180");
 
   Serial.println("7. torque");
-  Serial.println("   Set torque value for the specified joint.");
+  Serial.println("   LOCKED in this observation-only build.");
   Serial.println("   Usage: torque <legSide> <appendage> <torqueValue>");
   Serial.println("   Example: torque left knee 100");
 
   Serial.println("8. calibrateDirection");
-  Serial.println("   Calibrate torque direction for the specified joint.");
+  Serial.println("   LOCKED in this observation-only build.");
   Serial.println("   Valid joints:");
   Serial.println("     right_outer_calf, right_inner_calf, left_outer_calf, left_inner_calf");
   Serial.println("     right_knee, left_knee, right_hip_pitch, left_hip_pitch");
@@ -1328,7 +1487,7 @@ void printHelp() {
   Serial.println("   Usage: resetSPIFFS");
 
   Serial.println("14. play");
-  Serial.println("   Enable play mode (start impedance control).");
+  Serial.println("   LOCKED in this observation-only build.");
   Serial.println("   Usage: play");
 
   Serial.println("15. stop");

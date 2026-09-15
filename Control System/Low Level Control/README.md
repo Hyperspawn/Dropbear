@@ -1,87 +1,90 @@
-# ESP32 Bipedal Control System
+# ESP32 bipedal control system
 
-![Frame 2(3)](https://github.com/user-attachments/assets/1a4015b7-2bcd-48eb-9b44-fc3f3899f1f7)
+## Current source state
 
+This sketch is the source for each leg ESP32. The reviewed source boots in an
+observation-only state: external AS5600 angles continue streaming, CAN motion
+is disabled, and legacy serial motion commands are denied. These changes are
+not active on an installed controller until that controller is separately
+built, reviewed, and flashed.
 
-## Overview
-This project involves an ESP32-based control system designed to manage bipedal robot locomotion. The system handles multiple tasks, including torque control for actuators, sensor readings, IMU data processing, and CAN bus communication. The control logic ensures stability and smooth operation for the robot's legs by continuously adjusting torque based on sensor inputs and predefined commands.
+## Observation behavior
 
-## Features
-- **Torque Control**: Manages torque for 12 actuators (6 per leg) through CAN bus communication.
-- **IMU Data Processing**: Reads and processes data from multiple IMUs for accurate orientation and motion tracking.
-- **Sensor Calibration**: Calibrates sensors and saves offset values for accurate movement control.
-- **Command Interface**: Accepts serial commands to control the robot, adjust settings, and retrieve status information.
-- **Multi-tasking**: Utilizes FreeRTOS for concurrent execution of tasks such as torque control, sensor reading, and IMU processing.
-
-## Hardware Requirements
-- **ESP32 DevKit V1**
-- **MCP2515 CAN Module**
-- **IMUs (e.g., MPU-9250)**
-- **Torque Sensors**
-- **Actuators for bipedal robot legs**
+- Five single-turn AS5600 analog outputs are sampled through the ESP32 ADC.
+- Ten readings are averaged, stored side offsets are applied, and angles are
+  emitted in degrees at 50 Hz.
+- Each AS5600 angle is a 1:1 actuator output-shaft measurement.
+- The knee AS5600 drives the high-mounted upstream knee actuator joint 1:1.
+  The closed-loop linkage produces the larger downstream anatomical knee bend;
+  firmware and host code must not apply another knee multiplier.
+- A disabled-by-default RMD V4.4 `0x92` query path can add independently
+  measured motor-native angles after isolated validation.
 
 ## Pinout
-- **CAN0_INT**: GPIO 17 - Interrupt pin for CAN bus.
-- **CAN0_CS**: GPIO 5 - Chip select pin for CAN bus.
-- **I2C SDA**: GPIO 21 - I2C data line for IMU communication.
-- **I2C SCL**: GPIO 22 - I2C clock line for IMU communication.
-- **Outer Calf AS5600 Encoder**: GPIO 14 - Analog input for outer calf sensor.
-- **Inner Calf AS5600 Encoder**: GPIO 27 - Analog input for inner calf sensor.
-- **Hip AS5600 Encoder**: GPIO 26 - Analog input for hip sensor.
-- **Knee AS5600 Encoder**: GPIO 25 - Analog input for knee sensor.
-- **Butt AS5600 Encoder**: GPIO 33 - Analog input for butt sensor.
+
+- **CAN0_INT**: GPIO 17
+- **CAN0_CS**: GPIO 5
+- **I2C SDA**: GPIO 21
+- **I2C SCL**: GPIO 22
+- **Outer calf AS5600**: GPIO 14 analog input
+- **Inner calf AS5600**: GPIO 27 analog input
+- **Hip pitch AS5600**: GPIO 26 analog input
+- **Knee actuator AS5600**: GPIO 25 analog input
+- **Hip roll AS5600**: GPIO 33 analog input
 
 ## Actuator IDs
-- **Right Calf Outer**: 0x144
-- **Left Calf Outer**: 0x141
-- **Right Calf Inner**: 0x143
-- **Left Calf Inner**: 0x142
-- **Right Knee**: 0x148
-- **Left Knee**: 0x145
-- **Right Hip Pitch**: 0x147
-- **Left Hip Pitch**: 0x146
-- **Right Hip Yaw**: 0x14C
-- **Left Hip Yaw**: 0x149
-- **Right Hip Roll**: 0x14B
-- **Left Hip Roll**: 0x14A
 
-## Usage
-1. **Setup and Initialization**: 
-   - Connect the ESP32 to the sensors and actuators as per the pinout.
-   - Power the system and open a serial monitor at 115200 baud.
-   
-2. **Calibration**: 
-   - Use the `calibrate` command to calibrate sensors and save offset values.
-   
-3. **Operating Modes**:
-   - **Play Mode**: Use the `play` command to enable torque control and begin operation.
-   - **Stop Mode**: Use the `stop` command to disable torque control and stop all actuators.
-   - **Configuration Mode**: Enter configuration mode with the `config` command to change settings.
+| Joint | Left | Right |
+|---|---:|---:|
+| Outer calf | `0x141` | `0x144` |
+| Inner calf | `0x142` | `0x143` |
+| Knee actuator | `0x145` | `0x148` |
+| Hip pitch | `0x146` | `0x147` |
+| Hip yaw | `0x149` | `0x14C` |
+| Hip roll | `0x14A` | `0x14B` |
 
-4. **Serial Commands**:
-   - `torque left outer_calf 200`: Set the torque for the left outer calf to 200.
-   - `mac`: Print the MAC address of the ESP32.
-   - `chirality`: Check the current leg side or center mode.
-   - `save`: Save the current configuration to SPIFFS.
-   - `play`: Start the torque control loop.
-   - `stop`: Stop all actuators.
-   - `config`: Enter configuration mode.
-   - `left`, `right`, `center`: Set the chirality (left or right leg) or enable center mode for IMU processing.
-   - `stop_actuator 0x144`: Stop a specific actuator by its ID.
-   - `buzz_motor 0x144 100 0.5`: Buzz a motor with the specified frequency and intensity.
+## Telemetry
+
+The installed legacy build emits:
+
+```text
+outer_calf,inner_calf,hip_pitch,knee_actuator,hip_roll
+```
+
+All five values are external sensor degrees. They are not motor encoder values.
+
+The source also defines a future `DB2` record:
+
+```text
+DB2,millis,<5 external degrees>,<6 motor-native degrees or NA>
+```
+
+The six motor values are ordered outer calf, inner calf, hip pitch, knee,
+hip yaw, hip roll. `MOTOR_FEEDBACK_QUERY_ALLOWED` remains `false` because the
+`0x92` request transmits a CAN frame. Validate the request and `request + 0x100`
+response ID with an isolated unloaded actuator before enabling it. The browser
+supports both formats and never fills a missing motor value from an AS5600.
+
+## Current serial surface
+
+- `mac`, `chirality`, `save`, and read-only configuration inspection remain
+  available.
+- `play`, `torque`, `impedance`, and `calibrateDirection` are denied by the
+  legacy motion gate.
+- Changing chirality saves the setting, disables CAN, and requires a reboot.
+- Browser software zero is intentionally outside this firmware. It neither
+  changes stored offsets nor sends a calibration command.
+
+See [SAFETY_ARCHITECTURE.md](SAFETY_ARCHITECTURE.md) for the controller flow,
+failure states, and motor-observation release sequence.
 
 ## Dependencies
-- **Arduino Core for ESP32**
-- **MCP_CAN Library**
-- **SPIFFS**
-- **FreeRTOS**
 
-## To-Do
-Implement correct channels for IMU's present on calves and feet
-Implement streaming of IMU data from torso
+- Arduino Core for ESP32
+- MCP_CAN library
+- SPIFFS
+- FreeRTOS
 
 ## License
-This project is licensed under the MIT License.
 
-## Acknowledgments
-Special thanks to the contributors of the libraries used in this project.
+This project is licensed under the MIT License.

@@ -17,8 +17,8 @@
  *
  * Updated architecture:
  *   - Preserves existing ESP32 MCP2515/SPI and I2C pinout.
- *   - Portal-enabled builds move joint sensors to ADC1 GPIOs because classic
- *     ESP32 ADC2 channels cannot be used reliably while Wi-Fi is active.
+ *   - Preserves the original five AS5600 OUT GPIOs and decodes their one-wire
+ *     PWM duty cycle with interrupts, allowing Wi-Fi to remain active.
  *   - Preserves MyActuator CAN IDs 0x141..0x14C.
  *   - Preserves A1 torque-control and 0x81 stop commands.
  *   - Uses one periodic CAN-output task as the normal actuator writer.
@@ -28,7 +28,7 @@
  *   - Calibration uses an output override instead of racing the CAN task.
  *   - Fixes impedance serial parsing and joint-constraint persistence.
  *   - Starts the IMU task in center mode.
- *   - Sensor acquisition remains 1 kHz; serial telemetry is throttled to 50 Hz.
+ *   - AS5600 pulse state is processed at 1 kHz; serial telemetry is throttled to 50 Hz.
  *   - Adds role-aware Wi-Fi SoftAP + captive portal control/configuration.
  *   - LEFTLEG / RIGHTLEG / CENTER SSID follows persisted chirality.
  *   - Existing SPIFFS configuration is loaded into the web configurator.
@@ -53,37 +53,127 @@
 
 MCP_CAN CAN(CAN_CS_PIN);
 
-// Full-time Wi-Fi and ESP32 ADC2 cannot coexist on classic ESP32.
-// Portal-enabled builds therefore use only ADC1 sensor inputs.
+// The leg encoders are AS5600 OUT signals on independent one-wire GPIOs.
+// They are decoded as PWM rather than sampled through ADC2, so the original
+// Dropbear wiring can coexist with the always-on Wi-Fi captive portal.
 //
-// WIFI-SAFE ADC1 PINOUT (default):
-//   outer calf  -> GPIO32  ADC1_CH4
-//   inner calf  -> GPIO34  ADC1_CH6
-//   hip pitch   -> GPIO35  ADC1_CH7
-//   knee        -> GPIO36  ADC1_CH0
-//   hip roll    -> GPIO33  ADC1_CH5
+// ORIGINAL DROPBEAR SENSOR PINOUT (preserved):
+//   outer calf  -> GPIO14
+//   inner calf  -> GPIO27
+//   hip pitch   -> GPIO26
+//   knee        -> GPIO25
+//   hip roll    -> GPIO33
 //
-// LEGACY DROPBEAR PINOUT:
-//   14,27,26,25,33. GPIO14/25/26/27 are ADC2 and are not safe while
-//   Wi-Fi is active on classic ESP32.
-//
-// Set to 0 only if retaining the legacy wiring; doing so disables the Wi-Fi
-// captive portal at runtime so ADC2 sensing remains valid.
+// AS5600 PWM timing is nominally 115/230/460/920 Hz and represents 0..360°
+// between approximately 2.9% and 97.1% duty cycle. The interrupt capture below
+// measures period/high-time without consuming ADC2, which avoids the classic
+// ESP32 Wi-Fi/ADC2 resource conflict while retaining the existing wiring.
 #define DROPBEAR_ENABLE_WIFI_PORTAL 1
 
-#if DROPBEAR_ENABLE_WIFI_PORTAL
-static const int PIN_OUTER_CALF = 32;
-static const int PIN_INNER_CALF = 34;
-static const int PIN_HIP_PITCH = 35;
-static const int PIN_KNEE = 36;
-static const int PIN_HIP_ROLL = 33;
-#else
 static const int PIN_OUTER_CALF = 14;
 static const int PIN_INNER_CALF = 27;
 static const int PIN_HIP_PITCH = 26;
 static const int PIN_KNEE = 25;
 static const int PIN_HIP_ROLL = 33;
-#endif
+
+static const uint8_t AS5600_SENSOR_COUNT = 5;
+static const uint32_t AS5600_STALE_US = 100000; // 100 ms: safely above 115 Hz frame period
+static const float AS5600_PWM_MIN_DUTY = 128.0f / 4351.0f;
+static const float AS5600_PWM_MAX_DUTY = 4223.0f / 4351.0f;
+
+struct As5600PwmCapture {
+  volatile uint32_t lastRiseUs = 0;
+  volatile uint32_t highUs = 0;
+  volatile uint32_t periodUs = 0;
+  volatile uint32_t lastEdgeUs = 0;
+  volatile uint32_t frames = 0;
+  volatile bool valid = false;
+};
+
+As5600PwmCapture as5600Capture[AS5600_SENSOR_COUNT];
+static const int AS5600_PINS[AS5600_SENSOR_COUNT] = {
+  PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL
+};
+
+void IRAM_ATTR handleAs5600Edge(uint8_t index, int pin) {
+  const uint32_t now = micros();
+  As5600PwmCapture &c = as5600Capture[index];
+  const int level = digitalRead(pin);
+  c.lastEdgeUs = now;
+
+  if (level) {
+    if (c.lastRiseUs != 0) {
+      const uint32_t period = now - c.lastRiseUs;
+      // Accept all four documented AS5600 PWM frequencies with generous margin.
+      if (period >= 800 && period <= 12000) {
+        c.periodUs = period;
+        if (c.highUs > 0 && c.highUs < period) {
+          c.valid = true;
+          c.frames++;
+        }
+      }
+    }
+    c.lastRiseUs = now;
+  } else if (c.lastRiseUs != 0) {
+    const uint32_t high = now - c.lastRiseUs;
+    if (high > 0 && high < 12000) c.highUs = high;
+  }
+}
+
+void IRAM_ATTR as5600Isr0() { handleAs5600Edge(0, PIN_OUTER_CALF); }
+void IRAM_ATTR as5600Isr1() { handleAs5600Edge(1, PIN_INNER_CALF); }
+void IRAM_ATTR as5600Isr2() { handleAs5600Edge(2, PIN_HIP_PITCH); }
+void IRAM_ATTR as5600Isr3() { handleAs5600Edge(3, PIN_KNEE); }
+void IRAM_ATTR as5600Isr4() { handleAs5600Edge(4, PIN_HIP_ROLL); }
+
+void setupAs5600Inputs() {
+  for (int i = 0; i < AS5600_SENSOR_COUNT; ++i) pinMode(AS5600_PINS[i], INPUT);
+  attachInterrupt(digitalPinToInterrupt(PIN_OUTER_CALF), as5600Isr0, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_INNER_CALF), as5600Isr1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_HIP_PITCH), as5600Isr2, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_KNEE), as5600Isr3, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_HIP_ROLL), as5600Isr4, CHANGE);
+}
+
+bool readAs5600Pwm(uint8_t index, float &angleDeg, float &duty, float &freqHz,
+                   uint32_t &periodUs, uint32_t &highUs, uint32_t &ageUs) {
+  if (index >= AS5600_SENSOR_COUNT) return false;
+
+  noInterrupts();
+  const As5600PwmCapture snapshot = as5600Capture[index];
+  interrupts();
+
+  const uint32_t nowUs = micros();
+  ageUs = snapshot.lastEdgeUs ? (nowUs - snapshot.lastEdgeUs) : UINT32_MAX;
+  periodUs = snapshot.periodUs;
+  highUs = snapshot.highUs;
+
+  if (!snapshot.valid || periodUs == 0 || highUs == 0 || ageUs > AS5600_STALE_US) {
+    duty = 0.0f;
+    freqHz = 0.0f;
+    angleDeg = 0.0f;
+    return false;
+  }
+
+  duty = static_cast<float>(highUs) / static_cast<float>(periodUs);
+  freqHz = 1000000.0f / static_cast<float>(periodUs);
+  float fraction = (duty - AS5600_PWM_MIN_DUTY) /
+                   (AS5600_PWM_MAX_DUTY - AS5600_PWM_MIN_DUTY);
+  if (fraction < 0.0f) fraction = 0.0f;
+  if (fraction > 1.0f) fraction = 1.0f;
+  angleDeg = fraction * 360.0f;
+  return true;
+}
+
+int as5600PseudoRaw(uint8_t index) {
+  float angle = 0.0f, duty = 0.0f, freq = 0.0f;
+  uint32_t period = 0, high = 0, age = 0;
+  if (!readAs5600Pwm(index, angle, duty, freq, period, high, age)) return -1;
+  int raw = static_cast<int>(lroundf((angle / 360.0f) * 4095.0f));
+  if (raw < 0) raw = 0;
+  if (raw > 4095) raw = 4095;
+  return raw;
+}
 
 // -----------------------------------------------------------------------------
 // Actuator mapping
@@ -200,6 +290,123 @@ volatile bool runtimeControlReady = false;
 volatile bool runtimeImuReady = false;
 
 // -----------------------------------------------------------------------------
+// Dual operating structure
+// -----------------------------------------------------------------------------
+// STANDALONE is the existing Dropbear controller: portal/Serial command
+// authority with manual torque + external-sensor impedance control.
+// HYPERSPAWN_ROUTE is the parallel ROS2/CAN route derived from
+// Hyperspawn/dropbear_firmware. Hardware, sensors, safety and RMD output remain
+// shared; only command authority and upstream state transport change.
+enum OperatingMode : uint8_t {
+  OPERATING_STANDALONE = 0,
+  OPERATING_HYPERSPAWN_ROUTE = 1
+};
+
+volatile OperatingMode operatingMode = OPERATING_STANDALONE; // default/original path
+String operatingModeAtBoot = "standalone";
+
+String operatingModeName() {
+  return operatingMode == OPERATING_HYPERSPAWN_ROUTE ? "hyperspawn" : "standalone";
+}
+
+// Hyperspawn/dropbear_firmware network constants. The existing repository uses
+// node 0x12 for left_leg, 0x13 for right_leg, brain 0x01, 1 Mbps CAN, 500 Hz
+// control/state cadence and a 1 Hz heartbeat.
+static const uint8_t HS_NODE_BRAIN = 0x01;
+static const uint8_t HS_NODE_LEFT_LEG = 0x12;
+static const uint8_t HS_NODE_RIGHT_LEG = 0x13;
+static const uint8_t HS_LIMB_LEFT_LEG = 2;
+static const uint8_t HS_LIMB_RIGHT_LEG = 3;
+static const uint8_t HS_MSG_HEARTBEAT = 0x00;
+static const uint8_t HS_MSG_CMD_POS = 0x01;
+static const uint8_t HS_MSG_CMD_TORQUE = 0x02;
+static const uint8_t HS_MSG_STATE = 0x03;
+// Extension message types for joints 4-5. CAN 2.0 carries only four int16
+// values in one frame, while each Dropbear leg has six joints.
+static const uint8_t HS_MSG_CMD_POS_EXT = 0x04;
+static const uint8_t HS_MSG_CMD_TORQUE_EXT = 0x05;
+static const uint8_t HS_MSG_STATE_EXT = 0x06;
+static const uint8_t HS_MSG_FAULT = 0x0F;
+static const uint16_t HS_ROUTE_HZ = 500;
+static const uint16_t HS_HEARTBEAT_HZ = 1;
+
+// Wire joint order used by this combined firmware:
+//   0 hip_pitch, 1 hip_roll, 2 hip_yaw, 3 knee, 4 outer_calf/ankle-A,
+//   5 inner_calf/ankle-B.
+static const uint8_t HS_JOINT_COUNT = 6;
+enum HyperspawnJointIndex : uint8_t {
+  HS_HIP_PITCH = 0,
+  HS_HIP_ROLL = 1,
+  HS_HIP_YAW = 2,
+  HS_KNEE = 3,
+  HS_OUTER_CALF = 4,
+  HS_INNER_CALF = 5
+};
+
+enum HyperspawnControlMode : uint8_t {
+  HS_CONTROL_NONE = 0,
+  HS_CONTROL_POSITION = 1,
+  HS_CONTROL_TORQUE = 2
+};
+
+volatile HyperspawnControlMode hyperspawnControlMode = HS_CONTROL_NONE;
+volatile int16_t hyperspawnPositionSetpoints[HS_JOINT_COUNT] = {0};
+volatile int16_t hyperspawnTorqueSetpoints[HS_JOINT_COUNT] = {0};
+// Targeted two-frame commands decode into staging banks first. They are copied
+// into the active banks only when the full six-joint command is complete.
+volatile int16_t hyperspawnPositionPending[HS_JOINT_COUNT] = {0};
+volatile int16_t hyperspawnTorquePending[HS_JOINT_COUNT] = {0};
+volatile int16_t hyperspawnJointState[HS_JOINT_COUNT] = {0};
+volatile uint32_t hyperspawnLastCommandMs = 0;
+volatile uint32_t hyperspawnLastPositionMs = 0;
+volatile uint32_t hyperspawnLastTorqueMs = 0;
+volatile uint32_t hyperspawnRxFrames = 0;
+volatile uint32_t hyperspawnRxLegacyFrames = 0;
+volatile uint32_t hyperspawnRxTargetedFrames = 0;
+volatile uint32_t hyperspawnRxRejectedFrames = 0;
+volatile uint32_t hyperspawnStateFrames = 0;
+volatile uint32_t hyperspawnHeartbeatFrames = 0;
+volatile uint32_t hyperspawnFaultFrames = 0;
+volatile uint32_t hyperspawnWatchdogTrips = 0;
+volatile bool hyperspawnWatchdogTripped = false;
+volatile uint8_t hyperspawnFaultCode = 0;
+// Targeted six-joint commands arrive as two CAN 2.0 frames. Arm/update control
+// only after both fragments have arrived inside this window.
+static const uint32_t HS_FRAGMENT_TIMEOUT_MS = 50;
+volatile bool hyperspawnPositionBasePending = false;
+volatile bool hyperspawnPositionExtPending = false;
+volatile bool hyperspawnTorqueBasePending = false;
+volatile bool hyperspawnTorqueExtPending = false;
+volatile uint32_t hyperspawnPositionBaseMs = 0;
+volatile uint32_t hyperspawnPositionExtMs = 0;
+volatile uint32_t hyperspawnTorqueBaseMs = 0;
+volatile uint32_t hyperspawnTorqueExtMs = 0;
+volatile uint32_t hyperspawnCompletedCommands = 0;
+volatile uint32_t hyperspawnFragmentTimeouts = 0;
+volatile uint32_t lastHyperspawnTaskMs = 0;
+volatile uint32_t hyperspawnTaskLoops = 0;
+
+uint32_t hyperspawnCommandTimeoutMs = 250;
+bool hyperspawnLegacyBroadcast = false; // unsafe on a shared multi-limb bus; compatibility opt-in
+bool hyperspawnAutoArm = true;
+float hyperspawnPositionUnitsPerDegree = 1.0f; // published repo leaves scaling unspecified
+
+TaskHandle_t canRxTaskHandle = nullptr;
+TaskHandle_t hyperspawnTaskHandle = nullptr;
+volatile uint32_t canRxTaskLoops = 0;
+volatile uint32_t lastCanRxTaskMs = 0;
+volatile uint32_t canRxFrames = 0;
+volatile uint32_t canRxErrors = 0;
+volatile uint32_t lastCanRxMs = 0;
+
+// TCA9548A is reserved for the IMU bank; AS5600s never use this bus.
+static const uint8_t IMU_MUX_ADDRESS = 0x70;
+static const uint8_t IMU_DEVICE_ADDRESS = 0x68;
+volatile bool imuMuxSeen = false;
+volatile uint32_t imuMuxSelectOk = 0;
+volatile uint32_t imuMuxSelectFail = 0;
+
+// -----------------------------------------------------------------------------
 // Captive portal / web command plumbing
 // -----------------------------------------------------------------------------
 
@@ -238,6 +445,105 @@ volatile uint32_t portalRebootAtMs = 0;
 bool portalRoutesRegistered = false;
 String portalSSID = "DROPBEAR-SETUP";
 
+// -----------------------------------------------------------------------------
+// Runtime diagnostics
+// -----------------------------------------------------------------------------
+
+struct SensorDiagnostic {
+  volatile int raw = 0; // 0..4095 pseudo-raw derived from decoded PWM angle
+  volatile float filtered = 0.0f;
+  volatile float angle = 0.0f;
+  volatile int minRaw = 4095;
+  volatile int maxRaw = 0;
+  volatile int lastChangeRaw = -1;
+  volatile uint32_t samples = 0;
+  volatile uint32_t lastSampleMs = 0;
+  volatile uint32_t lastChangeMs = 0;
+  volatile bool signalValid = false;
+  volatile float duty = 0.0f;
+  volatile float frequencyHz = 0.0f;
+  volatile uint32_t periodUs = 0;
+  volatile uint32_t highUs = 0;
+  volatile uint32_t pulseAgeUs = UINT32_MAX;
+  volatile uint32_t pwmFrames = 0;
+};
+
+struct ActuatorDiagnostic {
+  volatile uint32_t txOk = 0;
+  volatile uint32_t txFail = 0;
+  volatile uint32_t lastTxMs = 0;
+  volatile int16_t lastCommand = 0;
+  volatile uint8_t lastOpcode = 0;
+  volatile int lastResult = 0;
+};
+
+struct ImuDiagnostic {
+  volatile bool everSeen = false;
+  volatile uint32_t readOk = 0;
+  volatile uint32_t readFail = 0;
+  volatile uint32_t lastProbeMs = 0;
+  volatile uint32_t lastSeenMs = 0;
+  volatile int16_t ax = 0;
+  volatile int16_t ay = 0;
+  volatile int16_t az = 0;
+  volatile int16_t gx = 0;
+  volatile int16_t gy = 0;
+  volatile int16_t gz = 0;
+};
+
+SensorDiagnostic sensorDiagnostics[5];
+ActuatorDiagnostic actuatorDiagnostics[ACTUATOR_COUNT];
+ImuDiagnostic imuDiagnostics[IMU_COUNT];
+
+volatile bool spiffsMounted = false;
+volatile bool i2cInitialized = false;
+volatile bool spiInitialized = false;
+volatile bool canInitialized = false;
+volatile bool portalOnline = false;
+
+volatile uint32_t spiffsReadOps = 0;
+volatile uint32_t spiffsWriteOps = 0;
+volatile uint32_t spiffsErrors = 0;
+volatile uint32_t lastSpiffsReadMs = 0;
+volatile uint32_t lastSpiffsWriteMs = 0;
+
+volatile uint32_t canTxSuccess = 0;
+volatile uint32_t canTxFailure = 0;
+volatile uint32_t canConsecutiveFailures = 0;
+volatile uint32_t canMutexTimeouts = 0;
+volatile uint32_t canTorqueFrames = 0;
+volatile uint32_t canStopFrames = 0;
+volatile uint32_t lastCanTxMs = 0;
+volatile uint32_t lastCanFailureMs = 0;
+volatile int lastCanResult = 0;
+
+volatile uint32_t sensorTaskLoops = 0;
+volatile uint32_t impedanceTaskLoops = 0;
+volatile uint32_t canTaskLoops = 0;
+volatile uint32_t commandTaskLoops = 0;
+volatile uint32_t portalTaskLoops = 0;
+volatile uint32_t imuTaskLoops = 0;
+volatile uint32_t lastSensorTaskMs = 0;
+volatile uint32_t lastImpedanceTaskMs = 0;
+volatile uint32_t lastCanTaskMs = 0;
+volatile uint32_t lastCommandTaskMs = 0;
+volatile uint32_t lastPortalTaskMs = 0;
+volatile uint32_t lastImuTaskMs = 0;
+
+volatile uint32_t webCommandsQueued = 0;
+volatile uint32_t webCommandsProcessed = 0;
+volatile uint32_t webCommandQueueFull = 0;
+volatile uint32_t serialCommandsProcessed = 0;
+volatile uint32_t portalHttpRequests = 0;
+volatile uint32_t portalRedirects = 0;
+
+TaskHandle_t sensorTaskHandle = nullptr;
+TaskHandle_t impedanceTaskHandle = nullptr;
+TaskHandle_t canTaskHandle = nullptr;
+TaskHandle_t commandTaskHandle = nullptr;
+TaskHandle_t portalTaskHandle = nullptr;
+TaskHandle_t imuTaskHandle = nullptr;
+
 // Command-output capture is only activated while the single command task is
 // executing a web command. All human-readable command responses are mirrored
 // into the web log as well as USB Serial.
@@ -256,6 +562,12 @@ void processSerialCommand(String command);
 void readIMU();
 void saveConfig();
 void printHelp();
+void hyperspawnRouteTask(void *parameter);
+void canReceiveTask(void *parameter);
+void processHyperspawnSerialCommand(const String &command);
+void printHyperspawnStatus();
+void changeOperatingMode(const String &modeName);
+void sendHyperspawnFault(uint8_t code);
 
 
 // -----------------------------------------------------------------------------
@@ -429,6 +741,85 @@ int firstSelectedActuatorIndex() {
   return isLeft ? 1 : 0;
 }
 
+uint32_t diagnosticAgeMs(uint32_t timestamp) {
+  if (timestamp == 0) return UINT32_MAX;
+  return millis() - timestamp;
+}
+
+int actuatorIndexFromCanId(uint32_t actuatorID) {
+  for (int i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (ACTUATOR_IDS[i] == actuatorID) return i;
+  }
+  return -1;
+}
+
+void updateSensorDiagnosticSample(int index, int raw) {
+  if (index < 0 || index >= 5) return;
+  SensorDiagnostic &d = sensorDiagnostics[index];
+  const uint32_t now = millis();
+
+  float angle = 0.0f, duty = 0.0f, freq = 0.0f;
+  uint32_t period = 0, high = 0, ageUs = UINT32_MAX;
+  const bool valid = readAs5600Pwm(index, angle, duty, freq, period, high, ageUs);
+  d.signalValid = valid;
+  d.duty = duty;
+  d.frequencyHz = freq;
+  d.periodUs = period;
+  d.highUs = high;
+  d.pulseAgeUs = ageUs;
+  d.pwmFrames = as5600Capture[index].frames;
+
+  if (raw < 0) {
+    d.lastSampleMs = now;
+    return;
+  }
+
+  d.raw = raw;
+  d.samples++;
+  d.lastSampleMs = now;
+  if (raw < d.minRaw) d.minRaw = raw;
+  if (raw > d.maxRaw) d.maxRaw = raw;
+  if (d.lastChangeRaw < 0 || abs(raw - d.lastChangeRaw) >= 3) {
+    d.lastChangeRaw = raw;
+    d.lastChangeMs = now;
+  }
+}
+
+void updateSensorDiagnosticProcessed() {
+  sensorDiagnostics[0].filtered = averageOuter;
+  sensorDiagnostics[1].filtered = averageInner;
+  sensorDiagnostics[2].filtered = averageHip;
+  sensorDiagnostics[3].filtered = averageKnee;
+  sensorDiagnostics[4].filtered = averageButt;
+
+  sensorDiagnostics[0].angle = normalizedOuter;
+  sensorDiagnostics[1].angle = normalizedInner;
+  sensorDiagnostics[2].angle = normalizedHip;
+  sensorDiagnostics[3].angle = normalizedKnee;
+  sensorDiagnostics[4].angle = normalizedButt;
+}
+
+const char *sensorHealthStatus(const SensorDiagnostic &d) {
+  if (!runtimeControlReady || isCenter) return "inactive";
+  const uint32_t age = diagnosticAgeMs(d.lastSampleMs);
+  if (age == UINT32_MAX || age > 100 || !d.signalValid || d.pulseAgeUs > AS5600_STALE_US) return "fault";
+  if (d.duty < 0.025f || d.duty > 0.975f || d.frequencyHz < 100.0f || d.frequencyHz > 980.0f) return "warn";
+  return "ok";
+}
+
+const char *taskHealthStatus(bool expectedActive, uint32_t lastMs, uint32_t warnAge, uint32_t faultAge) {
+  if (!expectedActive) return "inactive";
+  const uint32_t age = diagnosticAgeMs(lastMs);
+  if (age == UINT32_MAX || age > faultAge) return "fault";
+  if (age > warnAge) return "warn";
+  return "ok";
+}
+
+uint32_t taskStackWords(TaskHandle_t handle) {
+  if (!handle) return 0;
+  return (uint32_t)uxTaskGetStackHighWaterMark(handle);
+}
+
 // -----------------------------------------------------------------------------
 // Impedance controller
 // -----------------------------------------------------------------------------
@@ -524,16 +915,56 @@ ImpedanceControl hipRollControlLeft(3.5f, 80.0f, 9.05f);
 // CAN primitives
 // -----------------------------------------------------------------------------
 
-bool canSend(uint32_t actuatorID, const byte data[8]) {
-  if (isCenter) return false;
+bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
+  if (isCenter || !canInitialized) return false;
   if (canMutex == nullptr) return false;
 
+  const int actuatorIndex = actuatorIndexFromCanId(actuatorID);
   bool ok = false;
+  int result = -2;
+
   if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-    ok = (CAN.sendMsgBuf(actuatorID, 0, 8, const_cast<byte *>(data)) == CAN_OK);
+    result = CAN.sendMsgBuf(actuatorID, 0, dataLen, const_cast<byte *>(data));
+    ok = (result == CAN_OK);
     xSemaphoreGive(canMutex);
+  } else {
+    canMutexTimeouts++;
   }
+
+  const uint32_t now = millis();
+  lastCanResult = result;
+  if (ok) {
+    canTxSuccess++;
+    canConsecutiveFailures = 0;
+    lastCanTxMs = now;
+    if (data[0] == 0xA1) canTorqueFrames++;
+    if (data[0] == 0x81) canStopFrames++;
+  } else {
+    canTxFailure++;
+    canConsecutiveFailures++;
+    lastCanFailureMs = now;
+  }
+
+  if (actuatorIndex >= 0) {
+    ActuatorDiagnostic &d = actuatorDiagnostics[actuatorIndex];
+    d.lastOpcode = data[0];
+    d.lastResult = result;
+    d.lastTxMs = now;
+    if (data[0] == 0xA1) {
+      d.lastCommand = static_cast<int16_t>(static_cast<uint16_t>(data[4]) |
+                                           (static_cast<uint16_t>(data[5]) << 8));
+    } else if (data[0] == 0x81) {
+      d.lastCommand = 0;
+    }
+    if (ok) d.txOk++;
+    else d.txFail++;
+  }
+
   return ok;
+}
+
+bool canSend(uint32_t actuatorID, const byte data[8]) {
+  return canSendFrame(actuatorID, data, 8);
 }
 
 void sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
@@ -551,9 +982,22 @@ void sendStopCommand(unsigned long actuatorID) {
   canSend(actuatorID, buf);
 }
 
+void clearHyperspawnCommandState() {
+  hyperspawnControlMode = HS_CONTROL_NONE;
+  hyperspawnPositionBasePending = hyperspawnPositionExtPending = false;
+  hyperspawnTorqueBasePending = hyperspawnTorqueExtPending = false;
+  for (int i = 0; i < HS_JOINT_COUNT; ++i) {
+    hyperspawnTorqueSetpoints[i] = 0;
+    hyperspawnTorquePending[i] = 0;
+  }
+}
+
 void requestStop(uint8_t repeats = 3) {
   playMode = false;
   stopBurstRemaining = repeats;
+  // In the HyperSpawn world STOP is a disarm operation. A subsequent arm must
+  // come from a new complete ROS/CAN command (auto-arm) or an explicit 'play'.
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) clearHyperspawnCommandState();
 }
 
 void clearAllTorqueSetpoints() {
@@ -562,10 +1006,18 @@ void clearAllTorqueSetpoints() {
       torqueValues[i] = 0;
       impedanceTorqueValues[i] = 0;
     }
+    for (int i = 0; i < HS_JOINT_COUNT; ++i) {
+      hyperspawnTorqueSetpoints[i] = 0;
+      hyperspawnTorquePending[i] = 0;
+    }
     xSemaphoreGive(stateMutex);
   }
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+    hyperspawnControlMode = HS_CONTROL_NONE;
+    hyperspawnPositionBasePending = hyperspawnPositionExtPending = false;
+    hyperspawnTorqueBasePending = hyperspawnTorqueExtPending = false;
+  }
 }
-
 bool isImpedanceEnabled(int index) {
   switch (index) {
     case RIGHT_OUTER_CALF: return impedanceEnabledRightOuterCalf;
@@ -583,6 +1035,376 @@ bool isImpedanceEnabled(int index) {
 }
 
 // -----------------------------------------------------------------------------
+// Hyperspawn/dropbear_firmware parallel route
+// -----------------------------------------------------------------------------
+
+uint8_t hyperspawnNodeId() {
+  return isLeft ? HS_NODE_LEFT_LEG : HS_NODE_RIGHT_LEG;
+}
+
+uint8_t hyperspawnLimbId() {
+  return isLeft ? HS_LIMB_LEFT_LEG : HS_LIMB_RIGHT_LEG;
+}
+
+int hyperspawnJointToActuatorIndex(uint8_t joint) {
+  const bool left = isLeft;
+  switch (joint) {
+    case HS_HIP_PITCH: return left ? LEFT_HIP_PITCH : RIGHT_HIP_PITCH;
+    case HS_HIP_ROLL: return left ? LEFT_HIP_ROLL : RIGHT_HIP_ROLL;
+    case HS_HIP_YAW: return left ? LEFT_HIP_YAW : RIGHT_HIP_YAW;
+    case HS_KNEE: return left ? LEFT_KNEE : RIGHT_KNEE;
+    case HS_OUTER_CALF: return left ? LEFT_OUTER_CALF : RIGHT_OUTER_CALF;
+    case HS_INNER_CALF: return left ? LEFT_INNER_CALF : RIGHT_INNER_CALF;
+    default: return -1;
+  }
+}
+
+float hyperspawnMeasuredDegrees(uint8_t joint) {
+  switch (joint) {
+    case HS_HIP_PITCH: return normalizedHip;
+    case HS_HIP_ROLL: return normalizedButt;
+    case HS_KNEE: return normalizedKnee;
+    case HS_OUTER_CALF: return normalizedOuter;
+    case HS_INNER_CALF: return normalizedInner;
+    case HS_HIP_YAW:
+      // There is no external hip-yaw encoder in the original five-sensor leg.
+      // Preserve the repository's open-loop state convention by echoing the
+      // most recent position target for this one unobserved axis.
+      return hyperspawnPositionUnitsPerDegree != 0.0f
+                 ? static_cast<float>(hyperspawnPositionSetpoints[HS_HIP_YAW]) / hyperspawnPositionUnitsPerDegree
+                 : 0.0f;
+    default: return 0.0f;
+  }
+}
+
+int16_t hyperspawnDegreesToWire(float degrees) {
+  float value = degrees * hyperspawnPositionUnitsPerDegree;
+  if (value > 32767.0f) value = 32767.0f;
+  if (value < -32768.0f) value = -32768.0f;
+  return static_cast<int16_t>(lroundf(value));
+}
+
+float hyperspawnWireToDegrees(int16_t value) {
+  if (fabsf(hyperspawnPositionUnitsPerDegree) < 0.0001f) return static_cast<float>(value);
+  return static_cast<float>(value) / hyperspawnPositionUnitsPerDegree;
+}
+
+void refreshHyperspawnJointState() {
+  for (uint8_t i = 0; i < HS_JOINT_COUNT; ++i) {
+    hyperspawnJointState[i] = hyperspawnDegreesToWire(hyperspawnMeasuredDegrees(i));
+  }
+}
+
+void applyHyperspawnPositionTargets() {
+  if (operatingMode != OPERATING_HYPERSPAWN_ROUTE || hyperspawnControlMode != HS_CONTROL_POSITION) return;
+
+  const float hipPitch = hyperspawnWireToDegrees(hyperspawnPositionSetpoints[HS_HIP_PITCH]);
+  const float hipRoll = hyperspawnWireToDegrees(hyperspawnPositionSetpoints[HS_HIP_ROLL]);
+  const float knee = hyperspawnWireToDegrees(hyperspawnPositionSetpoints[HS_KNEE]);
+  const float outer = hyperspawnWireToDegrees(hyperspawnPositionSetpoints[HS_OUTER_CALF]);
+  const float inner = hyperspawnWireToDegrees(hyperspawnPositionSetpoints[HS_INNER_CALF]);
+
+  if (isLeft) {
+    hipPitchControlLeft.setDesiredPosition(hipPitch);
+    hipPitchControlLeft.setDesiredVelocity(0.0f);
+    hipRollControlLeft.setDesiredPosition(hipRoll);
+    hipRollControlLeft.setDesiredVelocity(0.0f);
+    kneeControlLeft.setDesiredPosition(knee);
+    kneeControlLeft.setDesiredVelocity(0.0f);
+    outerCalfControlLeft.setDesiredPosition(outer);
+    outerCalfControlLeft.setDesiredVelocity(0.0f);
+    innerCalfControlLeft.setDesiredPosition(inner);
+    innerCalfControlLeft.setDesiredVelocity(0.0f);
+  } else {
+    hipPitchControlRight.setDesiredPosition(hipPitch);
+    hipPitchControlRight.setDesiredVelocity(0.0f);
+    hipRollControlRight.setDesiredPosition(hipRoll);
+    hipRollControlRight.setDesiredVelocity(0.0f);
+    kneeControlRight.setDesiredPosition(knee);
+    kneeControlRight.setDesiredVelocity(0.0f);
+    outerCalfControlRight.setDesiredPosition(outer);
+    outerCalfControlRight.setDesiredVelocity(0.0f);
+    innerCalfControlRight.setDesiredPosition(inner);
+    innerCalfControlRight.setDesiredVelocity(0.0f);
+  }
+}
+
+void markHyperspawnCommand(HyperspawnControlMode mode) {
+  const uint32_t now = millis();
+  hyperspawnControlMode = mode;
+  hyperspawnLastCommandMs = now;
+  hyperspawnWatchdogTripped = false;
+  hyperspawnFaultCode = 0;
+  if (mode == HS_CONTROL_POSITION) hyperspawnLastPositionMs = now;
+  if (mode == HS_CONTROL_TORQUE) hyperspawnLastTorqueMs = now;
+  if (hyperspawnAutoArm && runtimeControlReady) {
+    stopBurstRemaining = 0;
+    playMode = true;
+  }
+}
+
+void decodeHyperspawnValues(const byte *data, byte len, uint8_t startJoint,
+                            volatile int16_t *destination) {
+  uint8_t joint = startJoint;
+  for (uint8_t offset = 0; offset + 1 < len && joint < HS_JOINT_COUNT; offset += 2, ++joint) {
+    destination[joint] = static_cast<int16_t>((static_cast<uint16_t>(data[offset]) << 8) |
+                                              static_cast<uint16_t>(data[offset + 1]));
+  }
+}
+
+bool isHyperspawnTargetedId(uint32_t id, uint8_t &msgType) {
+  const uint8_t localNode = hyperspawnNodeId();
+  const uint8_t node = static_cast<uint8_t>((id >> 4) & 0xFF);
+  msgType = static_cast<uint8_t>(id & 0x0F);
+  return node == localNode;
+}
+
+void expireHyperspawnFragments(uint32_t now) {
+  if (hyperspawnPositionBasePending && now - hyperspawnPositionBaseMs > HS_FRAGMENT_TIMEOUT_MS) {
+    hyperspawnPositionBasePending = false;
+    hyperspawnPositionExtPending = false;
+    hyperspawnFragmentTimeouts++;
+  }
+  if (hyperspawnPositionExtPending && now - hyperspawnPositionExtMs > HS_FRAGMENT_TIMEOUT_MS) {
+    hyperspawnPositionBasePending = false;
+    hyperspawnPositionExtPending = false;
+    hyperspawnFragmentTimeouts++;
+  }
+  if (hyperspawnTorqueBasePending && now - hyperspawnTorqueBaseMs > HS_FRAGMENT_TIMEOUT_MS) {
+    hyperspawnTorqueBasePending = false;
+    hyperspawnTorqueExtPending = false;
+    hyperspawnFragmentTimeouts++;
+  }
+  if (hyperspawnTorqueExtPending && now - hyperspawnTorqueExtMs > HS_FRAGMENT_TIMEOUT_MS) {
+    hyperspawnTorqueBasePending = false;
+    hyperspawnTorqueExtPending = false;
+    hyperspawnFragmentTimeouts++;
+  }
+}
+
+void completeHyperspawnPositionCommand() {
+  // Temporarily disarm the route while swapping the complete staged command so
+  // the 100 Hz output loop can observe either the old command or zero, never a
+  // mixture of old/new joint values.
+  hyperspawnControlMode = HS_CONTROL_NONE;
+  for (uint8_t i = 0; i < HS_JOINT_COUNT; ++i) {
+    hyperspawnPositionSetpoints[i] = hyperspawnPositionPending[i];
+  }
+  hyperspawnPositionBasePending = false;
+  hyperspawnPositionExtPending = false;
+  markHyperspawnCommand(HS_CONTROL_POSITION);
+  applyHyperspawnPositionTargets();
+  hyperspawnCompletedCommands++;
+}
+
+void completeHyperspawnTorqueCommand() {
+  hyperspawnControlMode = HS_CONTROL_NONE;
+  for (uint8_t i = 0; i < HS_JOINT_COUNT; ++i) {
+    hyperspawnTorqueSetpoints[i] = hyperspawnTorquePending[i];
+  }
+  hyperspawnTorqueBasePending = false;
+  hyperspawnTorqueExtPending = false;
+  markHyperspawnCommand(HS_CONTROL_TORQUE);
+  hyperspawnCompletedCommands++;
+}
+
+void handleHyperspawnRxFrame(uint32_t id, const byte *data, byte len) {
+  if (operatingMode != OPERATING_HYPERSPAWN_ROUTE || isCenter) return;
+
+  const uint32_t now = millis();
+  expireHyperspawnFragments(now);
+
+  uint8_t msgType = 0;
+  const bool targeted = isHyperspawnTargetedId(id, msgType);
+  bool legacy = false;
+
+  const uint8_t nodeField = static_cast<uint8_t>((id >> 4) & 0xFF);
+  if (!targeted && hyperspawnLegacyBroadcast && nodeField == HS_NODE_BRAIN) {
+    msgType = static_cast<uint8_t>(id & 0x0F);
+    legacy = true;
+  }
+
+  if (!targeted && !legacy) return;
+
+  bool accepted = false;
+  if (legacy) {
+    // Exact compatibility with the current Hyperspawn/dropbear_firmware brain
+    // frames. Those frames can contain at most four int16 values and cannot
+    // identify a destination limb on a shared bus. Compatibility is therefore
+    // explicit/opt-in. Missing position joints hold their measured position;
+    // missing torque joints are forced to zero.
+    if (msgType == HS_MSG_CMD_POS) {
+      decodeHyperspawnValues(data, len, 0, hyperspawnPositionPending);
+      hyperspawnPositionPending[HS_OUTER_CALF] = hyperspawnDegreesToWire(hyperspawnMeasuredDegrees(HS_OUTER_CALF));
+      hyperspawnPositionPending[HS_INNER_CALF] = hyperspawnDegreesToWire(hyperspawnMeasuredDegrees(HS_INNER_CALF));
+      completeHyperspawnPositionCommand();
+      accepted = true;
+    } else if (msgType == HS_MSG_CMD_TORQUE) {
+      decodeHyperspawnValues(data, len, 0, hyperspawnTorquePending);
+      hyperspawnTorquePending[HS_OUTER_CALF] = 0;
+      hyperspawnTorquePending[HS_INNER_CALF] = 0;
+      completeHyperspawnTorqueCommand();
+      accepted = true;
+    }
+  } else {
+    // Targeted extension: IDs are based on this limb node (0x12/0x13), and a
+    // command is committed only after both the 4-joint base frame and 2-joint
+    // extension frame have arrived within HS_FRAGMENT_TIMEOUT_MS.
+    switch (msgType) {
+      case HS_MSG_CMD_POS:
+        decodeHyperspawnValues(data, len, 0, hyperspawnPositionPending);
+        hyperspawnPositionBasePending = true;
+        hyperspawnPositionExtPending = false;
+        hyperspawnPositionBaseMs = now;
+        accepted = true;
+        break;
+      case HS_MSG_CMD_POS_EXT:
+        if (hyperspawnPositionBasePending && now - hyperspawnPositionBaseMs <= HS_FRAGMENT_TIMEOUT_MS) {
+          decodeHyperspawnValues(data, len, 4, hyperspawnPositionPending);
+          hyperspawnPositionExtPending = true;
+          hyperspawnPositionExtMs = now;
+          completeHyperspawnPositionCommand();
+          accepted = true;
+        }
+        break;
+      case HS_MSG_CMD_TORQUE:
+        decodeHyperspawnValues(data, len, 0, hyperspawnTorquePending);
+        hyperspawnTorqueBasePending = true;
+        hyperspawnTorqueExtPending = false;
+        hyperspawnTorqueBaseMs = now;
+        accepted = true;
+        break;
+      case HS_MSG_CMD_TORQUE_EXT:
+        if (hyperspawnTorqueBasePending && now - hyperspawnTorqueBaseMs <= HS_FRAGMENT_TIMEOUT_MS) {
+          decodeHyperspawnValues(data, len, 4, hyperspawnTorquePending);
+          hyperspawnTorqueExtPending = true;
+          hyperspawnTorqueExtMs = now;
+          completeHyperspawnTorqueCommand();
+          accepted = true;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (accepted) {
+    hyperspawnRxFrames++;
+    if (legacy) hyperspawnRxLegacyFrames++;
+    if (targeted) hyperspawnRxTargetedFrames++;
+  } else {
+    hyperspawnRxRejectedFrames++;
+  }
+}
+void sendHyperspawnState() {
+  if (!canInitialized || isCenter || operatingMode != OPERATING_HYPERSPAWN_ROUTE) return;
+  refreshHyperspawnJointState();
+
+  byte base[8] = {0};
+  for (uint8_t i = 0; i < 4; ++i) {
+    const uint16_t raw = static_cast<uint16_t>(hyperspawnJointState[i]);
+    base[i * 2] = static_cast<byte>((raw >> 8) & 0xFF);
+    base[i * 2 + 1] = static_cast<byte>(raw & 0xFF);
+  }
+  const uint32_t baseId = (static_cast<uint32_t>(hyperspawnNodeId()) << 4) | HS_MSG_STATE;
+  if (canSendFrame(baseId, base, 8)) hyperspawnStateFrames++;
+
+  byte ext[4] = {0};
+  for (uint8_t i = 0; i < 2; ++i) {
+    const uint16_t raw = static_cast<uint16_t>(hyperspawnJointState[i + 4]);
+    ext[i * 2] = static_cast<byte>((raw >> 8) & 0xFF);
+    ext[i * 2 + 1] = static_cast<byte>(raw & 0xFF);
+  }
+  const uint32_t extId = (static_cast<uint32_t>(hyperspawnNodeId()) << 4) | HS_MSG_STATE_EXT;
+  if (canSendFrame(extId, ext, 4)) hyperspawnStateFrames++;
+}
+
+void sendHyperspawnHeartbeat() {
+  byte data[1] = {hyperspawnLimbId()};
+  const uint32_t id = (static_cast<uint32_t>(hyperspawnNodeId()) << 4) | HS_MSG_HEARTBEAT;
+  if (canSendFrame(id, data, 1)) hyperspawnHeartbeatFrames++;
+}
+
+void sendHyperspawnFault(uint8_t code) {
+  hyperspawnFaultCode = code;
+  byte data[1] = {code};
+  const uint32_t id = (static_cast<uint32_t>(hyperspawnNodeId()) << 4) | HS_MSG_FAULT;
+  if (canSendFrame(id, data, 1)) hyperspawnFaultFrames++;
+}
+
+void canReceiveTask(void *parameter) {
+  while (true) {
+    canRxTaskLoops++;
+    lastCanRxTaskMs = millis();
+
+    uint8_t drained = 0;
+    while (canInitialized && drained < 12) {
+      bool available = false;
+      if (canMutex && xSemaphoreTake(canMutex, pdMS_TO_TICKS(2)) == pdTRUE) {
+        available = CAN.checkReceive() == CAN_MSGAVAIL;
+        if (available) {
+          unsigned long rxId = 0;
+          unsigned char len = 0;
+          byte data[8] = {0};
+          const int result = CAN.readMsgBuf(&rxId, &len, data);
+          xSemaphoreGive(canMutex);
+
+          if (result == CAN_OK) {
+            canRxFrames++;
+            lastCanRxMs = millis();
+            handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len);
+          } else {
+            canRxErrors++;
+          }
+        } else {
+          xSemaphoreGive(canMutex);
+        }
+      }
+
+      if (!available) break;
+      drained++;
+    }
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+}
+void hyperspawnRouteTask(void *parameter) {
+  TickType_t lastWake = xTaskGetTickCount();
+  uint32_t lastHeartbeat = 0;
+
+  while (true) {
+    hyperspawnTaskLoops++;
+    lastHyperspawnTaskMs = millis();
+
+    if (runtimeControlReady && operatingMode == OPERATING_HYPERSPAWN_ROUTE && !isCenter) {
+      const uint32_t now = millis();
+      expireHyperspawnFragments(now);
+
+      if (hyperspawnLastCommandMs != 0 &&
+          now - hyperspawnLastCommandMs > hyperspawnCommandTimeoutMs &&
+          playMode && !hyperspawnWatchdogTripped) {
+        hyperspawnWatchdogTripped = true;
+        hyperspawnWatchdogTrips++;
+        hyperspawnControlMode = HS_CONTROL_NONE;
+        hyperspawnPositionBasePending = hyperspawnPositionExtPending = false;
+        hyperspawnTorqueBasePending = hyperspawnTorqueExtPending = false;
+        for (int i = 0; i < HS_JOINT_COUNT; ++i) hyperspawnTorqueSetpoints[i] = 0;
+        requestStop(3);
+        sendHyperspawnFault(1); // command timeout
+        dbPrintln("HYPERSPAWN WATCHDOG: command timeout; actuator stop burst queued.");
+      }
+
+      sendHyperspawnState();
+      if (now - lastHeartbeat >= (1000UL / HS_HEARTBEAT_HZ)) {
+        sendHyperspawnHeartbeat();
+        lastHeartbeat = now;
+      }
+    }
+
+    vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1000 / HS_ROUTE_HZ));
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Sensor functions
 // -----------------------------------------------------------------------------
 
@@ -593,11 +1415,24 @@ void readSensors() {
   totalKnee -= readingsKnee[readIndex];
   totalButt -= readingsButt[readIndex];
 
-  readingsOuter[readIndex] = analogRead(PIN_OUTER_CALF);
-  readingsInner[readIndex] = analogRead(PIN_INNER_CALF);
-  readingsHip[readIndex] = analogRead(PIN_HIP_PITCH);
-  readingsKnee[readIndex] = analogRead(PIN_KNEE);
-  readingsButt[readIndex] = analogRead(PIN_HIP_ROLL);
+  const int previous[5] = {
+    readingsOuter[readIndex], readingsInner[readIndex], readingsHip[readIndex],
+    readingsKnee[readIndex], readingsButt[readIndex]
+  };
+  int sample[5];
+  for (int i = 0; i < 5; ++i) {
+    const int decoded = as5600PseudoRaw(i);
+    // Keep the last valid sample through a short missing-frame interval; health
+    // diagnostics still expose the stale pulse independently.
+    sample[i] = decoded >= 0 ? decoded : previous[i];
+    updateSensorDiagnosticSample(i, decoded);
+  }
+
+  readingsOuter[readIndex] = sample[0];
+  readingsInner[readIndex] = sample[1];
+  readingsHip[readIndex] = sample[2];
+  readingsKnee[readIndex] = sample[3];
+  readingsButt[readIndex] = sample[4];
 
   totalOuter += readingsOuter[readIndex];
   totalInner += readingsInner[readIndex];
@@ -629,6 +1464,7 @@ void normalizeReadings() {
     normalizedHip = wrapAngleFloat(hip);
     normalizedKnee = wrapAngleFloat(kneeAngle);
     normalizedButt = wrapAngleFloat(butt);
+    updateSensorDiagnosticProcessed();
     return;
   }
 
@@ -638,29 +1474,56 @@ void normalizeReadings() {
   normalizedHip = wrapAngleFloat(hip + offsets[2]);
   normalizedKnee = wrapAngleFloat(kneeAngle + offsets[3]);
   normalizedButt = wrapAngleFloat(butt + offsets[4]);
+  updateSensorDiagnosticProcessed();
 }
 
 void primeSensorFilter() {
   totalOuter = totalInner = totalHip = totalKnee = totalButt = 0;
   readIndex = 0;
+
+  // Give the slowest supported AS5600 PWM mode (~115 Hz) time to produce at
+  // least one complete frame on every encoder. Do not fabricate an ADC sample.
+  const uint32_t waitStart = millis();
+  bool allValid = false;
+  while (millis() - waitStart < 250) {
+    allValid = true;
+    for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+      if (as5600PseudoRaw(sensor) < 0) {
+        allValid = false;
+        break;
+      }
+    }
+    if (allValid) break;
+    delay(2);
+  }
+
+  if (!allValid) {
+    dbPrintln("WARNING: one or more AS5600 PWM signals were not valid during filter priming; missing channels start at zero and diagnostics remain FAULT until pulses arrive.");
+  }
+
+  int seed[5] = {0, 0, 0, 0, 0};
+  for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+    const int raw = as5600PseudoRaw(sensor);
+    seed[sensor] = raw >= 0 ? raw : 0;
+    updateSensorDiagnosticSample(sensor, raw);
+  }
+
   for (int i = 0; i < NUM_READINGS; ++i) {
-    readingsOuter[i] = analogRead(PIN_OUTER_CALF);
-    readingsInner[i] = analogRead(PIN_INNER_CALF);
-    readingsHip[i] = analogRead(PIN_HIP_PITCH);
-    readingsKnee[i] = analogRead(PIN_KNEE);
-    readingsButt[i] = analogRead(PIN_HIP_ROLL);
+    readingsOuter[i] = seed[0];
+    readingsInner[i] = seed[1];
+    readingsHip[i] = seed[2];
+    readingsKnee[i] = seed[3];
+    readingsButt[i] = seed[4];
 
     totalOuter += readingsOuter[i];
     totalInner += readingsInner[i];
     totalHip += readingsHip[i];
     totalKnee += readingsKnee[i];
     totalButt += readingsButt[i];
-    delay(2);
   }
   computeAverages();
   normalizeReadings();
 }
-
 void printReadings() {
   if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
     Serial.print(normalizedOuter, 1);
@@ -716,16 +1579,25 @@ int getEncoderPinForJoint(const String &joint) {
   if (joint.endsWith("knee")) return PIN_KNEE;
   if (joint.endsWith("hip_pitch")) return PIN_HIP_PITCH;
   if (joint.endsWith("hip_roll")) return PIN_HIP_ROLL;
-  return -1; // hip yaw does not have an analog sensor in this pinout
+  return -1; // hip yaw does not have an external AS5600 OUT signal in this pinout
 }
 
 int getEncoderReading(String joint) {
-  const int pin = getEncoderPinForJoint(joint);
-  if (pin < 0) {
-    dbPrintf("No external analog encoder mapped for joint: %s\n", joint.c_str());
+  int sensorIndex = -1;
+  if (joint.endsWith("outer_calf")) sensorIndex = 0;
+  else if (joint.endsWith("inner_calf")) sensorIndex = 1;
+  else if (joint.endsWith("hip_pitch")) sensorIndex = 2;
+  else if (joint.endsWith("knee")) sensorIndex = 3;
+  else if (joint.endsWith("hip_roll")) sensorIndex = 4;
+
+  if (sensorIndex < 0) {
+    dbPrintf("No external AS5600 one-wire encoder mapped for joint: %s\n", joint.c_str());
     return -1;
   }
-  const float angle = adcToDegrees(static_cast<float>(analogRead(pin)));
+
+  float angle = 0.0f, duty = 0.0f, freq = 0.0f;
+  uint32_t period = 0, high = 0, age = 0;
+  if (!readAs5600Pwm(sensorIndex, angle, duty, freq, period, high, age)) return -1;
   return static_cast<int>(lroundf(angle));
 }
 
@@ -738,6 +1610,8 @@ void readAndComputeTask(void *parameter) {
   unsigned long lastTelemetry = 0;
 
   while (true) {
+    sensorTaskLoops++;
+    lastSensorTaskMs = millis();
     if (!isCenter) {
       readSensors();
       computeAverages();
@@ -757,56 +1631,62 @@ void impedanceControlTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
 
   while (true) {
+    impedanceTaskLoops++;
+    lastImpedanceTaskMs = millis();
     if (!isCenter) {
       const unsigned long now = millis();
 
+      if (operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) {
+        applyHyperspawnPositionTargets();
+      }
+
       if (isLeft) {
-        if (impedanceEnabledLeftOuterCalf) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftOuterCalf) {
           outerCalfControlLeft.update(normalizedOuter, now, outerCalfConstraintsLeft.minAngle, outerCalfConstraintsLeft.maxAngle);
           impedanceTorqueValues[LEFT_OUTER_CALF] = clampTorqueCommand(outerCalfControlLeft.torqueOutput * directionMultiplierLeftOuterCalf);
         } else impedanceTorqueValues[LEFT_OUTER_CALF] = 0;
 
-        if (impedanceEnabledLeftInnerCalf) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftInnerCalf) {
           innerCalfControlLeft.update(normalizedInner, now, innerCalfConstraintsLeft.minAngle, innerCalfConstraintsLeft.maxAngle);
           impedanceTorqueValues[LEFT_INNER_CALF] = clampTorqueCommand(innerCalfControlLeft.torqueOutput * directionMultiplierLeftInnerCalf);
         } else impedanceTorqueValues[LEFT_INNER_CALF] = 0;
 
-        if (impedanceEnabledLeftKnee) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftKnee) {
           kneeControlLeft.update(normalizedKnee, now, kneeConstraintsLeft.minAngle, kneeConstraintsLeft.maxAngle);
           impedanceTorqueValues[LEFT_KNEE] = clampTorqueCommand(kneeControlLeft.torqueOutput * directionMultiplierLeftKnee);
         } else impedanceTorqueValues[LEFT_KNEE] = 0;
 
-        if (impedanceEnabledLeftHipPitch) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftHipPitch) {
           hipPitchControlLeft.update(normalizedHip, now, hipPitchConstraintsLeft.minAngle, hipPitchConstraintsLeft.maxAngle);
           impedanceTorqueValues[LEFT_HIP_PITCH] = clampTorqueCommand(hipPitchControlLeft.torqueOutput * directionMultiplierLeftHipPitch);
         } else impedanceTorqueValues[LEFT_HIP_PITCH] = 0;
 
-        if (impedanceEnabledLeftHipRoll) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftHipRoll) {
           hipRollControlLeft.update(normalizedButt, now, hipRollConstraintsLeft.minAngle, hipRollConstraintsLeft.maxAngle);
           impedanceTorqueValues[LEFT_HIP_ROLL] = clampTorqueCommand(hipRollControlLeft.torqueOutput * directionMultiplierLeftHipRoll);
         } else impedanceTorqueValues[LEFT_HIP_ROLL] = 0;
       } else {
-        if (impedanceEnabledRightOuterCalf) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightOuterCalf) {
           outerCalfControlRight.update(normalizedOuter, now, outerCalfConstraintsRight.minAngle, outerCalfConstraintsRight.maxAngle);
           impedanceTorqueValues[RIGHT_OUTER_CALF] = clampTorqueCommand(outerCalfControlRight.torqueOutput * directionMultiplierRightOuterCalf);
         } else impedanceTorqueValues[RIGHT_OUTER_CALF] = 0;
 
-        if (impedanceEnabledRightInnerCalf) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightInnerCalf) {
           innerCalfControlRight.update(normalizedInner, now, innerCalfConstraintsRight.minAngle, innerCalfConstraintsRight.maxAngle);
           impedanceTorqueValues[RIGHT_INNER_CALF] = clampTorqueCommand(innerCalfControlRight.torqueOutput * directionMultiplierRightInnerCalf);
         } else impedanceTorqueValues[RIGHT_INNER_CALF] = 0;
 
-        if (impedanceEnabledRightKnee) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightKnee) {
           kneeControlRight.update(normalizedKnee, now, kneeConstraintsRight.minAngle, kneeConstraintsRight.maxAngle);
           impedanceTorqueValues[RIGHT_KNEE] = clampTorqueCommand(kneeControlRight.torqueOutput * directionMultiplierRightKnee);
         } else impedanceTorqueValues[RIGHT_KNEE] = 0;
 
-        if (impedanceEnabledRightHipPitch) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightHipPitch) {
           hipPitchControlRight.update(normalizedHip, now, hipPitchConstraintsRight.minAngle, hipPitchConstraintsRight.maxAngle);
           impedanceTorqueValues[RIGHT_HIP_PITCH] = clampTorqueCommand(hipPitchControlRight.torqueOutput * directionMultiplierRightHipPitch);
         } else impedanceTorqueValues[RIGHT_HIP_PITCH] = 0;
 
-        if (impedanceEnabledRightHipRoll) {
+        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightHipRoll) {
           hipRollControlRight.update(normalizedButt, now, hipRollConstraintsRight.minAngle, hipRollConstraintsRight.maxAngle);
           impedanceTorqueValues[RIGHT_HIP_ROLL] = clampTorqueCommand(hipRollControlRight.torqueOutput * directionMultiplierRightHipRoll);
         } else impedanceTorqueValues[RIGHT_HIP_ROLL] = 0;
@@ -821,6 +1701,8 @@ void canOutputTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
 
   while (true) {
+    canTaskLoops++;
+    lastCanTaskMs = millis();
     if (runtimeControlReady && !isCenter) {
       const int start = firstSelectedActuatorIndex();
 
@@ -833,8 +1715,31 @@ void canOutputTask(void *parameter) {
         }
       } else if (playMode) {
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-          int16_t value = torqueValues[i];
-          if (isImpedanceEnabled(i)) value = impedanceTorqueValues[i];
+          int16_t value = 0;
+
+          if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+            if (hyperspawnControlMode == HS_CONTROL_TORQUE) {
+              // Translate the selected leg's local actuator into the six-joint
+              // Hyperspawn wire order.
+              for (uint8_t j = 0; j < HS_JOINT_COUNT; ++j) {
+                if (hyperspawnJointToActuatorIndex(j) == i) {
+                  value = hyperspawnTorqueSetpoints[j];
+                  break;
+                }
+              }
+            } else if (hyperspawnControlMode == HS_CONTROL_POSITION) {
+              // Five externally observed joints use the existing impedance
+              // controller. Hip yaw has no external encoder, so position-mode
+              // torque remains zero until a verified feedback source is added.
+              if (i != (isLeft ? LEFT_HIP_YAW : RIGHT_HIP_YAW)) {
+                value = impedanceTorqueValues[i];
+              }
+            }
+          } else {
+            value = torqueValues[i];
+            if (isImpedanceEnabled(i)) value = impedanceTorqueValues[i];
+          }
+
           value = clampTorqueCommand(value);
           sendTorqueCommand(ACTUATOR_IDS[i], value);
         }
@@ -858,6 +1763,7 @@ void executeQueuedWebCommand(const WebCommand &item) {
   capture.reserve(1024);
   activeCommandCapture = &capture;
   appendWebLog(String("WEB #") + item.id + " > " + command);
+  webCommandsProcessed++;
 
   if (configMode) handleConfigurationCommand(command);
   else processSerialCommand(command);
@@ -868,11 +1774,14 @@ void executeQueuedWebCommand(const WebCommand &item) {
 
 void checkChiralityTask(void *parameter) {
   while (true) {
+    commandTaskLoops++;
+    lastCommandTaskMs = millis();
     // USB Serial and web commands intentionally converge here.
     if (Serial.available() > 0) {
       String command = Serial.readStringUntil('\n');
       command.trim();
       if (command.length()) {
+        serialCommandsProcessed++;
         appendWebLog("SERIAL > " + command);
         if (configMode) handleConfigurationCommand(command);
         else processSerialCommand(command);
@@ -893,6 +1802,8 @@ void checkChiralityTask(void *parameter) {
 void imuReadTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
   while (true) {
+    imuTaskLoops++;
+    lastImuTaskMs = millis();
     if (isCenter && playMode) readIMU();
     vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(10));
   }
@@ -1063,12 +1974,14 @@ void applyConstraintLine(const String &line) {
 
 void saveConfig() {
   if (spiffsMutex && xSemaphoreTake(spiffsMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+    spiffsErrors++;
     dbPrintln("Failed to acquire SPIFFS lock for configuration save.");
     return;
   }
 
   File file = SPIFFS.open("/config.txt", FILE_WRITE);
   if (!file) {
+    spiffsErrors++;
     if (spiffsMutex) xSemaphoreGive(spiffsMutex);
     dbPrintln("Failed to open /config.txt for writing.");
     return;
@@ -1102,10 +2015,17 @@ void saveConfig() {
   saveJointConstraintsToFile(file, hipRollConstraintsRight, "hip_roll_right_Constraints");
 
   // Extended fields are appended after the legacy block.
-  file.println("ConfigVersion:3");
+  file.println("ConfigVersion:4");
   file.printf("MaxTorqueLimit:%.3f\n", maxTorqueLimit);
+  file.printf("OperatingMode:%s\n", operatingModeName().c_str());
+  file.printf("HyperspawnCommandTimeoutMs:%lu\n", (unsigned long)hyperspawnCommandTimeoutMs);
+  file.printf("HyperspawnLegacyBroadcast:%d\n", hyperspawnLegacyBroadcast ? 1 : 0);
+  file.printf("HyperspawnAutoArm:%d\n", hyperspawnAutoArm ? 1 : 0);
+  file.printf("HyperspawnPositionUnitsPerDegree:%.6f\n", hyperspawnPositionUnitsPerDegree);
 
   file.close();
+  spiffsWriteOps++;
+  lastSpiffsWriteMs = millis();
   if (spiffsMutex) xSemaphoreGive(spiffsMutex);
   configProvisioned = true;
   dbPrintln("Configuration saved.");
@@ -1120,16 +2040,21 @@ bool loadConfig() {
   }
 
   if (spiffsMutex && xSemaphoreTake(spiffsMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+    spiffsErrors++;
     dbPrintln("Failed to acquire SPIFFS lock for configuration load.");
     return false;
   }
 
   File file = SPIFFS.open("/config.txt", FILE_READ);
   if (!file) {
+    spiffsErrors++;
     if (spiffsMutex) xSemaphoreGive(spiffsMutex);
     dbPrintln("Failed to open /config.txt. Starting unconfigured.");
     return false;
   }
+
+  spiffsReadOps++;
+  lastSpiffsReadMs = millis();
 
   bool validRole = false;
   while (file.available()) {
@@ -1155,6 +2080,20 @@ bool loadConfig() {
     } else if (line.startsWith("MaxTorqueLimit:")) {
       const float value = line.substring(15).toFloat();
       if (value > 0.0f && value <= 100.0f) maxTorqueLimit = value;
+    } else if (line.startsWith("OperatingMode:")) {
+      String mode = line.substring(14);
+      mode.trim();
+      operatingMode = mode == "hyperspawn" ? OPERATING_HYPERSPAWN_ROUTE : OPERATING_STANDALONE;
+    } else if (line.startsWith("HyperspawnCommandTimeoutMs:")) {
+      const uint32_t v = (uint32_t)line.substring(27).toInt();
+      if (v >= 50 && v <= 10000) hyperspawnCommandTimeoutMs = v;
+    } else if (line.startsWith("HyperspawnLegacyBroadcast:")) {
+      hyperspawnLegacyBroadcast = line.substring(26).toInt() != 0;
+    } else if (line.startsWith("HyperspawnAutoArm:")) {
+      hyperspawnAutoArm = line.substring(18).toInt() != 0;
+    } else if (line.startsWith("HyperspawnPositionUnitsPerDegree:")) {
+      const float v = line.substring(33).toFloat();
+      if (v > 0.0001f && v <= 1000.0f) hyperspawnPositionUnitsPerDegree = v;
     } else if (line.startsWith("LeftOffsets:")) {
       parseFiveInts(line, "LeftOffsets:", leftLegOffsets);
     } else if (line.startsWith("RightOffsets:")) {
@@ -1295,23 +2234,47 @@ void calibrateSensors(bool forceSave = false) {
     return;
   }
 
-  // Acquire an independent 10-sample calibration average. Do not mutate the
-  // live moving-average ring while the 1 kHz sensor task is running.
-  long sumOuter = 0, sumInner = 0, sumHip = 0, sumKnee = 0, sumButt = 0;
-  for (int i = 0; i < NUM_READINGS; ++i) {
-    sumOuter += analogRead(PIN_OUTER_CALF);
-    sumInner += analogRead(PIN_INNER_CALF);
-    sumHip += analogRead(PIN_HIP_PITCH);
-    sumKnee += analogRead(PIN_KNEE);
-    sumButt += analogRead(PIN_HIP_ROLL);
-    delay(2);
+  // Acquire an independent PWM-derived average. The calibration path uses the
+  // same AS5600 OUT decoding as the real-time control path; it never falls back
+  // to ADC2/analogRead while Wi-Fi is active.
+  long sums[5] = {0, 0, 0, 0, 0};
+  int validCounts[5] = {0, 0, 0, 0, 0};
+  const uint32_t calibrationDeadline = millis() + 500;
+  while (millis() < calibrationDeadline) {
+    for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+      if (validCounts[sensor] >= NUM_READINGS) continue;
+      const int raw = as5600PseudoRaw(sensor);
+      if (raw >= 0) {
+        sums[sensor] += raw;
+        validCounts[sensor]++;
+      }
+    }
+
+    bool complete = true;
+    for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+      if (validCounts[sensor] < NUM_READINGS) {
+        complete = false;
+        break;
+      }
+    }
+    if (complete) break;
+    // 10 ms guarantees a fresh frame even at the slowest supported 115 Hz mode.
+    delay(10);
   }
 
-  const float rawOuter = adcToDegrees(static_cast<float>(sumOuter) / NUM_READINGS);
-  const float rawInner = adcToDegrees(static_cast<float>(sumInner) / NUM_READINGS);
-  const float rawHip = adcToDegrees(static_cast<float>(sumHip) / NUM_READINGS);
-  const float rawKnee = adcToDegrees(static_cast<float>(sumKnee) / NUM_READINGS);
-  const float rawButt = adcToDegrees(static_cast<float>(sumButt) / NUM_READINGS);
+  for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+    if (validCounts[sensor] < NUM_READINGS) {
+      dbPrintf("Calibration aborted: AS5600 sensor %u supplied only %d/%d valid PWM samples.\n",
+               sensor, validCounts[sensor], NUM_READINGS);
+      return;
+    }
+  }
+
+  const float rawOuter = adcToDegrees(static_cast<float>(sums[0]) / validCounts[0]);
+  const float rawInner = adcToDegrees(static_cast<float>(sums[1]) / validCounts[1]);
+  const float rawHip = adcToDegrees(static_cast<float>(sums[2]) / validCounts[2]);
+  const float rawKnee = adcToDegrees(static_cast<float>(sums[3]) / validCounts[3]);
+  const float rawButt = adcToDegrees(static_cast<float>(sums[4]) / validCounts[4]);
 
   const int offsetOuter = static_cast<int>(lroundf(180.0f - rawOuter));
   const int offsetInner = static_cast<int>(lroundf(180.0f - rawInner));
@@ -1359,25 +2322,56 @@ void printSavedOffsets() {
 // IMU / misc
 // -----------------------------------------------------------------------------
 
+bool selectImuMuxChannel(uint8_t channel) {
+  if (channel > 7) return false;
+  Wire.beginTransmission(IMU_MUX_ADDRESS);
+  Wire.write(static_cast<uint8_t>(1U << channel));
+  const uint8_t result = Wire.endTransmission();
+  if (result == 0) {
+    imuMuxSeen = true;
+    imuMuxSelectOk++;
+    return true;
+  }
+  imuMuxSelectFail++;
+  return false;
+}
+
 void readIMU() {
   for (int i = 0; i < IMU_COUNT; ++i) {
-    const uint8_t address = 0x68 + i;
-    Wire.beginTransmission(address);
+    ImuDiagnostic &diag = imuDiagnostics[i];
+    diag.lastProbeMs = millis();
+
+    if (!selectImuMuxChannel(i)) {
+      diag.readFail++;
+      continue;
+    }
+
+    Wire.beginTransmission(IMU_DEVICE_ADDRESS);
     Wire.write(0x3B);
-    if (Wire.endTransmission(false) != 0) continue;
+    if (Wire.endTransmission(false) != 0) {
+      diag.readFail++;
+      continue;
+    }
 
-    const uint8_t received = Wire.requestFrom(address, static_cast<uint8_t>(14), static_cast<uint8_t>(true));
-    if (received < 14) continue;
+    const uint8_t received = Wire.requestFrom((int)IMU_DEVICE_ADDRESS, 14, true);
+    if (received < 14) {
+      diag.readFail++;
+      continue;
+    }
 
-    const int16_t ax = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
-    const int16_t ay = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
-    const int16_t az = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
-    (void)Wire.read(); (void)Wire.read(); // temperature bytes
-    const int16_t gx = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
-    const int16_t gy = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
-    const int16_t gz = static_cast<int16_t>((Wire.read() << 8) | Wire.read());
+    diag.ax = (Wire.read() << 8) | Wire.read();
+    diag.ay = (Wire.read() << 8) | Wire.read();
+    diag.az = (Wire.read() << 8) | Wire.read();
+    Wire.read(); Wire.read(); // temperature
+    diag.gx = (Wire.read() << 8) | Wire.read();
+    diag.gy = (Wire.read() << 8) | Wire.read();
+    diag.gz = (Wire.read() << 8) | Wire.read();
+    diag.readOk++;
+    diag.everSeen = true;
+    diag.lastSeenMs = millis();
 
-    Serial.printf("IMU %d Acc:%d,%d,%d Gyro:%d,%d,%d\n", i, ax, ay, az, gx, gy, gz);
+    dbPrintf("IMU %d CH%d Acc:%d,%d,%d Gyro:%d,%d,%d\n",
+             i, i, diag.ax, diag.ay, diag.az, diag.gx, diag.gy, diag.gz);
   }
 }
 
@@ -1389,13 +2383,15 @@ void printMACAddress() {
 }
 
 void printStatus() {
-  dbPrintf("Mode: %s | chirality: %s | play:%d | raw:%d | maxTorque:%.2f A\n",
+  dbPrintf("Operating: %s | Mode: %s | chirality: %s | play:%d | raw:%d | maxTorque:%.2f A\n",
+                operatingModeName().c_str(),
                 configMode ? "config" : "normal",
                 isCenter ? "center" : (isLeft ? "left" : "right"),
                 playMode, rawMode, maxTorqueLimit);
   if (!isCenter) {
     dbPrintf("Angles: outer=%.1f inner=%.1f hipPitch=%.1f knee=%.1f hipRoll=%.1f\n",
                   normalizedOuter, normalizedInner, normalizedHip, normalizedKnee, normalizedButt);
+    if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) printHyperspawnStatus();
   }
 }
 
@@ -1458,10 +2454,111 @@ void changeChirality(const String &side) {
   if (DROPBEAR_ENABLE_WIFI_PORTAL) requestPortalRestart();
 }
 
+void changeOperatingMode(const String &modeName) {
+  OperatingMode requested = operatingMode;
+  if (modeName == "standalone" || modeName == "original" || modeName == "local") {
+    requested = OPERATING_STANDALONE;
+  } else if (modeName == "hyperspawn" || modeName == "ros2" || modeName == "route") {
+    requested = OPERATING_HYPERSPAWN_ROUTE;
+  } else {
+    dbPrintln("Usage: mode standalone | hyperspawn");
+    return;
+  }
+
+  if (requested == operatingMode) {
+    dbPrintf("Operating mode already %s.\n", operatingModeName().c_str());
+    return;
+  }
+
+  if (runtimeControlReady && !isCenter) {
+    requestStop(3);
+    delay(40);
+  }
+  clearAllTorqueSetpoints();
+  hyperspawnControlMode = HS_CONTROL_NONE;
+  operatingMode = requested;
+  saveConfig();
+  rebootRequired = true;
+  dbPrintf("Operating mode saved as %s. Reboot required before control authority changes.\n",
+           operatingModeName().c_str());
+}
+
+void printHyperspawnStatus() {
+  dbPrintf("Hyperspawn route: mode=%s node=0x%02X limb=%u control=%s play=%s timeout=%lums legacy=%s autoArm=%s scale=%.4f lastCmdAge=%s\n",
+           operatingModeName().c_str(), hyperspawnNodeId(), hyperspawnLimbId(),
+           hyperspawnControlMode == HS_CONTROL_POSITION ? "position" :
+           (hyperspawnControlMode == HS_CONTROL_TORQUE ? "torque" : "none"),
+           playMode ? "on" : "off", (unsigned long)hyperspawnCommandTimeoutMs,
+           hyperspawnLegacyBroadcast ? "on" : "off",
+           hyperspawnAutoArm ? "on" : "off", hyperspawnPositionUnitsPerDegree,
+           hyperspawnLastCommandMs ? String(millis() - hyperspawnLastCommandMs).c_str() : "never");
+  dbPrintf("  RX=%lu targeted=%lu legacy=%lu rejected=%lu completed=%lu fragmentTimeouts=%lu stateTX=%lu heartbeatTX=%lu watchdogTrips=%lu fault=%u\n",
+           (unsigned long)hyperspawnRxFrames, (unsigned long)hyperspawnRxTargetedFrames,
+           (unsigned long)hyperspawnRxLegacyFrames, (unsigned long)hyperspawnRxRejectedFrames,
+           (unsigned long)hyperspawnCompletedCommands, (unsigned long)hyperspawnFragmentTimeouts,
+           (unsigned long)hyperspawnStateFrames, (unsigned long)hyperspawnHeartbeatFrames,
+           (unsigned long)hyperspawnWatchdogTrips, hyperspawnFaultCode);
+}
+
+void processHyperspawnSerialCommand(const String &command) {
+  if (command == "hyperspawn" || command == "hyperspawn status") {
+    printHyperspawnStatus();
+    return;
+  }
+  if (command == "hyperspawn legacy on") {
+    hyperspawnLegacyBroadcast = true;
+    saveConfig();
+    dbPrintln("Hyperspawn legacy brain-broadcast compatibility enabled. WARNING: not limb-targeted on a shared bus.");
+    return;
+  }
+  if (command == "hyperspawn legacy off") {
+    hyperspawnLegacyBroadcast = false;
+    saveConfig();
+    dbPrintln("Hyperspawn legacy brain-broadcast compatibility disabled; targeted route remains active.");
+    return;
+  }
+  if (command == "hyperspawn autoarm on") {
+    hyperspawnAutoArm = true;
+    saveConfig();
+    dbPrintln("Hyperspawn auto-arm on valid command enabled.");
+    return;
+  }
+  if (command == "hyperspawn autoarm off") {
+    hyperspawnAutoArm = false;
+    saveConfig();
+    dbPrintln("Hyperspawn auto-arm disabled; use 'play' to arm output.");
+    return;
+  }
+  if (command.startsWith("hyperspawn timeout ")) {
+    const uint32_t v = (uint32_t)command.substring(20).toInt();
+    if (v < 50 || v > 10000) dbPrintln("Timeout must be 50..10000 ms.");
+    else {
+      hyperspawnCommandTimeoutMs = v;
+      saveConfig();
+      dbPrintf("Hyperspawn command timeout set to %lu ms.\n", (unsigned long)v);
+    }
+    return;
+  }
+  if (command.startsWith("hyperspawn scale ")) {
+    const float v = command.substring(17).toFloat();
+    if (v <= 0.0001f || v > 1000.0f) dbPrintln("Position scale must be >0 and <=1000 wire-units/degree.");
+    else {
+      hyperspawnPositionUnitsPerDegree = v;
+      saveConfig();
+      dbPrintf("Hyperspawn position scale set to %.6f wire-units/degree.\n", v);
+    }
+    return;
+  }
+  dbPrintln("Hyperspawn commands: status | legacy on/off | autoarm on/off | timeout <ms> | scale <units_per_degree>");
+}
+
 void handleConfigurationCommand(String command) {
   command.trim();
   if (command == "exit") exitConfigurationMode();
   else if (command == "left" || command == "right" || command == "center") changeChirality(command);
+  else if (command == "mode") dbPrintf("Operating mode: %s (boot=%s)%s\n", operatingModeName().c_str(), operatingModeAtBoot.c_str(), rebootRequired ? " REBOOT_REQUIRED" : "");
+  else if (command.startsWith("mode ")) { String m = command.substring(5); m.trim(); changeOperatingMode(m); }
+  else if (command.startsWith("hyperspawn")) processHyperspawnSerialCommand(command);
   else if (command == "calibrate save") calibrateSensors(true);
   else if (command == "calibrate") calibrateSensors(false);
   else if (command == "save") saveConfig();
@@ -1474,6 +2571,11 @@ void handleConfigurationCommand(String command) {
 // -----------------------------------------------------------------------------
 
 void processImpedanceCommand(const String &command) {
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+    dbPrintln("Manual motion command rejected: HyperSpawn/ROS2 route owns actuator authority. Use STOP or switch mode and reboot.");
+    return;
+  }
+
   if (!runtimeControlReady) {
     dbPrintln("Impedance command rejected: actuator control runtime is not active. Reboot after role configuration.");
     return;
@@ -1539,6 +2641,11 @@ void processImpedanceCommand(const String &command) {
 }
 
 void processTorqueCommand(const String &command) {
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+    dbPrintln("Manual motion command rejected: HyperSpawn/ROS2 route owns actuator authority. Use STOP or switch mode and reboot.");
+    return;
+  }
+
   if (!runtimeControlReady) {
     dbPrintln("Torque command rejected: actuator control runtime is not active. Reboot after role configuration.");
     return;
@@ -1594,7 +2701,26 @@ void processSerialCommand(String command) {
 
   if (serialMutex && xSemaphoreTake(serialMutex, portMAX_DELAY) != pdTRUE) return;
 
-  if (command == "config") {
+  if (command == "mode") {
+    dbPrintf("Operating mode: %s (boot=%s)%s\n", operatingModeName().c_str(), operatingModeAtBoot.c_str(),
+             rebootRequired ? " REBOOT_REQUIRED" : "");
+  } else if (command.startsWith("mode ")) {
+    String m = command.substring(5);
+    m.trim();
+    xSemaphoreGive(serialMutex);
+    changeOperatingMode(m);
+    return;
+  } else if (command == "ros2" || command == "hyperspawn on") {
+    xSemaphoreGive(serialMutex);
+    changeOperatingMode("hyperspawn");
+    return;
+  } else if (command == "hyperspawn off") {
+    xSemaphoreGive(serialMutex);
+    changeOperatingMode("standalone");
+    return;
+  } else if (command.startsWith("hyperspawn")) {
+    processHyperspawnSerialCommand(command);
+  } else if (command == "config") {
     xSemaphoreGive(serialMutex);
     enterConfigurationMode();
     return;
@@ -1700,6 +2826,15 @@ void processSerialCommand(String command) {
 
 void printHelp() {
   dbPrintln("Available Commands:");
+  dbPrintln("  mode");
+  dbPrintln("      Show active operating structure.");
+  dbPrintln("  mode standalone | mode hyperspawn");
+  dbPrintln("      Persist command-authority path; reboot required. Default is standalone/original.");
+  dbPrintln("  hyperspawn status");
+  dbPrintln("  hyperspawn legacy on | off");
+  dbPrintln("  hyperspawn autoarm on | off");
+  dbPrintln("  hyperspawn timeout <ms>");
+  dbPrintln("  hyperspawn scale <wire_units_per_degree>");
   dbPrintln("  config");
   dbPrintln("      Enter configuration mode and stop this leg.");
   dbPrintln("  resetOffsets");
@@ -1769,6 +2904,8 @@ void sendNoCacheHeaders() {
 }
 
 void redirectToPortal() {
+  portalHttpRequests++;
+  portalRedirects++;
   server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/");
   sendNoCacheHeaders();
   server.send(302, "text/plain", "Redirecting to Dropbear controller...");
@@ -1780,9 +2917,12 @@ String readSPIFFSTextFile(const String &path, size_t maxBytes = 32768) {
 
   File file = SPIFFS.open(path, FILE_READ);
   if (!file) {
+    spiffsErrors++;
     if (spiffsMutex) xSemaphoreGive(spiffsMutex);
     return "";
   }
+  spiffsReadOps++;
+  lastSpiffsReadMs = millis();
 
   String data;
   const size_t wanted = min((size_t)file.size(), maxBytes);
@@ -1804,8 +2944,9 @@ String buildStateJson() {
   out.reserve(3200);
   out += "{";
   out += "\"role\":\"" + selectedRoleName() + "\",";
+  out += "\"operating_mode\":\"" + operatingModeName() + "\",";
   out += "\"portal_enabled\":" + String(DROPBEAR_ENABLE_WIFI_PORTAL ? "true" : "false") + ",";
-  out += "\"sensor_pinout\":\"" + String(DROPBEAR_ENABLE_WIFI_PORTAL ? "adc1_wifi" : "legacy_adc2") + "\",";
+  out += "\"sensor_pinout\":\"as5600_pwm_one_wire_original_gpio\",";
   out += "\"sensor_pins\":[" + String(PIN_OUTER_CALF) + "," + String(PIN_INNER_CALF) + "," +
          String(PIN_HIP_PITCH) + "," + String(PIN_KNEE) + "," + String(PIN_HIP_ROLL) + "],";
   out += "\"ssid\":\"" + jsonEscape(portalSSID) + "\",";
@@ -1858,8 +2999,21 @@ String buildStateJson() {
     if (i) out += ",";
     out += String(ACTUATOR_IDS[i]);
   }
-  out += "]";
+  out += "],";
 
+  out += "\"hyperspawn\":{";
+  out += "\"node_id\":" + String(hyperspawnNodeId()) + ",";
+  out += "\"limb_id\":" + String(hyperspawnLimbId()) + ",";
+  out += "\"control_mode\":\"" + String(hyperspawnControlMode == HS_CONTROL_POSITION ? "position" : (hyperspawnControlMode == HS_CONTROL_TORQUE ? "torque" : "none")) + "\",";
+  out += "\"last_command_age_ms\":" + String(hyperspawnLastCommandMs ? millis() - hyperspawnLastCommandMs : UINT32_MAX) + ",";
+  out += "\"watchdog_tripped\":" + String(hyperspawnWatchdogTripped ? "true" : "false") + ",";
+  out += "\"fault_code\":" + String(hyperspawnFaultCode) + ",";
+  out += "\"rx_frames\":" + String(hyperspawnRxFrames) + ",";
+  out += "\"completed_commands\":" + String(hyperspawnCompletedCommands) + ",";
+  out += "\"fragment_timeouts\":" + String(hyperspawnFragmentTimeouts) + ",";
+  out += "\"state_frames\":" + String(hyperspawnStateFrames) + ",";
+  out += "\"heartbeat_frames\":" + String(hyperspawnHeartbeatFrames);
+  out += "}";
   out += "}";
   return out;
 }
@@ -1869,6 +3023,11 @@ String buildConfigJson() {
   out.reserve(5000);
   out += "{";
   out += "\"role\":\"" + selectedRoleName() + "\",";
+  out += "\"operating_mode\":\"" + operatingModeName() + "\",";
+  out += "\"hyperspawn_timeout_ms\":" + String(hyperspawnCommandTimeoutMs) + ",";
+  out += "\"hyperspawn_legacy_broadcast\":" + String(hyperspawnLegacyBroadcast ? "true" : "false") + ",";
+  out += "\"hyperspawn_auto_arm\":" + String(hyperspawnAutoArm ? "true" : "false") + ",";
+  out += "\"hyperspawn_position_units_per_degree\":" + String(hyperspawnPositionUnitsPerDegree, 6) + ",";
   out += "\"configured\":" + String(configProvisioned ? "true" : "false") + ",";
   out += "\"max_torque\":" + String(maxTorqueLimit, 3) + ",";
 
@@ -1909,6 +3068,360 @@ String buildConfigJson() {
   return out;
 }
 
+
+const JointConstraints &selectedConstraintForSensor(int index) {
+  if (isLeft) {
+    switch (index) {
+      case 0: return outerCalfConstraintsLeft;
+      case 1: return innerCalfConstraintsLeft;
+      case 2: return hipPitchConstraintsLeft;
+      case 3: return kneeConstraintsLeft;
+      default: return hipRollConstraintsLeft;
+    }
+  }
+  switch (index) {
+    case 0: return outerCalfConstraintsRight;
+    case 1: return innerCalfConstraintsRight;
+    case 2: return hipPitchConstraintsRight;
+    case 3: return kneeConstraintsRight;
+    default: return hipRollConstraintsRight;
+  }
+}
+
+const char *canHealthStatus() {
+  if (!configProvisioned || isCenter) return "inactive";
+  if (!canInitialized || !runtimeControlReady) return "fault";
+  if (strcmp(taskHealthStatus(true, lastCanTaskMs, 40, 150), "fault") == 0) return "fault";
+  if (canConsecutiveFailures >= 3) return "fault";
+  if (canConsecutiveFailures > 0 || diagnosticAgeMs(lastCanFailureMs) < 5000) return "warn";
+  return "ok";
+}
+
+const char *overallDiagnosticStatus() {
+  if (!configProvisioned) return "warn";
+  if (rebootRequired) return "warn";
+  if (DROPBEAR_ENABLE_WIFI_PORTAL && !portalOnline) return "fault";
+  if (spiffsMounted == false) return "fault";
+
+  if (isCenter) {
+    if (!runtimeImuReady) return "fault";
+    if (strcmp(taskHealthStatus(true, lastImuTaskMs, 100, 300), "fault") == 0) return "fault";
+    bool anySeen = false;
+    for (int i = 0; i < IMU_COUNT; ++i) anySeen = anySeen || imuDiagnostics[i].everSeen;
+    return anySeen ? "ok" : "warn";
+  }
+
+  if (!runtimeControlReady || !canInitialized) return "fault";
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnWatchdogTripped) return "fault";
+  if (strcmp(taskHealthStatus(true, lastSensorTaskMs, 20, 100), "fault") == 0) return "fault";
+  if (strcmp(taskHealthStatus(true, lastImpedanceTaskMs, 50, 150), "fault") == 0) return "fault";
+  if (strcmp(taskHealthStatus(true, lastCanTaskMs, 50, 150), "fault") == 0) return "fault";
+  for (int i = 0; i < 5; ++i) {
+    if (strcmp(sensorHealthStatus(sensorDiagnostics[i]), "fault") == 0) return "fault";
+  }
+  if (strcmp(canHealthStatus(), "fault") == 0) return "fault";
+  if (strcmp(canHealthStatus(), "warn") == 0) return "warn";
+  return "ok";
+}
+
+String ageJsonValue(uint32_t timestamp) {
+  const uint32_t age = diagnosticAgeMs(timestamp);
+  if (age == UINT32_MAX) return "-1";
+  return String(age);
+}
+
+String buildDiagnosticsJson() {
+  static const char *sensorNames[5] = {"outer_calf", "inner_calf", "hip_pitch", "knee", "hip_roll"};
+  static const int sensorPins[5] = {PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL};
+  static const char *actuatorNames[ACTUATOR_COUNT] = {
+    "right_outer_calf", "left_outer_calf", "right_inner_calf", "left_inner_calf",
+    "right_knee", "left_knee", "right_hip_pitch", "left_hip_pitch",
+    "right_hip_yaw", "left_hip_yaw", "right_hip_roll", "left_hip_roll"
+  };
+
+  String out;
+  out.reserve(18000);
+  const uint32_t now = millis();
+  const bool legRuntime = configProvisioned && !isCenter && runtimeControlReady;
+  const uint32_t queueDepth = webCommandQueue ? (uint32_t)uxQueueMessagesWaiting(webCommandQueue) : 0;
+
+  out += "{";
+  out += "\"timestamp_ms\":" + String(now) + ",";
+  out += "\"overall\":\"" + String(overallDiagnosticStatus()) + "\",";
+  out += "\"role\":\"" + selectedRoleName() + "\",";
+  out += "\"role_at_boot\":\"" + jsonEscape(roleAtBoot) + "\",";
+  out += "\"reboot_required\":" + String(rebootRequired ? "true" : "false") + ",";
+
+  out += "\"modules\":{";
+  out += "\"controller\":{";
+  out += "\"status\":\"" + String(configProvisioned ? (rebootRequired ? "warn" : "ok") : "warn") + "\",";
+  out += "\"configured\":" + String(configProvisioned ? "true" : "false") + ",";
+  out += "\"control_ready\":" + String(runtimeControlReady ? "true" : "false") + ",";
+  out += "\"imu_ready\":" + String(runtimeImuReady ? "true" : "false") + ",";
+  out += "\"play\":" + String(playMode ? "true" : "false") + ",";
+  out += "\"config_mode\":" + String(configMode ? "true" : "false") + ",";
+  out += "\"raw_mode\":" + String(rawMode ? "true" : "false") + ",";
+  out += "\"max_torque\":" + String(maxTorqueLimit, 3) + ",";
+  out += "\"uptime_ms\":" + String(now) + ",";
+  out += "\"free_heap\":" + String(ESP.getFreeHeap());
+  out += "},";
+
+  out += "\"wifi\":{";
+  out += "\"status\":\"" + String(!DROPBEAR_ENABLE_WIFI_PORTAL ? "inactive" : (portalOnline ? "ok" : "fault")) + "\",";
+  out += "\"enabled\":" + String(DROPBEAR_ENABLE_WIFI_PORTAL ? "true" : "false") + ",";
+  out += "\"online\":" + String(portalOnline ? "true" : "false") + ",";
+  out += "\"ssid\":\"" + jsonEscape(portalSSID) + "\",";
+  out += "\"ip\":\"" + WiFi.softAPIP().toString() + "\",";
+  out += "\"clients\":" + String(WiFi.softAPgetStationNum()) + ",";
+  out += "\"http_requests\":" + String(portalHttpRequests) + ",";
+  out += "\"redirects\":" + String(portalRedirects);
+  out += "},";
+
+  out += "\"spiffs\":{";
+  out += "\"status\":\"" + String(spiffsMounted ? "ok" : "fault") + "\",";
+  out += "\"mounted\":" + String(spiffsMounted ? "true" : "false") + ",";
+  out += "\"total\":" + String(SPIFFS.totalBytes()) + ",";
+  out += "\"used\":" + String(SPIFFS.usedBytes()) + ",";
+  out += "\"config_exists\":" + String(SPIFFS.exists("/config.txt") ? "true" : "false") + ",";
+  out += "\"backup_exists\":" + String(SPIFFS.exists("/config.bak") ? "true" : "false") + ",";
+  out += "\"reads\":" + String(spiffsReadOps) + ",";
+  out += "\"writes\":" + String(spiffsWriteOps) + ",";
+  out += "\"errors\":" + String(spiffsErrors) + ",";
+  out += "\"last_read_age_ms\":" + ageJsonValue(lastSpiffsReadMs) + ",";
+  out += "\"last_write_age_ms\":" + ageJsonValue(lastSpiffsWriteMs);
+  out += "},";
+
+  out += "\"spi\":{";
+  out += "\"status\":\"" + String((!configProvisioned || isCenter) ? "inactive" : (spiInitialized ? "ok" : "fault")) + "\",";
+  out += "\"initialized\":" + String(spiInitialized ? "true" : "false") + ",";
+  out += "\"sck\":" + String(SPI_SCK_PIN) + ",\"miso\":" + String(SPI_MISO_PIN) + ",\"mosi\":" + String(SPI_MOSI_PIN) + ",\"cs\":" + String(CAN_CS_PIN);
+  out += "},";
+
+  out += "\"encoder_io\":{";
+  out += "\"status\":\"" + String((!configProvisioned || isCenter) ? "inactive" : (runtimeControlReady ? "ok" : "fault")) + "\",";
+  out += "\"interface\":\"AS5600 OUT / one-wire PWM\",";
+  out += "\"pins\":[" + String(PIN_OUTER_CALF) + "," + String(PIN_INNER_CALF) + "," + String(PIN_HIP_PITCH) + "," + String(PIN_KNEE) + "," + String(PIN_HIP_ROLL) + "],";
+  out += "\"duty_min_percent\":2.9,\"duty_max_percent\":97.1,";
+  out += "\"supported_nominal_hz\":[115,230,460,920]";
+  out += "},";
+
+  out += "\"can\":{";
+  out += "\"status\":\"" + String(canHealthStatus()) + "\",";
+  out += "\"initialized\":" + String(canInitialized ? "true" : "false") + ",";
+  out += "\"bitrate\":1000000,\"oscillator_mhz\":8,";
+  out += "\"cs_gpio\":" + String(CAN_CS_PIN) + ",\"int_gpio\":" + String((int)CAN0_INT) + ",";
+  out += "\"int_level\":" + String(canInitialized ? digitalRead(CAN0_INT) : -1) + ",";
+  out += "\"tx_success\":" + String(canTxSuccess) + ",";
+  out += "\"rx_frames\":" + String(canRxFrames) + ",";
+  out += "\"rx_errors\":" + String(canRxErrors) + ",";
+  out += "\"last_rx_age_ms\":" + ageJsonValue(lastCanRxMs) + ",";
+  out += "\"tx_failure\":" + String(canTxFailure) + ",";
+  out += "\"consecutive_failures\":" + String(canConsecutiveFailures) + ",";
+  out += "\"mutex_timeouts\":" + String(canMutexTimeouts) + ",";
+  out += "\"torque_frames\":" + String(canTorqueFrames) + ",";
+  out += "\"stop_frames\":" + String(canStopFrames) + ",";
+  out += "\"last_result\":" + String(lastCanResult) + ",";
+  out += "\"last_tx_age_ms\":" + ageJsonValue(lastCanTxMs) + ",";
+  out += "\"last_failure_age_ms\":" + ageJsonValue(lastCanFailureMs) + ",";
+  out += "\"feedback\":\"rx_transport_active_rmd_decoder_pending\"";
+  out += "},";
+
+  out += "\"i2c\":{";
+  out += "\"status\":\"" + String(i2cInitialized ? "ok" : "fault") + "\",";
+  out += "\"initialized\":" + String(i2cInitialized ? "true" : "false") + ",";
+  out += "\"sda\":" + String(I2C_SDA_PIN) + ",\"scl\":" + String(I2C_SCL_PIN) + ",";
+  out += "\"mux_address\":112,";
+  out += "\"mux_seen\":" + String(imuMuxSeen ? "true" : "false") + ",";
+  out += "\"mux_select_ok\":" + String(imuMuxSelectOk) + ",";
+  out += "\"mux_select_fail\":" + String(imuMuxSelectFail);
+  out += "},";
+
+  out += "\"commands\":{";
+  out += "\"status\":\"" + String(taskHealthStatus(true, lastCommandTaskMs, 100, 500)) + "\",";
+  out += "\"queue_depth\":" + String(queueDepth) + ",";
+  out += "\"queue_capacity\":12,";
+  out += "\"web_queued\":" + String(webCommandsQueued) + ",";
+  out += "\"web_processed\":" + String(webCommandsProcessed) + ",";
+  out += "\"queue_full_events\":" + String(webCommandQueueFull) + ",";
+  out += "\"serial_processed\":" + String(serialCommandsProcessed);
+  out += "}";
+  out += "},";
+
+  out += "\"hyperspawn_route\":{";
+  out += "\"status\":\"" + String(operatingMode != OPERATING_HYPERSPAWN_ROUTE ? "inactive" : (hyperspawnWatchdogTripped ? "fault" : "ok")) + "\",";
+  out += "\"active\":" + String(operatingMode == OPERATING_HYPERSPAWN_ROUTE ? "true" : "false") + ",";
+  out += "\"node_id\":" + String(hyperspawnNodeId()) + ",";
+  out += "\"limb_id\":" + String(hyperspawnLimbId()) + ",";
+  out += "\"legacy_broadcast\":" + String(hyperspawnLegacyBroadcast ? "true" : "false") + ",";
+  out += "\"timeout_ms\":" + String(hyperspawnCommandTimeoutMs) + ",";
+  out += "\"position_units_per_degree\":" + String(hyperspawnPositionUnitsPerDegree, 6) + ",";
+  out += "\"control_mode\":\"" + String(hyperspawnControlMode == HS_CONTROL_POSITION ? "position" : (hyperspawnControlMode == HS_CONTROL_TORQUE ? "torque" : "none")) + "\",";
+  out += "\"last_command_age_ms\":" + String(hyperspawnLastCommandMs ? millis() - hyperspawnLastCommandMs : UINT32_MAX) + ",";
+  out += "\"rx_frames\":" + String(hyperspawnRxFrames) + ",";
+  out += "\"targeted_rx\":" + String(hyperspawnRxTargetedFrames) + ",";
+  out += "\"legacy_rx\":" + String(hyperspawnRxLegacyFrames) + ",";
+  out += "\"rejected_rx\":" + String(hyperspawnRxRejectedFrames) + ",";
+  out += "\"state_tx\":" + String(hyperspawnStateFrames) + ",";
+  out += "\"heartbeat_tx\":" + String(hyperspawnHeartbeatFrames) + ",";
+  out += "\"fault_tx\":" + String(hyperspawnFaultFrames) + ",";
+  out += "\"watchdog_trips\":" + String(hyperspawnWatchdogTrips) + ",";
+  out += "\"completed_commands\":" + String(hyperspawnCompletedCommands) + ",";
+  out += "\"fragment_timeouts\":" + String(hyperspawnFragmentTimeouts) + ",";
+  out += "\"fault_code\":" + String(hyperspawnFaultCode);
+  out += "},";
+
+  out += "\"safety\":{";
+  out += "\"play\":" + String(playMode ? "true" : "false") + ",";
+  out += "\"stop_burst_remaining\":" + String(stopBurstRemaining) + ",";
+  out += "\"calibration_override\":" + String(calibrationOverrideActive ? "true" : "false") + ",";
+  out += "\"calibration_actuator_index\":" + String(calibrationActuatorIndex) + ",";
+  out += "\"calibration_torque\":" + String(calibrationTorqueValue) + ",";
+  out += "\"reboot_required\":" + String(rebootRequired ? "true" : "false") + ",";
+  out += "\"command_watchdog\":\"" + String(operatingMode == OPERATING_HYPERSPAWN_ROUTE ? (hyperspawnWatchdogTripped ? "tripped" : "armed") : "inactive") + "\",";
+  out += "\"can_feedback_monitoring\":\"rx_transport_active_decoder_pending\"";
+  out += "},";
+
+  out += "\"sensors\":[";
+  for (int i = 0; i < 5; ++i) {
+    if (i) out += ",";
+    const SensorDiagnostic &d = sensorDiagnostics[i];
+    const JointConstraints &c = selectedConstraintForSensor(i);
+    out += "{";
+    out += "\"name\":\"" + String(sensorNames[i]) + "\",";
+    out += "\"status\":\"" + String(sensorHealthStatus(d)) + "\",";
+    out += "\"gpio\":" + String(sensorPins[i]) + ",";
+    out += "\"interface\":\"as5600_pwm_one_wire\",";
+    out += "\"raw\":" + String(d.raw) + ",";
+    out += "\"filtered_raw\":" + String(d.filtered, 2) + ",";
+    out += "\"angle\":" + String(d.angle, 2) + ",";
+    out += "\"signal_valid\":" + String(d.signalValid ? "true" : "false") + ",";
+    out += "\"duty_percent\":" + String(d.duty * 100.0f, 3) + ",";
+    out += "\"frequency_hz\":" + String(d.frequencyHz, 2) + ",";
+    out += "\"period_us\":" + String(d.periodUs) + ",";
+    out += "\"high_us\":" + String(d.highUs) + ",";
+    out += "\"pulse_age_us\":" + String(d.pulseAgeUs) + ",";
+    out += "\"pwm_frames\":" + String(d.pwmFrames) + ",";
+    out += "\"min_raw_seen\":" + String(d.minRaw == 4095 && d.samples == 0 ? 0 : d.minRaw) + ",";
+    out += "\"max_raw_seen\":" + String(d.maxRaw) + ",";
+    out += "\"samples\":" + String(d.samples) + ",";
+    out += "\"sample_age_ms\":" + ageJsonValue(d.lastSampleMs) + ",";
+    out += "\"last_change_age_ms\":" + ageJsonValue(d.lastChangeMs) + ",";
+    out += "\"rail_warning\":false,";
+    out += "\"constraint_min\":" + String(c.minAngle) + ",\"constraint_max\":" + String(c.maxAngle);
+    out += "}";
+  }
+  out += "],";
+
+  out += "\"actuators\":[";
+  for (int i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (i) out += ",";
+    const bool selected = legRuntime && actuatorBelongsToSelectedLeg(i);
+    const ActuatorDiagnostic &d = actuatorDiagnostics[i];
+    const uint32_t age = diagnosticAgeMs(d.lastTxMs);
+    const bool outputExpected = selected && (playMode || calibrationOverrideActive || stopBurstRemaining > 0);
+    const char *status = "inactive";
+    if (selected) {
+      if (!canInitialized) status = "fault";
+      else if (d.lastResult != CAN_OK && d.lastTxMs != 0 && diagnosticAgeMs(d.lastTxMs) < 5000) status = "fault";
+      else if (outputExpected && (age == UINT32_MAX || age > 250)) status = "fault";
+      else if (!playMode && !calibrationOverrideActive && stopBurstRemaining == 0) status = "idle";
+      else status = "ok";
+    }
+    char idHex[12];
+    snprintf(idHex, sizeof(idHex), "0x%03lX", (unsigned long)ACTUATOR_IDS[i]);
+    char opHex[10];
+    snprintf(opHex, sizeof(opHex), "0x%02X", (unsigned int)d.lastOpcode);
+    out += "{";
+    out += "\"name\":\"" + String(actuatorNames[i]) + "\",";
+    out += "\"status\":\"" + String(status) + "\",";
+    out += "\"selected\":" + String(selected ? "true" : "false") + ",";
+    out += "\"can_id\":\"" + String(idHex) + "\",";
+    out += "\"feedback\":\"can_rx_unparsed\",";
+    String commandSource;
+    if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+      commandSource = hyperspawnControlMode == HS_CONTROL_POSITION ? "hyperspawn_position" :
+                      (hyperspawnControlMode == HS_CONTROL_TORQUE ? "hyperspawn_torque" : "hyperspawn_idle");
+    } else {
+      commandSource = isImpedanceEnabled(i) ? "impedance" : "direct";
+    }
+    out += "\"command_source\":\"" + commandSource + "\",";
+    out += "\"direct_setpoint\":" + String(torqueValues[i]) + ",";
+    out += "\"impedance_setpoint\":" + String(impedanceTorqueValues[i]) + ",";
+    out += "\"impedance_enabled\":" + String(isImpedanceEnabled(i) ? "true" : "false") + ",";
+    out += "\"last_sent\":" + String(d.lastCommand) + ",";
+    out += "\"last_opcode\":\"" + String(opHex) + "\",";
+    out += "\"last_result\":" + String(d.lastResult) + ",";
+    out += "\"tx_ok\":" + String(d.txOk) + ",\"tx_fail\":" + String(d.txFail) + ",";
+    out += "\"tx_age_ms\":" + ageJsonValue(d.lastTxMs);
+    out += "}";
+  }
+  out += "],";
+
+  out += "\"imus\":[";
+  for (int i = 0; i < IMU_COUNT; ++i) {
+    if (i) out += ",";
+    const ImuDiagnostic &d = imuDiagnostics[i];
+    const bool active = configProvisioned && isCenter && runtimeImuReady;
+    const uint32_t seenAge = diagnosticAgeMs(d.lastSeenMs);
+    const char *status = "inactive";
+    if (active) {
+      if (!d.everSeen) status = "warn";
+      else if (seenAge > 1000) status = "fault";
+      else status = "ok";
+    }
+    char addr[8];
+    snprintf(addr, sizeof(addr), "0x%02X", IMU_DEVICE_ADDRESS);
+    out += "{";
+    out += "\"index\":" + String(i) + ",\"mux_channel\":" + String(i) + ",\"address\":\"" + String(addr) + "\",";
+    out += "\"status\":\"" + String(status) + "\",";
+    out += "\"ever_seen\":" + String(d.everSeen ? "true" : "false") + ",";
+    out += "\"read_ok\":" + String(d.readOk) + ",\"read_fail\":" + String(d.readFail) + ",";
+    out += "\"probe_age_ms\":" + ageJsonValue(d.lastProbeMs) + ",";
+    out += "\"seen_age_ms\":" + ageJsonValue(d.lastSeenMs) + ",";
+    out += "\"accel\":[" + String(d.ax) + "," + String(d.ay) + "," + String(d.az) + "],";
+    out += "\"gyro\":[" + String(d.gx) + "," + String(d.gy) + "," + String(d.gz) + "]";
+    out += "}";
+  }
+  out += "],";
+
+  out += "\"tasks\":[";
+  struct TaskDiagRow { const char *name; bool active; uint32_t expectedHz; uint32_t loops; uint32_t lastMs; TaskHandle_t handle; uint32_t warnAge; uint32_t faultAge; };
+  TaskDiagRow taskRows[] = {
+    {"sensors", legRuntime, 1000, sensorTaskLoops, lastSensorTaskMs, sensorTaskHandle, 20, 100},
+    {"impedance", legRuntime, 100, impedanceTaskLoops, lastImpedanceTaskMs, impedanceTaskHandle, 50, 150},
+    {"can_output", legRuntime, 100, canTaskLoops, lastCanTaskMs, canTaskHandle, 50, 150},
+    {"command", true, 200, commandTaskLoops, lastCommandTaskMs, commandTaskHandle, 100, 500},
+    {"portal", DROPBEAR_ENABLE_WIFI_PORTAL, 500, portalTaskLoops, lastPortalTaskMs, portalTaskHandle, 100, 500},
+    {"can_rx", runtimeControlReady, 1000, canRxTaskLoops, lastCanRxTaskMs, canRxTaskHandle, 20, 100},
+    {"hyperspawn", runtimeControlReady && operatingMode == OPERATING_HYPERSPAWN_ROUTE, HS_ROUTE_HZ, hyperspawnTaskLoops, lastHyperspawnTaskMs, hyperspawnTaskHandle, 20, 100},
+    {"imu", configProvisioned && isCenter && runtimeImuReady, 100, imuTaskLoops, lastImuTaskMs, imuTaskHandle, 100, 300}
+  };
+  const int taskCount = sizeof(taskRows) / sizeof(taskRows[0]);
+  for (int i = 0; i < taskCount; ++i) {
+    if (i) out += ",";
+    const TaskDiagRow &t = taskRows[i];
+    out += "{";
+    out += "\"name\":\"" + String(t.name) + "\",";
+    out += "\"status\":\"" + String(taskHealthStatus(t.active, t.lastMs, t.warnAge, t.faultAge)) + "\",";
+    out += "\"active\":" + String(t.active ? "true" : "false") + ",";
+    out += "\"expected_hz\":" + String(t.expectedHz) + ",";
+    out += "\"loops\":" + String(t.loops) + ",";
+    out += "\"age_ms\":" + ageJsonValue(t.lastMs) + ",";
+    out += "\"stack_high_water_words\":" + String(taskStackWords(t.handle));
+    out += "}";
+  }
+  out += "]";
+
+  out += "}";
+  return out;
+}
+
+void handleApiDiagnostics() {
+  portalHttpRequests++;
+  sendNoCacheHeaders();
+  server.send(200, "application/json", buildDiagnosticsJson());
+}
+
 void parseConstraintArg(const char *name, JointConstraints &c) {
   String minKey = String(name) + "_min";
   String maxKey = String(name) + "_max";
@@ -1940,6 +3453,14 @@ bool writeRawConfigWithBackup(const String &body) {
   if (file) {
     ok = file.print(body) == body.length();
     file.close();
+    if (ok) {
+      spiffsWriteOps++;
+      lastSpiffsWriteMs = millis();
+    } else {
+      spiffsErrors++;
+    }
+  } else {
+    spiffsErrors++;
   }
 
   if (spiffsMutex) xSemaphoreGive(spiffsMutex);
@@ -1947,16 +3468,19 @@ bool writeRawConfigWithBackup(const String &body) {
 }
 
 void handleApiState() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   server.send(200, "application/json", buildStateJson());
 }
 
 void handleApiConfigGet() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   server.send(200, "application/json", buildConfigJson());
 }
 
 void handleApiConfigPost() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
 
   const String oldRole = selectedRoleName();
@@ -1976,6 +3500,31 @@ void handleApiConfigPost() {
     } else if (role == "center") {
       isCenter = true; configProvisioned = true;
     }
+  }
+
+  if (server.hasArg("operatingMode")) {
+    String mode = server.arg("operatingMode");
+    mode.trim();
+    OperatingMode requested = mode == "hyperspawn" ? OPERATING_HYPERSPAWN_ROUTE : OPERATING_STANDALONE;
+    if (requested != operatingMode) {
+      if (runtimeControlReady && !isCenter) requestStop(3);
+      clearAllTorqueSetpoints();
+      hyperspawnControlMode = HS_CONTROL_NONE;
+      operatingMode = requested;
+      rebootRequired = true;
+    }
+  }
+  if (server.hasArg("hsTimeout")) {
+    uint32_t v = (uint32_t)server.arg("hsTimeout").toInt();
+    if (v >= 50 && v <= 10000) hyperspawnCommandTimeoutMs = v;
+  }
+  if (server.hasArg("hsLegacy")) hyperspawnLegacyBroadcast = server.arg("hsLegacy") == "1";
+  else hyperspawnLegacyBroadcast = false;
+  if (server.hasArg("hsAutoArm")) hyperspawnAutoArm = server.arg("hsAutoArm") == "1";
+  else hyperspawnAutoArm = false;
+  if (server.hasArg("hsScale")) {
+    float v = server.arg("hsScale").toFloat();
+    if (v > 0.0001f && v <= 1000.0f) hyperspawnPositionUnitsPerDegree = v;
   }
 
   if (server.hasArg("max_torque")) {
@@ -2034,6 +3583,7 @@ void handleApiConfigPost() {
 }
 
 void handleApiConfigReload() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   const String oldRole = selectedRoleName();
   if (runtimeControlReady) {
@@ -2042,7 +3592,7 @@ void handleApiConfigReload() {
   }
   clearAllTorqueSetpoints();
   loadConfig();
-  if (selectedRoleName() != oldRole || selectedRoleName() != roleAtBoot) {
+  if (selectedRoleName() != oldRole || selectedRoleName() != roleAtBoot || operatingModeName() != operatingModeAtBoot) {
     rebootRequired = true;
     runtimeControlReady = false;
     runtimeImuReady = false;
@@ -2052,6 +3602,7 @@ void handleApiConfigReload() {
 }
 
 void handleApiRawConfigPost() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   if (runtimeControlReady) {
     requestStop(3);
@@ -2083,6 +3634,7 @@ void handleApiRawConfigPost() {
 }
 
 void handleApiCommand() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   if (!server.hasArg("cmd")) {
     server.send(400, "application/json", "{\"ok\":false,\"error\":\"missing_cmd\"}");
@@ -2120,15 +3672,18 @@ void handleApiCommand() {
   command.toCharArray(item.text, sizeof(item.text));
 
   if (xQueueSend(webCommandQueue, &item, 0) != pdTRUE) {
+    webCommandQueueFull++;
     server.send(503, "application/json", "{\"ok\":false,\"error\":\"queue_full\"}");
     return;
   }
+  webCommandsQueued++;
 
   server.send(202, "application/json",
               "{\"ok\":true,\"queued\":true,\"id\":" + String(item.id) + "}");
 }
 
 void handleApiLog() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   uint32_t since = server.hasArg("since") ? (uint32_t)server.arg("since").toInt() : 0;
 
@@ -2154,6 +3709,7 @@ void handleApiLog() {
 }
 
 void handleApiSPIFFSList() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   String out = "{\"total\":" + String(SPIFFS.totalBytes()) +
                ",\"used\":" + String(SPIFFS.usedBytes()) + ",\"files\":[";
@@ -2172,6 +3728,7 @@ void handleApiSPIFFSList() {
 }
 
 void handleApiSPIFFSRead() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   String path = server.hasArg("path") ? server.arg("path") : "";
   if (!path.startsWith("/") || path.indexOf("..") >= 0) {
@@ -2186,6 +3743,7 @@ void handleApiSPIFFSRead() {
 }
 
 void handleApiSensorCalibration() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   if (!configProvisioned || isCenter) {
     server.send(409, "application/json", "{\"ok\":false,\"error\":\"not_leg_controller\"}");
@@ -2200,13 +3758,16 @@ void handleApiSensorCalibration() {
   item.id = nextWebCommandId++;
   String("calibrate save").toCharArray(item.text, sizeof(item.text));
   if (xQueueSend(webCommandQueue, &item, 0) != pdTRUE) {
+    webCommandQueueFull++;
     server.send(503, "application/json", "{\"ok\":false,\"error\":\"queue_full\"}");
     return;
   }
+  webCommandsQueued++;
   server.send(202, "application/json", "{\"ok\":true,\"queued\":true}");
 }
 
 void handleApiReboot() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   if (configProvisioned && !isCenter) requestStop(3);
   portalRebootAtMs = millis() + 800;
@@ -2245,20 +3806,23 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
 .notice{padding:9px;border:1px solid #654d2b;background:#2d2519;color:#e6c58d;border-radius:4px;font-size:11px}.okmsg{padding:9px;border:1px solid #38523b;background:#172219;color:#acd0ae;border-radius:4px;font-size:11px}
 .section-title{font-size:11px;color:#aeb7bd;text-transform:uppercase;letter-spacing:.08em;margin:8px 0}.cfgline{display:grid;grid-template-columns:170px repeat(5,1fr);gap:6px;align-items:center}.constraints{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:8px}
 .constraint{display:grid;grid-template-columns:1fr 82px 82px;gap:6px;align-items:center}.file{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #22282c;font-size:11px}
+.diagcards{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}.diagcard{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:11px}.diaghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}.diagtitle{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em}.health{display:inline-block;border:1px solid var(--line);padding:3px 6px;border-radius:3px;font-size:9px;text-transform:uppercase;letter-spacing:.08em}.health.ok{color:#b5d5b6;border-color:#3c5840}.health.warn,.health.idle{color:#e6c381;border-color:#625032}.health.fault{color:#efadad;border-color:#673f3f}.health.inactive{color:#8d979e;border-color:#343b41}.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:10px}.kv .k{color:var(--muted)}.kv .v{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:right}.diagtable{overflow:auto}.diagtable table{min-width:850px}.diagtable td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.diag-note{font-size:10px;color:var(--muted);line-height:1.5}.overall{font-size:30px;font-weight:700;letter-spacing:.08em}.overall.ok{color:#b5d5b6}.overall.warn{color:#e6c381}.overall.fault{color:#efadad}
+@media(max-width:800px){.diagcards{grid-template-columns:1fr}}
 @media(max-width:800px){.span8,.span6,.span4,.span3{grid-column:span 12}.joint{grid-template-columns:1fr 80px}.joint .controls{grid-column:1/-1}.cfgline{grid-template-columns:1fr repeat(2,1fr)}.cfgline input:nth-of-type(n+3){margin-top:2px}.constraints{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="shell">
  <div class="top">
-  <div><h1>DROPBEAR // <span id="roleTitle">...</span></h1><div class="sub">ESP32 low-level control · captive portal <span id="ipText"></span></div></div>
+  <div><h1>DROPBEAR // <span id="roleTitle">...</span></h1><div class="sub">ESP32 low-level control · captive portal · <span id="operatingText">STANDALONE</span> <span id="ipText"></span></div></div>
   <div class="badges">
-   <span class="badge" id="playBadge">STATE</span><span class="badge" id="canBadge">ROLE</span><span class="badge" id="clientBadge">0 CLIENTS</span><span class="badge" id="heapBadge">HEAP</span>
+   <span class="badge" id="diagBadge">DIAG</span><span class="badge" id="playBadge">STATE</span><span class="badge" id="canBadge">ROLE</span><span class="badge" id="clientBadge">0 CLIENTS</span><span class="badge" id="heapBadge">HEAP</span>
   </div>
  </div>
  <div id="globalNotice" class="notice" style="display:none"></div>
  <div class="tabs">
   <button class="tab active" data-tab="control">Control</button>
+  <button class="tab" data-tab="diagnostics">Diagnostics</button>
   <button class="tab" data-tab="config">Configuration</button>
   <button class="tab" data-tab="terminal">Terminal</button>
   <button class="tab" data-tab="spiffs">SPIFFS</button>
@@ -2284,15 +3848,38 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
   </div>
  </section>
 
+ <section id="diagnostics" class="view">
+  <div class="grid">
+   <div class="card span12">
+    <div class="row between"><div><h2>Runtime diagnostic wrapper</h2><div class="diag-note">Health is computed from the actual runtime acquisition/transmit points. Motor rows verify the ESP32→MCP2515 transmit path only; actuator health remains unverified until CAN RX is implemented.</div></div><button onclick="loadDiagnostics()">Refresh now</button></div>
+    <div class="row" style="margin-top:12px;gap:16px"><div id="diagOverall" class="overall">—</div><div class="stack tiny"><span id="diagTime">—</span><span id="diagRole">—</span></div></div>
+   </div>
+   <div class="card span12"><h2>Modules</h2><div id="diagModules" class="diagcards"></div></div>
+   <div class="card span12"><div class="row between"><h2>AS5600 one-wire encoders</h2><span class="tiny">Independent GPIO PWM capture: duty, frequency, pulse age, decoded/filtered angle and joint constraints.</span></div><div id="diagSensors" class="diagtable"></div></div>
+   <div class="card span12"><div class="row between"><h2>Actuator command paths</h2><span class="tiny">TX path status is not actuator feedback.</span></div><div id="diagActuators" class="diagtable"></div></div>
+   <div class="card span12"><h2>FreeRTOS / control loops</h2><div id="diagTasks" class="diagtable"></div></div>
+   <div class="card span8"><h2>I²C / IMU probes</h2><div id="diagImus" class="diagtable"></div></div>
+   <div class="card span4"><h2>Safety state</h2><div id="diagSafety" class="kv"></div></div>
+  </div>
+ </section>
+
  <section id="config" class="view">
   <div class="grid">
-   <div class="card span12"><h2>Controller identity</h2><div class="row">
+   <div class="card span12"><h2>Controller identity / operating structure</h2><div class="row">
     <label>Role <select id="cfgRole"><option value="left">LEFTLEG</option><option value="right">RIGHTLEG</option><option value="center">CENTER</option></select></label>
+    <label>Operating path <select id="cfgOperatingMode"><option value="standalone">STANDALONE / ORIGINAL</option><option value="hyperspawn">HYPERSPAWN / ROS2 ROUTE</option></select></label>
     <label>Max torque <input id="cfgMaxTorque" type="number" step=".1" min=".1" max="100"></label>
     <button class="primary" onclick="saveConfig()">Save configuration</button>
     <button onclick="reloadConfig()">Reload SPIFFS</button>
     <button class="warn" onclick="saveAndReboot()">Save + reboot</button>
-   </div><div class="tiny" style="margin-top:8px">Changing role changes the AP identity. Runtime task topology is recreated only after reboot.</div></div>
+   </div><div class="tiny" style="margin-top:8px">Role controls LEFTLEG/RIGHTLEG/CENTER AP identity. Operating path selects local portal/Serial authority or the parallel HyperSpawn ROS2 CAN route. Either topology change requires reboot.</div></div>
+
+   <div class="card span12"><h2>HyperSpawn / ROS2 route</h2><div class="row">
+    <label>Command timeout ms <input id="cfgHsTimeout" type="number" min="50" max="10000" step="10"></label>
+    <label>Position wire units / degree <input id="cfgHsScale" type="number" min="0.001" max="1000" step="0.001"></label>
+    <label><input id="cfgHsAutoArm" type="checkbox"> Auto-arm on valid command</label>
+    <label><input id="cfgHsLegacy" type="checkbox"> Legacy brain broadcast compatibility</label>
+   </div><div class="tiny" style="margin-top:8px">Targeted route uses node 0x12 for LEFTLEG and 0x13 for RIGHTLEG. Legacy 0x011/0x012 broadcast compatibility is optional because those IDs cannot distinguish two legs on the same shared bus.</div></div>
 
    <div class="card span12"><h2>Sensor offsets</h2>
     <div class="cfgline"><div></div><div>Outer</div><div>Inner</div><div>Hip pitch</div><div>Knee</div><div>Hip roll</div></div>
@@ -2330,7 +3917,7 @@ const ids={right:['0x144','0x143','0x148','0x147','0x14C','0x14B'],left:['0x141'
 const sensed=new Set(['outer_calf','inner_calf','knee','hip_pitch','hip_roll']);
 const dirNames=['right_outer_calf','right_inner_calf','left_outer_calf','left_inner_calf','right_knee','left_knee','right_hip_pitch','left_hip_pitch','right_hip_roll','left_hip_roll'];
 const constraintNames=['outer_calf_left','outer_calf_right','inner_calf_left','inner_calf_right','knee_left','knee_right','hip_pitch_left','hip_pitch_right','hip_yaw_left','hip_yaw_right','hip_roll_left','hip_roll_right'];
-let state=null,config=null,lastLog=0,renderedRole='';
+let state=null,config=null,diagnostics=null,lastLog=0,renderedRole='';
 
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')});
 document.getElementById('termInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendTerminal()});
@@ -2338,6 +3925,41 @@ document.getElementById('termInput').addEventListener('keydown',e=>{if(e.key==='
 function notice(t,good=false){const n=document.getElementById('globalNotice');n.style.display=t?'block':'none';n.className=good?'okmsg':'notice';n.textContent=t||''}
 function fmtDeg(v){return Number.isFinite(+v)?(+v).toFixed(1)+'°':'—'}
 async function jfetch(url,opt){const r=await fetch(url,opt);let data;const ct=r.headers.get('content-type')||'';data=ct.includes('json')?await r.json():await r.text();if(!r.ok)throw new Error(typeof data==='string'?data:(data.error||r.status));return data}
+
+function healthClass(s){return ['ok','warn','fault','inactive','idle'].includes(s)?s:'inactive'}
+function healthPill(s){return `<span class="health ${healthClass(s)}">${String(s||'unknown').toUpperCase()}</span>`}
+function age(v){return +v<0?'never':(+v<1000?`${v} ms`:`${(+v/1000).toFixed(1)} s`)}
+function boolText(v){return v?'YES':'NO'}
+function kvRows(rows){return rows.map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('')}
+function moduleCard(title,m,rows){return `<div class="diagcard"><div class="diaghead"><span class="diagtitle">${title}</span>${healthPill(m?.status)}</div><div class="kv">${kvRows(rows)}</div></div>`}
+function renderDiagnostics(){
+ const d=diagnostics;if(!d)return;
+ const ov=document.getElementById('diagOverall');ov.textContent=String(d.overall||'—').toUpperCase();ov.className='overall '+healthClass(d.overall);
+ document.getElementById('diagTime').textContent=`snapshot ${(d.timestamp_ms/1000).toFixed(1)} s uptime`;
+ document.getElementById('diagRole').textContent=`role ${d.role} · operating ${state?.operating_mode||'standalone'} · boot topology ${d.role_at_boot}${d.reboot_required?' · REBOOT REQUIRED':''}`;
+ const db=document.getElementById('diagBadge');db.textContent='DIAG '+String(d.overall||'').toUpperCase();db.className='badge '+(d.overall==='ok'?'ok':d.overall==='fault'?'bad':'warn');
+ const m=d.modules||{};
+ document.getElementById('diagModules').innerHTML=
+  moduleCard('Controller',m.controller,[['configured',boolText(m.controller?.configured)],['control runtime',boolText(m.controller?.control_ready)],['IMU runtime',boolText(m.controller?.imu_ready)],['play',boolText(m.controller?.play)],['max torque',m.controller?.max_torque],['free heap',Math.round((m.controller?.free_heap||0)/1024)+' KB']])+
+  moduleCard('Wi-Fi / portal',m.wifi,[['SSID',m.wifi?.ssid],['IP',m.wifi?.ip],['clients',m.wifi?.clients],['HTTP requests',m.wifi?.http_requests],['captive redirects',m.wifi?.redirects]])+
+  moduleCard('SPIFFS',m.spiffs,[['mounted',boolText(m.spiffs?.mounted)],['usage',`${m.spiffs?.used} / ${m.spiffs?.total}`],['config.txt',boolText(m.spiffs?.config_exists)],['config.bak',boolText(m.spiffs?.backup_exists)],['read / write',`${m.spiffs?.reads} / ${m.spiffs?.writes}`],['errors',m.spiffs?.errors]])+
+  moduleCard('SPI bus',m.spi,[['initialized',boolText(m.spi?.initialized)],['SCK',m.spi?.sck],['MISO',m.spi?.miso],['MOSI',m.spi?.mosi],['CS',m.spi?.cs]])+
+  moduleCard('AS5600 encoder I/O',m.encoder_io,[['interface',m.encoder_io?.interface],['pins',(m.encoder_io?.pins||[]).join(', ')],['nominal Hz',(m.encoder_io?.supported_nominal_hz||[]).join('/')]])+
+  moduleCard('MCP2515 / CAN',m.can,[['initialized',boolText(m.can?.initialized)],['bus','1 Mbps @ 8 MHz'],['CS / INT',`${m.can?.cs_gpio} / ${m.can?.int_gpio}`],['TX ok / fail',`${m.can?.tx_success} / ${m.can?.tx_failure}`],['consecutive fail',m.can?.consecutive_failures],['last TX',age(m.can?.last_tx_age_ms)],['feedback','TX ONLY']])+
+  moduleCard('I²C / IMU mux',m.i2c,[['initialized',boolText(m.i2c?.initialized)],['SDA',m.i2c?.sda],['SCL',m.i2c?.scl],['TCA9548A',m.i2c?.mux_seen?'0x70 present':'not seen'],['mux ok / fail',`${m.i2c?.mux_select_ok} / ${m.i2c?.mux_select_fail}`]])+
+  moduleCard('HyperSpawn / ROS2 route',d.hyperspawn_route,[['active',boolText(d.hyperspawn_route?.active)],['node',d.hyperspawn_route?.node_id],['control',d.hyperspawn_route?.control_mode],['last command',age(d.hyperspawn_route?.last_command_age_ms)],['RX targeted',d.hyperspawn_route?.targeted_rx],['RX legacy',d.hyperspawn_route?.legacy_rx],['completed cmds',d.hyperspawn_route?.completed_commands],['fragment timeouts',d.hyperspawn_route?.fragment_timeouts],['state TX',d.hyperspawn_route?.state_tx],['watchdog trips',d.hyperspawn_route?.watchdog_trips]])+
+  moduleCard('Command transport',m.commands,[['queue',`${m.commands?.queue_depth} / ${m.commands?.queue_capacity}`],['web queued',m.commands?.web_queued],['web processed',m.commands?.web_processed],['queue full',m.commands?.queue_full_events],['serial processed',m.commands?.serial_processed]]);
+ const sensors=d.sensors||[];
+ document.getElementById('diagSensors').innerHTML=`<table><thead><tr><th>Health</th><th>Sensor</th><th>GPIO</th><th>Raw</th><th>Filtered</th><th>Angle</th><th>PWM duty</th><th>PWM Hz</th><th>Pulse age</th><th>Sample age</th><th>Observed raw range</th><th>Constraint</th><th>Notes</th></tr></thead><tbody>${sensors.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.gpio} / PWM</td><td class="mono">${x.raw}</td><td class="mono">${Number(x.filtered_raw).toFixed(1)}</td><td class="mono">${Number(x.angle).toFixed(1)}°</td><td class="mono">${Number(x.duty_percent||0).toFixed(2)}%</td><td class="mono">${Number(x.frequency_hz||0).toFixed(1)}</td><td>${x.pulse_age_us===4294967295?'never':((x.pulse_age_us||0)/1000).toFixed(1)+' ms'}</td><td>${age(x.sample_age_ms)}</td><td class="mono">${x.min_raw_seen}…${x.max_raw_seen}</td><td class="mono">${x.constraint_min}…${x.constraint_max}°</td><td>${x.signal_valid?'PWM VALID':'PWM INVALID'} · change ${age(x.last_change_age_ms)}</td></tr>`).join('')}</tbody></table>`;
+ const acts=d.actuators||[];
+ document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Feedback</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td>${x.feedback==='can_rx_unparsed'?'CAN RX ACTIVE — RMD DECODE PENDING':x.feedback}</td></tr>`).join('')}</tbody></table>`;
+ const tasks=d.tasks||[];
+ document.getElementById('diagTasks').innerHTML=`<table><thead><tr><th>Health</th><th>Task</th><th>Active</th><th>Expected rate</th><th>Loop count</th><th>Heartbeat age</th><th>Min free stack</th></tr></thead><tbody>${tasks.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name}</td><td>${boolText(x.active)}</td><td>${x.expected_hz} Hz</td><td class="mono">${x.loops}</td><td>${age(x.age_ms)}</td><td class="mono">${x.stack_high_water_words} words</td></tr>`).join('')}</tbody></table>`;
+ const imus=d.imus||[];
+ document.getElementById('diagImus').innerHTML=`<table><thead><tr><th>Health</th><th>Index</th><th>Mux CH</th><th>Address</th><th>Seen</th><th>Read ok/fail</th><th>Last seen</th><th>Accel raw</th><th>Gyro raw</th></tr></thead><tbody>${imus.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.index}</td><td>${x.mux_channel}</td><td class="mono">${x.address}</td><td>${boolText(x.ever_seen)}</td><td class="mono">${x.read_ok}/${x.read_fail}</td><td>${age(x.seen_age_ms)}</td><td class="mono">${(x.accel||[]).join(', ')}</td><td class="mono">${(x.gyro||[]).join(', ')}</td></tr>`).join('')}</tbody></table>`;
+ const sf=d.safety||{};document.getElementById('diagSafety').innerHTML=kvRows([['play',boolText(sf.play)],['stop bursts',sf.stop_burst_remaining],['calibration override',boolText(sf.calibration_override)],['calibration motor',sf.calibration_actuator_index],['calibration torque',sf.calibration_torque],['reboot required',boolText(sf.reboot_required)],['command watchdog',sf.command_watchdog],['CAN feedback monitor',sf.can_feedback_monitoring]]);
+}
+async function loadDiagnostics(){try{diagnostics=await jfetch('/api/diagnostics');renderDiagnostics()}catch(e){const b=document.getElementById('diagBadge');b.textContent='DIAG OFFLINE';b.className='badge bad'}}
 
 function renderJoints(){
  const box=document.getElementById('jointControls');
@@ -2363,23 +3985,24 @@ function renderJoints(){
 async function loadState(){
  try{
   state=await jfetch('/api/state');
-  document.getElementById('roleTitle').textContent=(state.role||'unconfigured').toUpperCase();
-  document.getElementById('ipText').textContent='@ '+state.ip+' · '+state.ssid+' · sensors GPIO '+(state.sensor_pins||[]).join('/');
+  document.getElementById('roleTitle').textContent=(state.role||'unconfigured').toUpperCase();document.getElementById('operatingText').textContent=(state.operating_mode||'standalone').toUpperCase();
+  document.getElementById('ipText').textContent='@ '+state.ip+' · '+state.ssid+' · AS5600 GPIO '+(state.sensor_pins||[]).join('/');
   const pb=document.getElementById('playBadge');pb.textContent=state.play?'PLAY':'STOPPED';pb.className='badge '+(state.play?'ok':'bad');
   const cb=document.getElementById('canBadge');const ready=state.control_ready||state.imu_ready;cb.textContent=ready?'RUNTIME READY':(state.configured?'REBOOT REQUIRED':'SETUP');cb.className='badge '+(ready?'ok':'warn');
   document.getElementById('clientBadge').textContent=state.clients+' CLIENT'+(state.clients===1?'':'S');
   document.getElementById('heapBadge').textContent=Math.round(state.heap/1024)+' KB HEAP';
   document.getElementById('aOuter').textContent=fmtDeg(state.angles.outer_calf);document.getElementById('aInner').textContent=fmtDeg(state.angles.inner_calf);document.getElementById('aHip').textContent=fmtDeg(state.angles.hip_pitch);document.getElementById('aKnee').textContent=fmtDeg(state.angles.knee);document.getElementById('aRoll').textContent=fmtDeg(state.angles.hip_roll);
   if(!state.configured)notice('Controller is not configured. Actuator tasks are disabled. Select a role under Configuration, save, then reboot.');
-  else if(state.reboot_required)notice('Configuration role differs from the boot topology. Reboot is required before control topology matches the saved role.');
+  else if(state.reboot_required)notice('Saved role or operating structure differs from the boot topology. Reboot is required before control authority changes.');
+  else if(state.operating_mode==='hyperspawn')notice('HYPERSPAWN / ROS2 ROUTE ACTIVE — portal motion controls are read-only; STOP, diagnostics, configuration and terminal remain available.');
   else notice('');
   renderJoints();
  }catch(e){}
 }
 async function cmd(c){try{await jfetch('/api/command',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({cmd:c})});}catch(e){notice('Command failed: '+e.message)}}
 function sendTerminal(){const e=document.getElementById('termInput');const c=e.value.trim();if(c){cmd(c);e.value=''}}
-function sendTorque(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');cmd(`torque ${state.role} ${j} ${document.getElementById('t_'+j).value}`)}
-function sendImpedance(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');const on=document.getElementById('ie_'+j).checked?1:0;cmd(`impedance ${state.role} ${j} ${on} ${document.getElementById('ip_'+j).value} ${document.getElementById('iv_'+j).value}`)}
+function sendTorque(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');if(state.operating_mode==='hyperspawn')return notice('Manual torque is locked: HyperSpawn/ROS2 owns command authority. STOP remains available.');cmd(`torque ${state.role} ${j} ${document.getElementById('t_'+j).value}`)}
+function sendImpedance(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');if(state.operating_mode==='hyperspawn')return notice('Manual impedance is locked: HyperSpawn/ROS2 owns command authority.');const on=document.getElementById('ie_'+j).checked?1:0;cmd(`impedance ${state.role} ${j} ${on} ${document.getElementById('ip_'+j).value} ${document.getElementById('iv_'+j).value}`)}
 
 function buildConfigFields(){
  const df=document.getElementById('dirFields');df.innerHTML='';dirNames.forEach((n,i)=>{const d=document.createElement('div');d.className='constraint';d.innerHTML=`<span>${n.replaceAll('_',' ')}</span><select id="dm${i}"><option value="1">+</option><option value="-1">−</option></select><span></span>`;df.appendChild(d)});
@@ -2387,14 +4010,14 @@ function buildConfigFields(){
 }
 async function loadConfig(){
  try{
-  config=await jfetch('/api/config');document.getElementById('cfgRole').value=['left','right','center'].includes(config.role)?config.role:'left';document.getElementById('cfgMaxTorque').value=config.max_torque;
+  config=await jfetch('/api/config');document.getElementById('cfgRole').value=['left','right','center'].includes(config.role)?config.role:'left';document.getElementById('cfgMaxTorque').value=config.max_torque;document.getElementById('cfgOperatingMode').value=config.operating_mode||'standalone';document.getElementById('cfgHsTimeout').value=config.hyperspawn_timeout_ms||250;document.getElementById('cfgHsScale').value=config.hyperspawn_position_units_per_degree||1;document.getElementById('cfgHsLegacy').checked=!!config.hyperspawn_legacy_broadcast;document.getElementById('cfgHsAutoArm').checked=!!config.hyperspawn_auto_arm;
   config.left_offsets.forEach((v,i)=>document.getElementById('lo'+i).value=v);config.right_offsets.forEach((v,i)=>document.getElementById('ro'+i).value=v);config.directions.forEach((v,i)=>document.getElementById('dm'+i).value=v<0?'-1':'1');
   Object.entries(config.constraints).forEach(([n,a])=>{const mn=document.getElementById(n+'_min'),mx=document.getElementById(n+'_max');if(mn){mn.value=a[0];mx.value=a[1]}});
   document.getElementById('rawConfig').value=config.raw_config||'';
  }catch(e){notice('Config read failed: '+e.message)}
 }
 function configParams(){
- const p=new URLSearchParams({role:document.getElementById('cfgRole').value,max_torque:document.getElementById('cfgMaxTorque').value});
+ const p=new URLSearchParams({role:document.getElementById('cfgRole').value,operatingMode:document.getElementById('cfgOperatingMode').value,max_torque:document.getElementById('cfgMaxTorque').value,hsTimeout:document.getElementById('cfgHsTimeout').value,hsScale:document.getElementById('cfgHsScale').value,hsLegacy:document.getElementById('cfgHsLegacy').checked?'1':'0',hsAutoArm:document.getElementById('cfgHsAutoArm').checked?'1':'0'});
  for(let i=0;i<5;i++){p.set('lo'+i,document.getElementById('lo'+i).value);p.set('ro'+i,document.getElementById('ro'+i).value)}
  for(let i=0;i<10;i++)p.set('dm'+i,document.getElementById('dm'+i).value);
  constraintNames.forEach(n=>{p.set(n+'_min',document.getElementById(n+'_min').value);p.set(n+'_max',document.getElementById(n+'_max').value)});
@@ -2410,13 +4033,14 @@ async function loadLogs(){try{const d=await jfetch('/api/log?since='+lastLog);co
 async function loadFiles(){try{const d=await jfetch('/api/spiffs/list');const b=document.getElementById('fileList');b.innerHTML=`<div class="tiny">${d.used} / ${d.total} bytes used</div>`;d.files.forEach(f=>{const e=document.createElement('div');e.className='file';e.innerHTML=`<span>${f.name}<br><span class="tiny">${f.size} bytes</span></span><button>View</button>`;e.querySelector('button').onclick=()=>readFile(f.name);b.appendChild(e)})}catch(e){notice('SPIFFS list failed: '+e.message)}}
 async function readFile(path){try{document.getElementById('fileTitle').textContent=path;document.getElementById('fileViewer').value=await jfetch('/api/spiffs/read?path='+encodeURIComponent(path))}catch(e){notice('File read failed: '+e.message)}}
 
-buildConfigFields();loadState();loadConfig();loadFiles();loadLogs();setInterval(loadState,500);setInterval(loadLogs,500);
+buildConfigFields();loadState();loadDiagnostics();loadConfig();loadFiles();loadLogs();setInterval(loadState,500);setInterval(loadLogs,500);setInterval(loadDiagnostics,1000);
 </script>
 </body>
 </html>
 )DBHTML";
 
 void handlePortalRoot() {
+  portalHttpRequests++;
   sendNoCacheHeaders();
   server.send_P(200, "text/html", PORTAL_HTML);
 }
@@ -2427,6 +4051,7 @@ void registerPortalRoutes() {
 
   server.on("/", HTTP_GET, handlePortalRoot);
   server.on("/api/state", HTTP_GET, handleApiState);
+  server.on("/api/diagnostics", HTTP_GET, handleApiDiagnostics);
   server.on("/api/config", HTTP_GET, handleApiConfigGet);
   server.on("/api/config", HTTP_POST, handleApiConfigPost);
   server.on("/api/config/reload", HTTP_POST, handleApiConfigReload);
@@ -2452,6 +4077,7 @@ void registerPortalRoutes() {
 void startOrRestartSoftAP() {
   portalSSID = desiredPortalSSID();
 
+  portalOnline = false;
   dnsServer.stop();
   server.stop();
   WiFi.softAPdisconnect(true);
@@ -2465,12 +4091,14 @@ void startOrRestartSoftAP() {
   // robot's intended local operating environment.
   bool ok = WiFi.softAP(portalSSID.c_str());
   if (!ok) {
+    portalOnline = false;
     dbPrintln("ERROR: SoftAP start failed.");
     return;
   }
 
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
   server.begin();
+  portalOnline = true;
 
   dbPrintf("Captive portal active: SSID=%s IP=%s\n",
            portalSSID.c_str(), WiFi.softAPIP().toString().c_str());
@@ -2483,6 +4111,8 @@ void setupPortal() {
 
 void portalTask(void *parameter) {
   while (true) {
+    portalTaskLoops++;
+    lastPortalTaskMs = millis();
     if (portalRestartRequested) {
       portalRestartRequested = false;
       startOrRestartSoftAP();
@@ -2516,54 +4146,64 @@ void setup() {
   spiffsMutex = xSemaphoreCreateMutex();
   webCommandQueue = xQueueCreate(12, sizeof(WebCommand));
 
-  analogReadResolution(12);
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  i2cInitialized = true;
 
   if (!SPIFFS.begin(true)) {
+    spiffsMounted = false;
+    spiffsErrors++;
     dbPrintln("ERROR: SPIFFS mount failed.");
     while (true) delay(1000);
   }
+  spiffsMounted = true;
 
   loadConfig();
   roleAtBoot = selectedRoleName();
+  operatingModeAtBoot = operatingModeName();
 
-  // Full-time captive portal requires the Wi-Fi-safe ADC1 sensor pinout.
-  // With the legacy ADC2 pinout selected, Wi-Fi is explicitly kept off.
+  // AS5600s stay on the original five dedicated GPIOs. PWM edge capture is
+  // digital and therefore compatible with the always-on Wi-Fi captive portal.
+  setupAs5600Inputs();
+  dbPrintf("AS5600 one-wire PWM inputs: outer=%d inner=%d hipPitch=%d knee=%d hipRoll=%d\n",
+           PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL);
+
   if (DROPBEAR_ENABLE_WIFI_PORTAL) {
-    dbPrintf("Wi-Fi portal enabled: ADC1 sensor pinout REQUIRED: outer=%d inner=%d hipPitch=%d knee=%d hipRoll=%d\n",
-             PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL);
     setupPortal();
-    xTaskCreatePinnedToCore(portalTask, "portal", 8192, nullptr, 1, nullptr, 0);
-  } else {
-    WiFi.mode(WIFI_OFF);
-    portalSSID = "DISABLED-LEGACY-ADC2";
-    dbPrintln("Wi-Fi portal disabled: legacy ADC2 sensor pinout selected.");
+    xTaskCreatePinnedToCore(portalTask, "portal", 8192, nullptr, 1, &portalTaskHandle, 0);
   }
 
   if (configProvisioned && !isCenter) {
     pinMode(CAN0_INT, INPUT_PULLUP);
     SPI.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, CAN_CS_PIN);
+    spiInitialized = true;
 
     if (CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) != CAN_OK) {
+      canInitialized = false;
       dbPrintln("ERROR: MCP2515 CAN initialization failed at 1 Mbps / 8 MHz.");
       playMode = false;
     } else {
       CAN.setMode(MCP_NORMAL);
+      canInitialized = true;
       dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, CS GPIO5.");
 
       primeSensorFilter();
 
       // Wi-Fi/networking lives primarily on core 0. Keep the control path on
       // core 1 so captive-portal traffic does not become sensor/control jitter.
-      xTaskCreatePinnedToCore(readAndComputeTask, "sensors", 4096, nullptr, 3, nullptr, 1);
-      xTaskCreatePinnedToCore(impedanceControlTask, "impedance", 4096, nullptr, 3, nullptr, 1);
-      xTaskCreatePinnedToCore(canOutputTask, "can-output", 4096, nullptr, 4, nullptr, 1);
+      xTaskCreatePinnedToCore(readAndComputeTask, "sensors", 4096, nullptr, 3, &sensorTaskHandle, 1);
+      xTaskCreatePinnedToCore(impedanceControlTask, "impedance", 4096, nullptr, 3, &impedanceTaskHandle, 1);
+      xTaskCreatePinnedToCore(canOutputTask, "can-output", 4096, nullptr, 4, &canTaskHandle, 1);
+      xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 4, &canRxTaskHandle, 1);
+      xTaskCreatePinnedToCore(hyperspawnRouteTask, "hyperspawn", 4096, nullptr, 2, &hyperspawnTaskHandle, 1);
       runtimeControlReady = true;
       runtimeImuReady = false;
-      playMode = true;
+      playMode = (operatingMode == OPERATING_STANDALONE);
+      if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
+        dbPrintln("HyperSpawn/ROS2 route selected. Waiting for a valid CAN command before actuator output is armed.");
+      }
     }
   } else if (configProvisioned && isCenter) {
-    xTaskCreatePinnedToCore(imuReadTask, "imu", 4096, nullptr, 2, nullptr, 1);
+    xTaskCreatePinnedToCore(imuReadTask, "imu", 4096, nullptr, 2, &imuTaskHandle, 1);
     runtimeControlReady = false;
     runtimeImuReady = true;
     playMode = true;
@@ -2575,10 +4215,10 @@ void setup() {
   }
 
   // One command task consumes both Serial and web-command queue traffic.
-  xTaskCreatePinnedToCore(checkChiralityTask, "command", 6144, nullptr, 2, nullptr, 1);
+  xTaskCreatePinnedToCore(checkChiralityTask, "command", 6144, nullptr, 2, &commandTaskHandle, 1);
 
-  dbPrintf("Dropbear controller ready: role=%s portal=%s SSID=%s. Type 'help'.\n",
-           selectedRoleName().c_str(),
+  dbPrintf("Dropbear controller ready: role=%s operating=%s portal=%s SSID=%s. Type 'help'.\n",
+           selectedRoleName().c_str(), operatingModeName().c_str(),
            DROPBEAR_ENABLE_WIFI_PORTAL ? "enabled" : "disabled",
            DROPBEAR_ENABLE_WIFI_PORTAL ? desiredPortalSSID().c_str() : "n/a");
 }

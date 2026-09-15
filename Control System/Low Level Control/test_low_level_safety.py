@@ -3,7 +3,7 @@ import re
 import unittest
 
 
-SOURCE = Path(__file__).with_name("esp32_devkit_v1.ino").read_text()
+SOURCE = Path(__file__).with_name("esp32_devkit_v1_observation_safe.ino").read_text()
 
 
 class LowLevelSafetySourceTests(unittest.TestCase):

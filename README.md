@@ -20,9 +20,33 @@ The aim is to make building and using a humanoid feel approachable: find the par
 | Build my own | [Build platform](https://hyperspawn.org/platform) | Open the Workshop, choose an assembly, and review its parts and prints. |
 | Print a part or assemble a limb | [Printable parts](https://github.com/Hyperspawn/dropbear_printables) | Choose a subassembly and open its prepared `.3mf` plates or individual STL files. |
 | Work on walking | [Locomotion](https://github.com/Hyperspawn/dropbear-locomotion) | Follow the setup guide, load a published checkpoint, and use the interactive viewer. |
+| Observe connected controllers | [dropbear_control](https://github.com/robit-man/dropbear_control) | Run the local dashboard, open `/?live=1`, and use the Devices view for receive-only leg state and firmware diagnostics. |
 | Change the mechanical design | [Hardware](https://github.com/Hyperspawn/dropbear_hardware) | Open the full assembly or a component in CAD. |
 
 You can begin with a head, an arm, or a simulated robot. Each is a useful project in its own right.
+
+## Connected robot control and firmware
+
+Use [`robit-man/dropbear_control`](https://github.com/robit-man/dropbear_control) for the browser digital twin, live USB leg observation, raw serial diagnostics, controller health, and guarded firmware compilation/upload. Its physical command channel remains locked behind staged acknowledgements; live observation starts as receive-only.
+
+```bash
+git clone https://github.com/robit-man/dropbear_control.git
+cd dropbear_control
+python3 web/serve.py 8000
+```
+
+Open <http://localhost:8000/?live=1&renderer=swiftshader>. Select **Connected ESP32 devices** to inspect both leg streams, compile a trusted firmware source, or review an upload before its physical safety interlock is released.
+
+The controller sources live in [`Control System/Low Level Control`](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control):
+
+| Firmware | Use |
+|---|---|
+| [`firmware_full_libs_neck.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/firmware_full_libs_neck.ino) | Recommended universal Behemoth image. One build supports left leg, right leg, center IMU, or head/neck roles selected from persistent configuration. |
+| [`esp32_devkitc_v4_hybrid.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkitc_v4_hybrid.ino) | Hybrid leg controller retained for existing PWM/CAN deployments. |
+| [`esp32_devkit_v1_observation_safe.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkit_v1_observation_safe.ino) | Observation-only migration image. Motion commands stay disabled while five AS5600 and six motor-native CAN angles are reported. |
+| [`esp32_devkit_v1.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkit_v1.ino) | Legacy/development leg controller. Keep it for compatibility and comparison; use Behemoth for new universal deployments. |
+
+Read the [low-level firmware guide](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/README.md) and [Behemoth role/commissioning guide](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/BEHEMOTH.md) before selecting an image. The tracked [`partitions.csv`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/partitions.csv) gives the application 2.5 MiB while retaining the Arduino default SPIFFS settings region at `0x290000`. The `dropbear_control` uploader reads the connected ESP32 partition table first and refuses a mismatched layout.
 
 ## From files to a robot on your workbench
 

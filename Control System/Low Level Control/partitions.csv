@@ -1,0 +1,9 @@
+# Dropbear ESP32: large application while retaining Arduino default SPIFFS in place.
+# Existing settings remain at 0x290000 with the original 0x160000-byte extent.
+# The second OTA slot is intentionally reassigned to the factory application.
+# Name,   Type, SubType, Offset,  Size,     Flags
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  factory, 0x10000, 0x280000,
+spiffs,   data, spiffs,  0x290000,0x160000,
+coredump, data, coredump,0x3F0000,0x10000,

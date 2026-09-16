@@ -46,6 +46,27 @@ The firmware file documented by this README is:
 firmware_full_libs_neck.ino
 ```
 
+Build and inspect this source through the
+[`dropbear_control` connected-device dashboard](https://github.com/robit-man/dropbear_control).
+The dashboard pins Arduino ESP32 core 2.0.13, FastAccelStepper 0.30.15, and
+MCP_CAN_lib 1.5.1, then verifies the exact source before an upload can be
+selected.
+
+## SPIFFS-preserving uploads
+
+`partitions.csv` keeps SPIFFS at the Arduino default location, `0x290000`, and
+retains its original `0x160000` extent. It combines the two old OTA application
+slots into one `0x280000` factory application region so Behemoth fits without
+moving saved role, chirality, calibration, limits, Wi-Fi, or controller
+settings.
+
+The dashboard explicitly selects `EraseFlash=none`. Immediately before an
+upload, it reads only the connected ESP32 partition table and requires the
+installed SPIFFS offset and size to match. A different or unreadable partition
+layout blocks the flash so settings cannot be silently stranded. This process
+does not erase or rewrite SPIFFS; it updates the application and partition
+table while preserving the settings bytes in place.
+
 ## USB angle telemetry
 
 Leg roles emit a versioned `DB2` line at 50 Hz:
@@ -63,6 +84,16 @@ no dedicated AS5600 and is therefore available only from its motor encoder.
 The knee motor field is the upstream actuator-shaft angle at 1:1 scale. The
 mechanical linkage or digital twin is responsible for deriving the larger
 downstream knee motion from that shaft angle.
+
+At every restart, each of the five externally sensed axes collects eight
+matching AS5600/CAN samples. That establishes a fixed offset from the RMD
+multi-turn angle into the calibrated joint coordinate. Fresh CAN-native angle
+then supplies continuous position feedback; the AS5600 remains available in
+telemetry and as an independent drift check. CAN feedback is never silently
+replaced by AS5600 during control. A stale CAN value produces zero impedance
+torque, and three consecutive disagreements above 12 degrees latch an alignment
+fault until restart. Hip yaw remains motor telemetry only because it has no
+external absolute reference.
 
 ---
 
@@ -910,7 +941,10 @@ ROS/CAN position target
 wire units -> degrees
         │
         ▼
-local external-feedback impedance
+AS5600 restart zero + continuous RMD 0x92 feedback
+        │
+        ▼
+local impedance controller
         │
         ▼
 A1 torque
@@ -2337,19 +2371,23 @@ The current leg mapping has five external encoders and does not include a dedica
 Therefore:
 
 - local hip-yaw impedance is unavailable,
-- HyperSpawn hip-yaw position telemetry is not a true independent external measurement,
+- HyperSpawn hip-yaw position telemetry is motor-native but lacks an independent absolute reference,
 - torque mode remains available.
 
 ## RMD CAN feedback
 
-The firmware has a CAN receive path but does not yet fully decode all MyActuator response data into:
+All leg firmware images poll their six owned actuators with the non-motion RMD
+V4.4 `0x92` request. Motor-side multi-turn position is decoded at `0.01°` per
+least-significant bit, emitted in `DB2`, and used continuously after the five
+AS5600-equipped axes complete restart zeroing.
+
+The remaining RMD response families are not yet decoded into:
 
 ```text
 temperature
 measured current
 motor speed
 driver faults
-motor-side position
 ```
 
 Successful CAN TX should not be interpreted as proof of healthy actuator execution.

@@ -4,6 +4,24 @@
 
 Low-level ESP32 firmware for the Dropbear bipedal robot.
 
+For connected-robot visualization, receive-only USB telemetry, raw controller
+serial, and guarded compile/upload, use the
+[`dropbear_control` dashboard](https://github.com/robit-man/dropbear_control).
+The firmware choices in this directory are:
+
+| Source | Intended use |
+|---|---|
+| `firmware_full_libs_neck.ino` | Recommended universal Behemoth build for left leg, right leg, center, and head/neck roles. |
+| `esp32_devkitc_v4_hybrid.ino` | Existing hybrid leg PWM/CAN deployments. |
+| `esp32_devkit_v1_observation_safe.ino` | Fail-closed observation migration with no motion command path. |
+| `esp32_devkit_v1.ino` | Legacy/development leg implementation retained for compatibility. |
+
+All dashboard builds copy this directory's `partitions.csv`. It provides a
+2.5 MiB application region while preserving the standard deployed SPIFFS
+settings region at `0x290000` with size `0x160000`. The dashboard uses
+`EraseFlash=none`, reads the target partition table before upload, and holds
+the upload if the installed SPIFFS offset or size differs.
+
 This controller is designed around **one ESP32 per leg**, an **MCP2515 CAN controller**, MyActuator/RMD-class CAN actuators, and five external analog joint-angle sensors per leg. The firmware performs high-rate joint sensing, optional joint-space impedance control, deterministic CAN torque output, persistent calibration/configuration, and serial command handling.
 
 The current firmware is intentionally a **torque-control architecture**, not an actuator-internal absolute-position architecture. It sends MyActuator `0xA1` torque/current commands during normal operation and `0x81` stop commands when stopping a leg.
@@ -1692,20 +1710,22 @@ to stop output.
 
 This is low-level robot actuator firmware. Several current properties are important.
 
-## No CAN receive-state processing
+## Partial CAN receive-state processing
 
-The current code transmits motor commands but does not process actuator CAN feedback.
+All leg firmware variants continuously request and decode actuator position
+with RMD V4.4 command `0x92`. The five external sensors establish the absolute
+joint reference after restart; fresh motor-native feedback then provides the
+continuous position used by impedance control. Missing or stale CAN position
+fails to zero torque instead of falling back to continuous external-sensor
+control.
 
-Therefore it does not currently monitor, through CAN:
+The firmware does not yet monitor, through CAN:
 
-- actuator encoder position,
 - actuator velocity,
 - actuator current feedback,
 - actuator temperature,
 - motor fault flags,
-- communication timeouts.
-
-The external analog sensors are the joint-state source for impedance control.
+- response families beyond position.
 
 ## No command watchdog
 
@@ -1845,7 +1865,10 @@ ESP32
 actuator internal position controller
 ```
 
-For Dropbear's legs, the external joint sensors and torque-level output remain important because the robot controller needs mechanism/joint state rather than relying only on the actuator's internal position loop.
+For Dropbear's legs, the external joint sensors remain important as restart
+absolute references and independent drift checks. Continuous position comes
+from the motor-native CAN angle while torque-level output remains under the
+ESP32 impedance controller.
 
 The current Dropbear firmware therefore does **not** directly adopt the `myactuator-can` demo motor-ID layout or its `0xA4` position-control behavior.
 
@@ -1908,7 +1931,6 @@ These are **not commands in the current firmware** and should not be documented 
 
 Logical next low-level improvements include:
 
-- CAN RX and actuator-state decoding,
 - command heartbeat/watchdog,
 - physical E-stop input,
 - bus-off/error recovery,
@@ -1932,7 +1954,8 @@ This project is licensed under the repository's MIT License.
 ## Observation-only migration image
 
 `esp32_devkit_v1_observation_safe.ino` preserves the reviewed, fail-closed
-legacy sensor pinout and stages DB2 dual-angle telemetry. It is retained as a
+legacy sensor pinout and emits DB2 dual-angle telemetry with continuous 0x92
+motor polling. It is retained as a
 separate migration candidate; it is not the Behemoth/universal build and is
 not installed on the currently connected controllers. See
 `SAFETY_ARCHITECTURE.md` before selecting a firmware image.

@@ -34,8 +34,22 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn('Serial.print("NA")', SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-db2-native-angle-2026.09.15", SOURCE)
+        self.assertIn("behemoth-motor-feedback-zeroed-2026.09.16", SOURCE)
         self.assertIn("rmd_v44_0x92_multi_turn", SOURCE)
+
+    def test_as5600_boot_zero_then_can_feedback_drives_impedance(self):
+        self.assertIn("MOTOR_BOOT_ZERO_SAMPLE_COUNT", SOURCE)
+        self.assertIn("updateMotorControlReference(index, motorNativeDegrees[index])", SOURCE)
+        self.assertIn("readMotorControlDegrees(actuatorIndex, measuredDegrees)", SOURCE)
+        self.assertIn("controller.update(measuredDegrees", SOURCE)
+        self.assertNotIn("outerCalfControlLeft.update(normalizedOuter", SOURCE)
+        self.assertIn("as5600_boot_zero_then_rmd_0x92", SOURCE)
+
+    def test_stale_or_divergent_can_feedback_fails_to_zero_torque(self):
+        self.assertIn("MOTOR_AS5600_DIVERGENCE_LIMIT_DEG", SOURCE)
+        self.assertIn("motorControlAlignmentFault[actuatorIndex] = true", SOURCE)
+        self.assertIn("impedanceTorqueValues[actuatorIndex] = 0", SOURCE)
+        self.assertIn("millis() - motorNativeReceivedMs[actuatorIndex] > MOTOR_NATIVE_STALE_MS", SOURCE)
 
 
 if __name__ == "__main__":

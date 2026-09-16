@@ -69,15 +69,15 @@ const long unsigned int ACTUATOR_IDS[ACTUATOR_COUNT] = {
 // leased gateway must replace this path before physical output is re-enabled.
 const bool OBSERVATION_ONLY_FIRMWARE = true;
 const bool LEGACY_SERIAL_MOTION_ALLOWED = false;
-// A 0x92 angle request transmits on CAN even though it cannot command motion.
-// Keep this false on the installed robot until the motor tuple and response ID
-// have been verified on an isolated, unloaded actuator.
-const bool MOTOR_FEEDBACK_QUERY_ALLOWED = false;
+// A 0x92 angle request transmits on CAN but cannot command motion. Continuous
+// motor-native feedback is enabled so AS5600 can establish the post-restart
+// reference while actuator encoders provide the ongoing position stream.
+const bool MOTOR_FEEDBACK_QUERY_ALLOWED = true;
 bool canReady = false;
 bool chiralityConfigured = false;
 
 const uint32_t TELEMETRY_PERIOD_MS = 20;  // 50 Hz; values are degrees on the wire.
-const uint32_t MOTOR_QUERY_PERIOD_MS = 20;
+const uint32_t MOTOR_QUERY_PERIOD_MS = 5;
 const uint32_t MOTOR_FEEDBACK_STALE_MS = 500;
 const size_t OWNED_ACTUATOR_COUNT = 6;
 const size_t RIGHT_TELEMETRY_INDICES[OWNED_ACTUATOR_COUNT] = { 0, 2, 6, 4, 8, 10 };
@@ -1325,7 +1325,7 @@ void readIMU() {
     Wire.beginTransmission(0x68 + i);
     Wire.write(0x3B);
     Wire.endTransmission(false);
-    Wire.requestFrom(0x68 + i, 14, true);
+    Wire.requestFrom((uint8_t)(0x68 + i), (size_t)14, true);
 
     int16_t ax = Wire.read() << 8 | Wire.read();
     int16_t ay = Wire.read() << 8 | Wire.read();

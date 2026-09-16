@@ -29,6 +29,8 @@
  *   - Fixes impedance serial parsing and joint-constraint persistence.
  *   - Starts the IMU task in center mode.
  *   - Sensor acquisition remains 1 kHz; serial telemetry is throttled to 50 Hz.
+ *   - External sensors establish the restart reference; continuous RMD 0x92
+ *     feedback supplies measured motor position after zeroing.
  *   - Adds role-aware Wi-Fi SoftAP + captive portal control/configuration.
  *   - LEFTLEG / RIGHTLEG / CENTER SSID follows persisted chirality.
  *   - Existing SPIFFS configuration is loaded into the web configurator.
@@ -135,6 +137,37 @@ const unsigned long ACTUATOR_ID_RIGHT_HIP_YAW = ACTUATOR_IDS[RIGHT_HIP_YAW];
 const unsigned long ACTUATOR_ID_LEFT_HIP_YAW = ACTUATOR_IDS[LEFT_HIP_YAW];
 const unsigned long ACTUATOR_ID_RIGHT_HIP_ROLL = ACTUATOR_IDS[RIGHT_HIP_ROLL];
 const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
+
+static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 5;
+static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
+static const uint8_t MOTOR_BOOT_ZERO_SAMPLE_COUNT = 8;
+static const float MOTOR_BOOT_ZERO_MAX_SPREAD_DEG = 2.0f;
+static const float MOTOR_AS5600_DIVERGENCE_LIMIT_DEG = 12.0f;
+static const uint8_t MOTOR_AS5600_DIVERGENCE_SAMPLE_COUNT = 3;
+static const uint8_t RIGHT_MOTOR_TELEMETRY_ORDER[6] = {
+  RIGHT_OUTER_CALF, RIGHT_INNER_CALF, RIGHT_HIP_PITCH,
+  RIGHT_KNEE, RIGHT_HIP_YAW, RIGHT_HIP_ROLL
+};
+static const uint8_t LEFT_MOTOR_TELEMETRY_ORDER[6] = {
+  LEFT_OUTER_CALF, LEFT_INNER_CALF, LEFT_HIP_PITCH,
+  LEFT_KNEE, LEFT_HIP_YAW, LEFT_HIP_ROLL
+};
+volatile float motorNativeDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile uint32_t motorNativeReceivedMs[ACTUATOR_COUNT] = {0};
+volatile bool motorNativeValid[ACTUATOR_COUNT] = {false};
+volatile bool motorControlZeroed[ACTUATOR_COUNT] = {false};
+volatile bool motorControlAlignmentFault[ACTUATOR_COUNT] = {false};
+volatile float motorControlZeroOffsetDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile float motorAs5600ErrorDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile uint8_t motorBootZeroSamples[ACTUATOR_COUNT] = {0};
+volatile uint8_t motorAs5600DivergenceSamples[ACTUATOR_COUNT] = {0};
+float motorBootZeroOffsetSum[ACTUATOR_COUNT] = {0.0f};
+float motorBootZeroOffsetMin[ACTUATOR_COUNT] = {0.0f};
+float motorBootZeroOffsetMax[ACTUATOR_COUNT] = {0.0f};
+volatile uint32_t motorNativeQueries = 0;
+volatile uint32_t motorNativeQueryFailures = 0;
+volatile uint32_t motorNativeResponses = 0;
+volatile uint32_t motorNativeMalformedResponses = 0;
 
 // -----------------------------------------------------------------------------
 // Shared state
@@ -429,6 +462,161 @@ int firstSelectedActuatorIndex() {
   return isLeft ? 1 : 0;
 }
 
+const uint8_t *selectedMotorTelemetryOrder() {
+  return isLeft ? LEFT_MOTOR_TELEMETRY_ORDER : RIGHT_MOTOR_TELEMETRY_ORDER;
+}
+
+int actuatorIndexFromCanId(uint32_t actuatorID) {
+  for (int i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (ACTUATOR_IDS[i] == actuatorID) return i;
+  }
+  return -1;
+}
+
+int actuatorIndexFromMotorFeedbackId(uint32_t responseID) {
+  if (responseID < 0x100) return -1;
+  const int index = actuatorIndexFromCanId(responseID - 0x100);
+  return actuatorBelongsToSelectedLeg(index) ? index : -1;
+}
+
+int as5600SensorIndexForActuator(int actuatorIndex) {
+  switch (actuatorIndex) {
+    case RIGHT_OUTER_CALF:
+    case LEFT_OUTER_CALF: return 0;
+    case RIGHT_INNER_CALF:
+    case LEFT_INNER_CALF: return 1;
+    case RIGHT_HIP_PITCH:
+    case LEFT_HIP_PITCH: return 2;
+    case RIGHT_KNEE:
+    case LEFT_KNEE: return 3;
+    case RIGHT_HIP_ROLL:
+    case LEFT_HIP_ROLL: return 4;
+    default: return -1;
+  }
+}
+
+float motorFeedbackDirectionForActuator(int actuatorIndex) {
+  switch (actuatorIndex) {
+    case RIGHT_OUTER_CALF: return directionMultiplierRightOuterCalf;
+    case LEFT_OUTER_CALF: return directionMultiplierLeftOuterCalf;
+    case RIGHT_INNER_CALF: return directionMultiplierRightInnerCalf;
+    case LEFT_INNER_CALF: return directionMultiplierLeftInnerCalf;
+    case RIGHT_KNEE: return directionMultiplierRightKnee;
+    case LEFT_KNEE: return directionMultiplierLeftKnee;
+    case RIGHT_HIP_PITCH: return directionMultiplierRightHipPitch;
+    case LEFT_HIP_PITCH: return directionMultiplierLeftHipPitch;
+    case RIGHT_HIP_ROLL: return directionMultiplierRightHipRoll;
+    case LEFT_HIP_ROLL: return directionMultiplierLeftHipRoll;
+    default: return 1.0f;
+  }
+}
+
+float normalizedAs5600Degrees(uint8_t sensorIndex) {
+  switch (sensorIndex) {
+    case 0: return normalizedOuter;
+    case 1: return normalizedInner;
+    case 2: return normalizedHip;
+    case 3: return normalizedKnee;
+    case 4: return normalizedButt;
+    default: return 0.0f;
+  }
+}
+
+float shortestAngleDifference(float value, float reference) {
+  return fmodf(value - reference + 540.0f, 360.0f) - 180.0f;
+}
+
+void resetMotorBootZeroAccumulator(int actuatorIndex) {
+  motorBootZeroSamples[actuatorIndex] = 0;
+  motorBootZeroOffsetSum[actuatorIndex] = 0.0f;
+  motorBootZeroOffsetMin[actuatorIndex] = 0.0f;
+  motorBootZeroOffsetMax[actuatorIndex] = 0.0f;
+}
+
+void updateMotorControlReference(int actuatorIndex, float nativeDegrees) {
+  const int sensorIndex = as5600SensorIndexForActuator(actuatorIndex);
+  if (sensorIndex < 0 || motorControlAlignmentFault[actuatorIndex]) return;
+  const float externalDegrees = normalizedAs5600Degrees(static_cast<uint8_t>(sensorIndex));
+  if (!isfinite(externalDegrees)) return;
+
+  const float directedNative = nativeDegrees * motorFeedbackDirectionForActuator(actuatorIndex);
+  if (motorControlZeroed[actuatorIndex]) {
+    const float aligned = directedNative + motorControlZeroOffsetDegrees[actuatorIndex];
+    const float disagreement = fabsf(shortestAngleDifference(aligned, externalDegrees));
+    motorAs5600ErrorDegrees[actuatorIndex] = disagreement;
+    if (disagreement > MOTOR_AS5600_DIVERGENCE_LIMIT_DEG) {
+      if (motorAs5600DivergenceSamples[actuatorIndex] < UINT8_MAX)
+        motorAs5600DivergenceSamples[actuatorIndex]++;
+      if (motorAs5600DivergenceSamples[actuatorIndex] >= MOTOR_AS5600_DIVERGENCE_SAMPLE_COUNT) {
+        motorControlAlignmentFault[actuatorIndex] = true;
+        motorControlZeroed[actuatorIndex] = false;
+        impedanceTorqueValues[actuatorIndex] = 0;
+      }
+    } else {
+      motorAs5600DivergenceSamples[actuatorIndex] = 0;
+    }
+    return;
+  }
+
+  float candidateOffset = externalDegrees - directedNative;
+  const uint8_t samples = motorBootZeroSamples[actuatorIndex];
+  if (samples > 0) {
+    const float referenceOffset = motorBootZeroOffsetSum[actuatorIndex] / static_cast<float>(samples);
+    candidateOffset = referenceOffset + shortestAngleDifference(candidateOffset, referenceOffset);
+  }
+  if (samples == 0) {
+    motorBootZeroOffsetMin[actuatorIndex] = candidateOffset;
+    motorBootZeroOffsetMax[actuatorIndex] = candidateOffset;
+  } else {
+    motorBootZeroOffsetMin[actuatorIndex] = min(motorBootZeroOffsetMin[actuatorIndex], candidateOffset);
+    motorBootZeroOffsetMax[actuatorIndex] = max(motorBootZeroOffsetMax[actuatorIndex], candidateOffset);
+  }
+  motorBootZeroOffsetSum[actuatorIndex] += candidateOffset;
+  motorBootZeroSamples[actuatorIndex] = samples + 1;
+  if (motorBootZeroSamples[actuatorIndex] < MOTOR_BOOT_ZERO_SAMPLE_COUNT) return;
+  if (motorBootZeroOffsetMax[actuatorIndex] - motorBootZeroOffsetMin[actuatorIndex] >
+      MOTOR_BOOT_ZERO_MAX_SPREAD_DEG) {
+    resetMotorBootZeroAccumulator(actuatorIndex);
+    return;
+  }
+  motorControlZeroOffsetDegrees[actuatorIndex] = motorBootZeroOffsetSum[actuatorIndex] /
+    static_cast<float>(motorBootZeroSamples[actuatorIndex]);
+  motorAs5600ErrorDegrees[actuatorIndex] = 0.0f;
+  motorAs5600DivergenceSamples[actuatorIndex] = 0;
+  motorControlZeroed[actuatorIndex] = true;
+}
+
+bool readMotorControlDegrees(int actuatorIndex, float &degrees) {
+  if (actuatorIndex < 0 || actuatorIndex >= ACTUATOR_COUNT ||
+      !motorControlZeroed[actuatorIndex] || motorControlAlignmentFault[actuatorIndex] ||
+      !motorNativeValid[actuatorIndex] ||
+      millis() - motorNativeReceivedMs[actuatorIndex] > MOTOR_NATIVE_STALE_MS) return false;
+  degrees = motorNativeDegrees[actuatorIndex] * motorFeedbackDirectionForActuator(actuatorIndex) +
+            motorControlZeroOffsetDegrees[actuatorIndex];
+  return isfinite(degrees);
+}
+
+bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) {
+  if (len != 8 || data[0] != 0x92) return false;
+  const int index = actuatorIndexFromMotorFeedbackId(responseID);
+  if (index < 0 || data[1] != 0 || data[2] != 0 || data[3] != 0) {
+    motorNativeMalformedResponses++;
+    return false;
+  }
+  const uint32_t raw = static_cast<uint32_t>(data[4]) |
+                       (static_cast<uint32_t>(data[5]) << 8) |
+                       (static_cast<uint32_t>(data[6]) << 16) |
+                       (static_cast<uint32_t>(data[7]) << 24);
+  int32_t signedRaw = 0;
+  memcpy(&signedRaw, &raw, sizeof(signedRaw));
+  motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
+  motorNativeReceivedMs[index] = millis();
+  motorNativeValid[index] = true;
+  updateMotorControlReference(index, motorNativeDegrees[index]);
+  motorNativeResponses++;
+  return true;
+}
+
 // -----------------------------------------------------------------------------
 // Impedance controller
 // -----------------------------------------------------------------------------
@@ -509,6 +697,11 @@ private:
   float lastVelocity;
 };
 
+void updateMotorReferencedImpedance(int actuatorIndex, ImpedanceControl &controller,
+                                    const JointConstraints &constraints,
+                                    float outputDirection, bool enabled,
+                                    unsigned long now);
+
 ImpedanceControl outerCalfControlRight(2.5f, 50.0f, 0.8f);
 ImpedanceControl outerCalfControlLeft(2.5f, 50.0f, 0.8f);
 ImpedanceControl innerCalfControlRight(2.5f, 50.0f, 0.8f);
@@ -534,6 +727,46 @@ bool canSend(uint32_t actuatorID, const byte data[8]) {
     xSemaphoreGive(canMutex);
   }
   return ok;
+}
+
+void requestMotorNativeFeedback(uint8_t actuatorIndex) {
+  if (!runtimeControlReady || !actuatorBelongsToSelectedLeg(actuatorIndex)) return;
+  const byte request[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
+  if (canSend(ACTUATOR_IDS[actuatorIndex], request)) motorNativeQueries++;
+  else motorNativeQueryFailures++;
+}
+
+void canReceiveTask(void *parameter) {
+  uint8_t motorQuerySlot = 0;
+  uint32_t lastMotorQueryMs = 0;
+  while (true) {
+    uint8_t drained = 0;
+    while (runtimeControlReady && drained < 12) {
+      bool available = false;
+      if (canMutex && xSemaphoreTake(canMutex, pdMS_TO_TICKS(2)) == pdTRUE) {
+        available = CAN.checkReceive() == CAN_MSGAVAIL;
+        if (available) {
+          unsigned long responseID = 0;
+          unsigned char length = 0;
+          byte frame[8] = {0};
+          const int result = CAN.readMsgBuf(&responseID, &length, frame);
+          xSemaphoreGive(canMutex);
+          if (result == CAN_OK) ingestMotorNativeFeedback(responseID, frame, length);
+        } else {
+          xSemaphoreGive(canMutex);
+        }
+      }
+      if (!available) break;
+      drained++;
+    }
+    const uint32_t now = millis();
+    if (runtimeControlReady && now - lastMotorQueryMs >= MOTOR_NATIVE_QUERY_SLOT_MS) {
+      requestMotorNativeFeedback(selectedMotorTelemetryOrder()[motorQuerySlot]);
+      motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
+      lastMotorQueryMs = now;
+    }
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
 }
 
 void sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
@@ -663,6 +896,10 @@ void primeSensorFilter() {
 
 void printReadings() {
   if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    const uint32_t now = millis();
+    Serial.print("DB2,");
+    Serial.print(now);
+    Serial.print(',');
     Serial.print(normalizedOuter, 1);
     Serial.print(',');
     Serial.print(normalizedInner, 1);
@@ -671,7 +908,17 @@ void printReadings() {
     Serial.print(',');
     Serial.print(normalizedKnee, 1);
     Serial.print(',');
-    Serial.println(normalizedButt, 1);
+    Serial.print(normalizedButt, 1);
+    const uint8_t *order = selectedMotorTelemetryOrder();
+    for (uint8_t slot = 0; slot < 6; ++slot) {
+      const uint8_t index = order[slot];
+      Serial.print(',');
+      if (motorNativeValid[index] && now - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS)
+        Serial.print(motorNativeDegrees[index], 2);
+      else
+        Serial.print("NA");
+    }
+    Serial.println();
     xSemaphoreGive(serialMutex);
   }
 }
@@ -753,6 +1000,25 @@ void readAndComputeTask(void *parameter) {
   }
 }
 
+void updateMotorReferencedImpedance(int actuatorIndex, ImpedanceControl &controller,
+                                    const JointConstraints &constraints,
+                                    float outputDirection, bool enabled,
+                                    unsigned long now) {
+  if (!enabled) {
+    impedanceTorqueValues[actuatorIndex] = 0;
+    return;
+  }
+  float measuredDegrees = 0.0f;
+  if (!readMotorControlDegrees(actuatorIndex, measuredDegrees)) {
+    controller.reset();
+    impedanceTorqueValues[actuatorIndex] = 0;
+    return;
+  }
+  controller.update(measuredDegrees, now, constraints.minAngle, constraints.maxAngle);
+  impedanceTorqueValues[actuatorIndex] = clampTorqueCommand(
+    controller.torqueOutput * outputDirection);
+}
+
 void impedanceControlTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
 
@@ -761,55 +1027,27 @@ void impedanceControlTask(void *parameter) {
       const unsigned long now = millis();
 
       if (isLeft) {
-        if (impedanceEnabledLeftOuterCalf) {
-          outerCalfControlLeft.update(normalizedOuter, now, outerCalfConstraintsLeft.minAngle, outerCalfConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_OUTER_CALF] = clampTorqueCommand(outerCalfControlLeft.torqueOutput * directionMultiplierLeftOuterCalf);
-        } else impedanceTorqueValues[LEFT_OUTER_CALF] = 0;
-
-        if (impedanceEnabledLeftInnerCalf) {
-          innerCalfControlLeft.update(normalizedInner, now, innerCalfConstraintsLeft.minAngle, innerCalfConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_INNER_CALF] = clampTorqueCommand(innerCalfControlLeft.torqueOutput * directionMultiplierLeftInnerCalf);
-        } else impedanceTorqueValues[LEFT_INNER_CALF] = 0;
-
-        if (impedanceEnabledLeftKnee) {
-          kneeControlLeft.update(normalizedKnee, now, kneeConstraintsLeft.minAngle, kneeConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_KNEE] = clampTorqueCommand(kneeControlLeft.torqueOutput * directionMultiplierLeftKnee);
-        } else impedanceTorqueValues[LEFT_KNEE] = 0;
-
-        if (impedanceEnabledLeftHipPitch) {
-          hipPitchControlLeft.update(normalizedHip, now, hipPitchConstraintsLeft.minAngle, hipPitchConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_HIP_PITCH] = clampTorqueCommand(hipPitchControlLeft.torqueOutput * directionMultiplierLeftHipPitch);
-        } else impedanceTorqueValues[LEFT_HIP_PITCH] = 0;
-
-        if (impedanceEnabledLeftHipRoll) {
-          hipRollControlLeft.update(normalizedButt, now, hipRollConstraintsLeft.minAngle, hipRollConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_HIP_ROLL] = clampTorqueCommand(hipRollControlLeft.torqueOutput * directionMultiplierLeftHipRoll);
-        } else impedanceTorqueValues[LEFT_HIP_ROLL] = 0;
+        updateMotorReferencedImpedance(LEFT_OUTER_CALF, outerCalfControlLeft, outerCalfConstraintsLeft,
+          directionMultiplierLeftOuterCalf, impedanceEnabledLeftOuterCalf, now);
+        updateMotorReferencedImpedance(LEFT_INNER_CALF, innerCalfControlLeft, innerCalfConstraintsLeft,
+          directionMultiplierLeftInnerCalf, impedanceEnabledLeftInnerCalf, now);
+        updateMotorReferencedImpedance(LEFT_KNEE, kneeControlLeft, kneeConstraintsLeft,
+          directionMultiplierLeftKnee, impedanceEnabledLeftKnee, now);
+        updateMotorReferencedImpedance(LEFT_HIP_PITCH, hipPitchControlLeft, hipPitchConstraintsLeft,
+          directionMultiplierLeftHipPitch, impedanceEnabledLeftHipPitch, now);
+        updateMotorReferencedImpedance(LEFT_HIP_ROLL, hipRollControlLeft, hipRollConstraintsLeft,
+          directionMultiplierLeftHipRoll, impedanceEnabledLeftHipRoll, now);
       } else {
-        if (impedanceEnabledRightOuterCalf) {
-          outerCalfControlRight.update(normalizedOuter, now, outerCalfConstraintsRight.minAngle, outerCalfConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_OUTER_CALF] = clampTorqueCommand(outerCalfControlRight.torqueOutput * directionMultiplierRightOuterCalf);
-        } else impedanceTorqueValues[RIGHT_OUTER_CALF] = 0;
-
-        if (impedanceEnabledRightInnerCalf) {
-          innerCalfControlRight.update(normalizedInner, now, innerCalfConstraintsRight.minAngle, innerCalfConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_INNER_CALF] = clampTorqueCommand(innerCalfControlRight.torqueOutput * directionMultiplierRightInnerCalf);
-        } else impedanceTorqueValues[RIGHT_INNER_CALF] = 0;
-
-        if (impedanceEnabledRightKnee) {
-          kneeControlRight.update(normalizedKnee, now, kneeConstraintsRight.minAngle, kneeConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_KNEE] = clampTorqueCommand(kneeControlRight.torqueOutput * directionMultiplierRightKnee);
-        } else impedanceTorqueValues[RIGHT_KNEE] = 0;
-
-        if (impedanceEnabledRightHipPitch) {
-          hipPitchControlRight.update(normalizedHip, now, hipPitchConstraintsRight.minAngle, hipPitchConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_HIP_PITCH] = clampTorqueCommand(hipPitchControlRight.torqueOutput * directionMultiplierRightHipPitch);
-        } else impedanceTorqueValues[RIGHT_HIP_PITCH] = 0;
-
-        if (impedanceEnabledRightHipRoll) {
-          hipRollControlRight.update(normalizedButt, now, hipRollConstraintsRight.minAngle, hipRollConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_HIP_ROLL] = clampTorqueCommand(hipRollControlRight.torqueOutput * directionMultiplierRightHipRoll);
-        } else impedanceTorqueValues[RIGHT_HIP_ROLL] = 0;
+        updateMotorReferencedImpedance(RIGHT_OUTER_CALF, outerCalfControlRight, outerCalfConstraintsRight,
+          directionMultiplierRightOuterCalf, impedanceEnabledRightOuterCalf, now);
+        updateMotorReferencedImpedance(RIGHT_INNER_CALF, innerCalfControlRight, innerCalfConstraintsRight,
+          directionMultiplierRightInnerCalf, impedanceEnabledRightInnerCalf, now);
+        updateMotorReferencedImpedance(RIGHT_KNEE, kneeControlRight, kneeConstraintsRight,
+          directionMultiplierRightKnee, impedanceEnabledRightKnee, now);
+        updateMotorReferencedImpedance(RIGHT_HIP_PITCH, hipPitchControlRight, hipPitchConstraintsRight,
+          directionMultiplierRightHipPitch, impedanceEnabledRightHipPitch, now);
+        updateMotorReferencedImpedance(RIGHT_HIP_ROLL, hipRollControlRight, hipRollConstraintsRight,
+          directionMultiplierRightHipRoll, impedanceEnabledRightHipRoll, now);
       }
     }
 
@@ -2558,6 +2796,7 @@ void setup() {
       xTaskCreatePinnedToCore(readAndComputeTask, "sensors", 4096, nullptr, 3, nullptr, 1);
       xTaskCreatePinnedToCore(impedanceControlTask, "impedance", 4096, nullptr, 3, nullptr, 1);
       xTaskCreatePinnedToCore(canOutputTask, "can-output", 4096, nullptr, 4, nullptr, 1);
+      xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 4, nullptr, 1);
       runtimeControlReady = true;
       runtimeImuReady = false;
       playMode = true;

@@ -10,7 +10,8 @@ class LowLevelSafetySourceTests(unittest.TestCase):
     def test_default_build_is_observation_only(self):
         self.assertIn("const bool OBSERVATION_ONLY_FIRMWARE = true;", SOURCE)
         self.assertIn("const bool LEGACY_SERIAL_MOTION_ALLOWED = false;", SOURCE)
-        self.assertIn("const bool MOTOR_FEEDBACK_QUERY_ALLOWED = false;", SOURCE)
+        self.assertIn("const bool MOTOR_FEEDBACK_QUERY_ALLOWED = true;", SOURCE)
+        self.assertIn("byte frame[8] = { 0x92", SOURCE)
         self.assertRegex(SOURCE, r"bool playMode\s*=\s*false;")
 
     def test_every_motion_sender_has_local_fail_closed_guard(self):

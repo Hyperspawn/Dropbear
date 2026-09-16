@@ -31,6 +31,8 @@
  *   - Fixes impedance serial parsing and joint-constraint persistence.
  *   - Starts the IMU task in center mode.
  *   - AS5600 pulse state is processed at 1 kHz; serial telemetry is throttled to 50 Hz.
+ *   - Uses each AS5600 to establish the corresponding motor-native CAN angle
+ *     reference after restart, then uses fresh RMD angle feedback for control.
  *   - Adds role-aware Wi-Fi SoftAP + captive portal control/configuration.
  *   - LEFTLEG / RIGHTLEG / CENTER SSID follows persisted chirality.
  *   - Existing SPIFFS configuration is loaded into the web configurator.
@@ -46,7 +48,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-db2-native-angle-2026.09.15";
+  "behemoth-motor-feedback-zeroed-2026.09.16";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -271,6 +273,10 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
 static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 5;
 static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
+static const uint8_t MOTOR_BOOT_ZERO_SAMPLE_COUNT = 8;
+static const float MOTOR_BOOT_ZERO_MAX_SPREAD_DEG = 2.0f;
+static const float MOTOR_AS5600_DIVERGENCE_LIMIT_DEG = 12.0f;
+static const uint8_t MOTOR_AS5600_DIVERGENCE_SAMPLE_COUNT = 3;
 static const uint8_t RIGHT_MOTOR_TELEMETRY_ORDER[6] = {
   RIGHT_OUTER_CALF, RIGHT_INNER_CALF, RIGHT_HIP_PITCH,
   RIGHT_KNEE, RIGHT_HIP_YAW, RIGHT_HIP_ROLL
@@ -283,6 +289,20 @@ static const uint8_t LEFT_MOTOR_TELEMETRY_ORDER[6] = {
 volatile float motorNativeDegrees[ACTUATOR_COUNT] = {0.0f};
 volatile uint32_t motorNativeReceivedMs[ACTUATOR_COUNT] = {0};
 volatile bool motorNativeValid[ACTUATOR_COUNT] = {false};
+// Five AS5600-equipped axes are aligned once after boot. The resulting offset
+// maps the RMD multi-turn angle into the calibrated joint coordinate. AS5600
+// remains an independent diagnostic after that point and never replaces stale
+// CAN feedback in the active controller.
+volatile bool motorControlZeroed[ACTUATOR_COUNT] = {false};
+volatile bool motorControlAlignmentFault[ACTUATOR_COUNT] = {false};
+volatile float motorControlZeroOffsetDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile float motorControlDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile float motorAs5600ErrorDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile uint8_t motorBootZeroSamples[ACTUATOR_COUNT] = {0};
+volatile uint8_t motorAs5600DivergenceSamples[ACTUATOR_COUNT] = {0};
+float motorBootZeroOffsetSum[ACTUATOR_COUNT] = {0.0f};
+float motorBootZeroOffsetMin[ACTUATOR_COUNT] = {0.0f};
+float motorBootZeroOffsetMax[ACTUATOR_COUNT] = {0.0f};
 volatile uint32_t motorNativeQueries = 0;
 volatile uint32_t motorNativeQueryFailures = 0;
 volatile uint32_t motorNativeResponses = 0;
@@ -1079,6 +1099,154 @@ int actuatorIndexFromMotorFeedbackId(uint32_t responseID) {
   return actuatorBelongsToSelectedLeg(index) ? index : -1;
 }
 
+int as5600SensorIndexForActuator(int actuatorIndex) {
+  switch (actuatorIndex) {
+    case RIGHT_OUTER_CALF:
+    case LEFT_OUTER_CALF: return 0;
+    case RIGHT_INNER_CALF:
+    case LEFT_INNER_CALF: return 1;
+    case RIGHT_HIP_PITCH:
+    case LEFT_HIP_PITCH: return 2;
+    case RIGHT_KNEE:
+    case LEFT_KNEE: return 3;
+    case RIGHT_HIP_ROLL:
+    case LEFT_HIP_ROLL: return 4;
+    default: return -1;
+  }
+}
+
+float motorFeedbackDirectionForActuator(int actuatorIndex) {
+  // Position scale is 1:1. Sign follows the same persisted mechanical mapping
+  // already verified for positive joint torque on each actuator.
+  switch (actuatorIndex) {
+    case RIGHT_OUTER_CALF: return directionMultiplierRightOuterCalf;
+    case LEFT_OUTER_CALF: return directionMultiplierLeftOuterCalf;
+    case RIGHT_INNER_CALF: return directionMultiplierRightInnerCalf;
+    case LEFT_INNER_CALF: return directionMultiplierLeftInnerCalf;
+    case RIGHT_KNEE: return directionMultiplierRightKnee;
+    case LEFT_KNEE: return directionMultiplierLeftKnee;
+    case RIGHT_HIP_PITCH: return directionMultiplierRightHipPitch;
+    case LEFT_HIP_PITCH: return directionMultiplierLeftHipPitch;
+    case RIGHT_HIP_ROLL: return directionMultiplierRightHipRoll;
+    case LEFT_HIP_ROLL: return directionMultiplierLeftHipRoll;
+    default: return 1.0f;
+  }
+}
+
+float normalizedAs5600Degrees(uint8_t sensorIndex) {
+  switch (sensorIndex) {
+    case 0: return normalizedOuter;
+    case 1: return normalizedInner;
+    case 2: return normalizedHip;
+    case 3: return normalizedKnee;
+    case 4: return normalizedButt;
+    default: return 0.0f;
+  }
+}
+
+bool readFreshAs5600Reference(int actuatorIndex, float &degrees) {
+  const int sensorIndex = as5600SensorIndexForActuator(actuatorIndex);
+  if (sensorIndex < 0) return false;
+  const SensorDiagnostic &diagnostic = sensorDiagnostics[sensorIndex];
+  const uint32_t age = diagnosticAgeMs(diagnostic.lastSampleMs);
+  if (!diagnostic.signalValid || diagnostic.pulseAgeUs > AS5600_STALE_US ||
+      age == UINT32_MAX || age > 100) return false;
+  degrees = normalizedAs5600Degrees(static_cast<uint8_t>(sensorIndex));
+  return isfinite(degrees);
+}
+
+float shortestAngleDifference(float value, float reference) {
+  float difference = fmodf(value - reference + 540.0f, 360.0f) - 180.0f;
+  return difference;
+}
+
+void resetMotorBootZeroAccumulator(int actuatorIndex) {
+  motorBootZeroSamples[actuatorIndex] = 0;
+  motorBootZeroOffsetSum[actuatorIndex] = 0.0f;
+  motorBootZeroOffsetMin[actuatorIndex] = 0.0f;
+  motorBootZeroOffsetMax[actuatorIndex] = 0.0f;
+}
+
+void updateMotorControlReference(int actuatorIndex, float nativeDegrees) {
+  const int sensorIndex = as5600SensorIndexForActuator(actuatorIndex);
+  if (sensorIndex < 0 || motorControlAlignmentFault[actuatorIndex]) return;
+
+  float externalDegrees = 0.0f;
+  if (!readFreshAs5600Reference(actuatorIndex, externalDegrees)) return;
+
+  const float directedNative = nativeDegrees * motorFeedbackDirectionForActuator(actuatorIndex);
+  if (motorControlZeroed[actuatorIndex]) {
+    const float aligned = directedNative + motorControlZeroOffsetDegrees[actuatorIndex];
+    motorControlDegrees[actuatorIndex] = aligned;
+    const float disagreement = fabsf(shortestAngleDifference(aligned, externalDegrees));
+    motorAs5600ErrorDegrees[actuatorIndex] = disagreement;
+    if (disagreement > MOTOR_AS5600_DIVERGENCE_LIMIT_DEG) {
+      if (motorAs5600DivergenceSamples[actuatorIndex] < UINT8_MAX) {
+        motorAs5600DivergenceSamples[actuatorIndex]++;
+      }
+      if (motorAs5600DivergenceSamples[actuatorIndex] >=
+          MOTOR_AS5600_DIVERGENCE_SAMPLE_COUNT) {
+        // Latch until restart. Re-zeroing while the leg may be moving would
+        // create a discontinuous position reference.
+        motorControlAlignmentFault[actuatorIndex] = true;
+        motorControlZeroed[actuatorIndex] = false;
+        impedanceTorqueValues[actuatorIndex] = 0;
+      }
+    } else {
+      motorAs5600DivergenceSamples[actuatorIndex] = 0;
+    }
+    return;
+  }
+
+  float candidateOffset = externalDegrees - directedNative;
+  const uint8_t samples = motorBootZeroSamples[actuatorIndex];
+  if (samples > 0) {
+    const float referenceOffset = motorBootZeroOffsetSum[actuatorIndex] /
+                                  static_cast<float>(samples);
+    candidateOffset = referenceOffset +
+      shortestAngleDifference(candidateOffset, referenceOffset);
+  }
+
+  if (samples == 0) {
+    motorBootZeroOffsetMin[actuatorIndex] = candidateOffset;
+    motorBootZeroOffsetMax[actuatorIndex] = candidateOffset;
+  } else {
+    motorBootZeroOffsetMin[actuatorIndex] = min(motorBootZeroOffsetMin[actuatorIndex], candidateOffset);
+    motorBootZeroOffsetMax[actuatorIndex] = max(motorBootZeroOffsetMax[actuatorIndex], candidateOffset);
+  }
+  motorBootZeroOffsetSum[actuatorIndex] += candidateOffset;
+  motorBootZeroSamples[actuatorIndex] = samples + 1;
+
+  if (motorBootZeroSamples[actuatorIndex] < MOTOR_BOOT_ZERO_SAMPLE_COUNT) return;
+
+  const float spread = motorBootZeroOffsetMax[actuatorIndex] -
+                       motorBootZeroOffsetMin[actuatorIndex];
+  if (spread > MOTOR_BOOT_ZERO_MAX_SPREAD_DEG) {
+    resetMotorBootZeroAccumulator(actuatorIndex);
+    return;
+  }
+
+  const float zeroOffset = motorBootZeroOffsetSum[actuatorIndex] /
+                           static_cast<float>(motorBootZeroSamples[actuatorIndex]);
+  motorControlZeroOffsetDegrees[actuatorIndex] = zeroOffset;
+  motorControlDegrees[actuatorIndex] = directedNative + zeroOffset;
+  motorAs5600ErrorDegrees[actuatorIndex] = fabsf(
+    shortestAngleDifference(motorControlDegrees[actuatorIndex], externalDegrees));
+  motorAs5600DivergenceSamples[actuatorIndex] = 0;
+  motorControlZeroed[actuatorIndex] = true;
+}
+
+bool readMotorControlDegrees(int actuatorIndex, float &degrees) {
+  if (actuatorIndex < 0 || actuatorIndex >= ACTUATOR_COUNT ||
+      !motorControlZeroed[actuatorIndex] || motorControlAlignmentFault[actuatorIndex] ||
+      !motorNativeValid[actuatorIndex] ||
+      millis() - motorNativeReceivedMs[actuatorIndex] > MOTOR_NATIVE_STALE_MS) return false;
+  degrees = motorNativeDegrees[actuatorIndex] * motorFeedbackDirectionForActuator(actuatorIndex) +
+            motorControlZeroOffsetDegrees[actuatorIndex];
+  motorControlDegrees[actuatorIndex] = degrees;
+  return isfinite(degrees);
+}
+
 bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) {
   if (!MOTOR_NATIVE_FEEDBACK_ENABLED || len != 8 || data[0] != 0x92) return false;
   const int index = actuatorIndexFromMotorFeedbackId(responseID);
@@ -1098,6 +1266,7 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
   motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
   motorNativeReceivedMs[index] = millis();
   motorNativeValid[index] = true;
+  updateMotorControlReference(index, motorNativeDegrees[index]);
   motorNativeResponses++;
   return true;
 }
@@ -1256,6 +1425,11 @@ private:
   float lastPosition;
   float lastVelocity;
 };
+
+void updateMotorReferencedImpedance(int actuatorIndex, ImpedanceControl &controller,
+                                    const JointConstraints &constraints,
+                                    float outputDirection, bool enabled,
+                                    unsigned long now);
 
 ImpedanceControl outerCalfControlRight(2.5f, 50.0f, 0.8f);
 ImpedanceControl outerCalfControlLeft(2.5f, 50.0f, 0.8f);
@@ -1424,6 +1598,13 @@ int hyperspawnJointToActuatorIndex(uint8_t joint) {
 }
 
 float hyperspawnMeasuredDegrees(uint8_t joint) {
+  const int actuatorIndex = hyperspawnJointToActuatorIndex(joint);
+  float motorDegrees = 0.0f;
+  if (readMotorControlDegrees(actuatorIndex, motorDegrees)) return motorDegrees;
+
+  // Before the boot reference is ready, retain the calibrated AS5600 value for
+  // staging a hold target. The torque controller itself remains at zero until
+  // aligned, fresh CAN-native feedback is available.
   switch (joint) {
     case HS_HIP_PITCH: return normalizedHip;
     case HS_HIP_ROLL: return normalizedButt;
@@ -2022,6 +2203,29 @@ void readAndComputeTask(void *parameter) {
   }
 }
 
+void updateMotorReferencedImpedance(int actuatorIndex, ImpedanceControl &controller,
+                                    const JointConstraints &constraints,
+                                    float outputDirection, bool enabled,
+                                    unsigned long now) {
+  if (!enabled) {
+    impedanceTorqueValues[actuatorIndex] = 0;
+    return;
+  }
+
+  float measuredDegrees = 0.0f;
+  if (!readMotorControlDegrees(actuatorIndex, measuredDegrees)) {
+    // Position feedback never falls back to an AS5600 once boot zeroing has
+    // begun. Missing/stale/untrusted CAN feedback is a zero-torque condition.
+    controller.reset();
+    impedanceTorqueValues[actuatorIndex] = 0;
+    return;
+  }
+
+  controller.update(measuredDegrees, now, constraints.minAngle, constraints.maxAngle);
+  impedanceTorqueValues[actuatorIndex] = clampTorqueCommand(
+    controller.torqueOutput * outputDirection);
+}
+
 void impedanceControlTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
 
@@ -2035,56 +2239,40 @@ void impedanceControlTask(void *parameter) {
         applyHyperspawnPositionTargets();
       }
 
+      const bool routedPosition = operatingMode == OPERATING_HYPERSPAWN_ROUTE &&
+                                  hyperspawnControlMode == HS_CONTROL_POSITION;
       if (isLeft) {
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftOuterCalf) {
-          outerCalfControlLeft.update(normalizedOuter, now, outerCalfConstraintsLeft.minAngle, outerCalfConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_OUTER_CALF] = clampTorqueCommand(outerCalfControlLeft.torqueOutput * directionMultiplierLeftOuterCalf);
-        } else impedanceTorqueValues[LEFT_OUTER_CALF] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftInnerCalf) {
-          innerCalfControlLeft.update(normalizedInner, now, innerCalfConstraintsLeft.minAngle, innerCalfConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_INNER_CALF] = clampTorqueCommand(innerCalfControlLeft.torqueOutput * directionMultiplierLeftInnerCalf);
-        } else impedanceTorqueValues[LEFT_INNER_CALF] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftKnee) {
-          kneeControlLeft.update(normalizedKnee, now, kneeConstraintsLeft.minAngle, kneeConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_KNEE] = clampTorqueCommand(kneeControlLeft.torqueOutput * directionMultiplierLeftKnee);
-        } else impedanceTorqueValues[LEFT_KNEE] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftHipPitch) {
-          hipPitchControlLeft.update(normalizedHip, now, hipPitchConstraintsLeft.minAngle, hipPitchConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_HIP_PITCH] = clampTorqueCommand(hipPitchControlLeft.torqueOutput * directionMultiplierLeftHipPitch);
-        } else impedanceTorqueValues[LEFT_HIP_PITCH] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledLeftHipRoll) {
-          hipRollControlLeft.update(normalizedButt, now, hipRollConstraintsLeft.minAngle, hipRollConstraintsLeft.maxAngle);
-          impedanceTorqueValues[LEFT_HIP_ROLL] = clampTorqueCommand(hipRollControlLeft.torqueOutput * directionMultiplierLeftHipRoll);
-        } else impedanceTorqueValues[LEFT_HIP_ROLL] = 0;
+        updateMotorReferencedImpedance(LEFT_OUTER_CALF, outerCalfControlLeft,
+          outerCalfConstraintsLeft, directionMultiplierLeftOuterCalf,
+          routedPosition || impedanceEnabledLeftOuterCalf, now);
+        updateMotorReferencedImpedance(LEFT_INNER_CALF, innerCalfControlLeft,
+          innerCalfConstraintsLeft, directionMultiplierLeftInnerCalf,
+          routedPosition || impedanceEnabledLeftInnerCalf, now);
+        updateMotorReferencedImpedance(LEFT_KNEE, kneeControlLeft,
+          kneeConstraintsLeft, directionMultiplierLeftKnee,
+          routedPosition || impedanceEnabledLeftKnee, now);
+        updateMotorReferencedImpedance(LEFT_HIP_PITCH, hipPitchControlLeft,
+          hipPitchConstraintsLeft, directionMultiplierLeftHipPitch,
+          routedPosition || impedanceEnabledLeftHipPitch, now);
+        updateMotorReferencedImpedance(LEFT_HIP_ROLL, hipRollControlLeft,
+          hipRollConstraintsLeft, directionMultiplierLeftHipRoll,
+          routedPosition || impedanceEnabledLeftHipRoll, now);
       } else {
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightOuterCalf) {
-          outerCalfControlRight.update(normalizedOuter, now, outerCalfConstraintsRight.minAngle, outerCalfConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_OUTER_CALF] = clampTorqueCommand(outerCalfControlRight.torqueOutput * directionMultiplierRightOuterCalf);
-        } else impedanceTorqueValues[RIGHT_OUTER_CALF] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightInnerCalf) {
-          innerCalfControlRight.update(normalizedInner, now, innerCalfConstraintsRight.minAngle, innerCalfConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_INNER_CALF] = clampTorqueCommand(innerCalfControlRight.torqueOutput * directionMultiplierRightInnerCalf);
-        } else impedanceTorqueValues[RIGHT_INNER_CALF] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightKnee) {
-          kneeControlRight.update(normalizedKnee, now, kneeConstraintsRight.minAngle, kneeConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_KNEE] = clampTorqueCommand(kneeControlRight.torqueOutput * directionMultiplierRightKnee);
-        } else impedanceTorqueValues[RIGHT_KNEE] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightHipPitch) {
-          hipPitchControlRight.update(normalizedHip, now, hipPitchConstraintsRight.minAngle, hipPitchConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_HIP_PITCH] = clampTorqueCommand(hipPitchControlRight.torqueOutput * directionMultiplierRightHipPitch);
-        } else impedanceTorqueValues[RIGHT_HIP_PITCH] = 0;
-
-        if ((operatingMode == OPERATING_HYPERSPAWN_ROUTE && hyperspawnControlMode == HS_CONTROL_POSITION) || impedanceEnabledRightHipRoll) {
-          hipRollControlRight.update(normalizedButt, now, hipRollConstraintsRight.minAngle, hipRollConstraintsRight.maxAngle);
-          impedanceTorqueValues[RIGHT_HIP_ROLL] = clampTorqueCommand(hipRollControlRight.torqueOutput * directionMultiplierRightHipRoll);
-        } else impedanceTorqueValues[RIGHT_HIP_ROLL] = 0;
+        updateMotorReferencedImpedance(RIGHT_OUTER_CALF, outerCalfControlRight,
+          outerCalfConstraintsRight, directionMultiplierRightOuterCalf,
+          routedPosition || impedanceEnabledRightOuterCalf, now);
+        updateMotorReferencedImpedance(RIGHT_INNER_CALF, innerCalfControlRight,
+          innerCalfConstraintsRight, directionMultiplierRightInnerCalf,
+          routedPosition || impedanceEnabledRightInnerCalf, now);
+        updateMotorReferencedImpedance(RIGHT_KNEE, kneeControlRight,
+          kneeConstraintsRight, directionMultiplierRightKnee,
+          routedPosition || impedanceEnabledRightKnee, now);
+        updateMotorReferencedImpedance(RIGHT_HIP_PITCH, hipPitchControlRight,
+          hipPitchConstraintsRight, directionMultiplierRightHipPitch,
+          routedPosition || impedanceEnabledRightHipPitch, now);
+        updateMotorReferencedImpedance(RIGHT_HIP_ROLL, hipRollControlRight,
+          hipRollConstraintsRight, directionMultiplierRightHipRoll,
+          routedPosition || impedanceEnabledRightHipRoll, now);
       }
     }
 
@@ -4017,6 +4205,7 @@ String buildStateJson() {
   out += "\"play\":" + String(playMode ? "true" : "false") + ",";
   out += "\"raw\":" + String(rawMode ? "true" : "false") + ",";
   out += "\"config_mode\":" + String(configMode ? "true" : "false") + ",";
+  out += "\"position_feedback_policy\":\"as5600_boot_zero_then_rmd_0x92\",";
   out += "\"max_torque\":" + String(maxTorqueLimit, 3) + ",";
   out += "\"heap\":" + String(ESP.getFreeHeap()) + ",";
   out += "\"uptime_ms\":" + String(millis()) + ",";
@@ -4312,6 +4501,7 @@ String buildDiagnosticsJson() {
   out += "\"last_tx_age_ms\":" + ageJsonValue(lastCanTxMs) + ",";
   out += "\"last_failure_age_ms\":" + ageJsonValue(lastCanFailureMs) + ",";
   out += "\"feedback\":\"rmd_v44_0x92_multi_turn\",";
+  out += "\"position_feedback_policy\":\"as5600_boot_zero_then_can_continuous\",";
   out += "\"motor_angle_queries\":" + String(motorNativeQueries) + ",";
   out += "\"motor_angle_query_failures\":" + String(motorNativeQueryFailures) + ",";
   out += "\"motor_angle_responses\":" + String(motorNativeResponses) + ",";
@@ -4436,6 +4626,9 @@ String buildDiagnosticsJson() {
     const uint32_t age = diagnosticAgeMs(d.lastTxMs);
     const bool motorFeedbackFresh = motorNativeValid[i] &&
       now - motorNativeReceivedMs[i] <= MOTOR_NATIVE_STALE_MS;
+    float controlPositionDegrees = 0.0f;
+    const bool controlFeedbackReady = readMotorControlDegrees(i, controlPositionDegrees);
+    const bool hasExternalReference = as5600SensorIndexForActuator(i) >= 0;
     const bool outputExpected = selected && (playMode || calibrationOverrideActive || stopBurstRemaining > 0);
     const char *status = "inactive";
     if (selected) {
@@ -4460,6 +4653,20 @@ String buildDiagnosticsJson() {
     out += motorFeedbackFresh ? String(motorNativeDegrees[i], 2) : String("null");
     out += ",";
     out += "\"feedback_age_ms\":" + ageJsonValue(motorNativeReceivedMs[i]) + ",";
+    out += "\"control_feedback\":\"" + String(
+      motorControlAlignmentFault[i] ? "alignment_fault" :
+      (controlFeedbackReady ? "motor_native_zeroed" :
+       (hasExternalReference ? "zeroing_from_as5600" : "motor_telemetry_only"))) + "\",";
+    out += "\"control_position_deg\":";
+    out += controlFeedbackReady ? String(controlPositionDegrees, 2) : String("null");
+    out += ",";
+    out += "\"boot_zero_offset_deg\":";
+    out += motorControlZeroed[i] ? String(motorControlZeroOffsetDegrees[i], 2) : String("null");
+    out += ",";
+    out += "\"as5600_crosscheck_error_deg\":";
+    out += hasExternalReference && motorControlZeroed[i]
+      ? String(motorAs5600ErrorDegrees[i], 2) : String("null");
+    out += ",";
     String commandSource;
     if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
       commandSource = hyperspawnControlMode == HS_CONTROL_POSITION ? "hyperspawn_position" :

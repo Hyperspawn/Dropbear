@@ -95,6 +95,14 @@ static const int AS5600_PINS[AS5600_SENSOR_COUNT] = {
   PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL
 };
 
+// Arduino 1.8 emits generated function prototypes before the type definitions
+// later in this sketch. Forward-declare every custom type used by those
+// prototypes so the command, diagnostics, and persistence helpers compile.
+struct JointConstraints;
+struct SensorDiagnostic;
+struct WebCommand;
+enum HyperspawnControlMode : uint8_t;
+
 void IRAM_ATTR handleAs5600Edge(uint8_t index, int pin) {
   const uint32_t now = micros();
   As5600PwmCapture &c = as5600Capture[index];
@@ -2353,7 +2361,9 @@ void readIMU() {
       continue;
     }
 
-    const uint8_t received = Wire.requestFrom((int)IMU_DEVICE_ADDRESS, 14, true);
+    const size_t received = Wire.requestFrom(
+      static_cast<uint8_t>(IMU_DEVICE_ADDRESS), static_cast<size_t>(14), true
+    );
     if (received < 14) {
       diag.readFail++;
       continue;

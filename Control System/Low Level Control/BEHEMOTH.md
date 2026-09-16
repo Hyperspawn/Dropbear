@@ -43,8 +43,26 @@ The role-specific hardware graphs are **never initialized simultaneously**.
 The firmware file documented by this README is:
 
 ```text
-dropbear_unified_behemoth.ino
+firmware_full_libs_neck.ino
 ```
+
+## USB angle telemetry
+
+Leg roles emit a versioned `DB2` line at 50 Hz:
+
+```text
+DB2,<controller_ms>,<outer AS5600>,<inner AS5600>,<hip-pitch AS5600>,<knee-actuator AS5600>,<hip-roll AS5600>,<outer motor>,<inner motor>,<hip-pitch motor>,<knee motor>,<hip-yaw motor>,<hip-roll motor>
+```
+
+Every angle is in degrees. The five AS5600 fields remain independent absolute
+measurements. The six motor fields come from read-only RMD V4.4 `0x92`
+multi-turn-angle replies at `0.01°` per least-significant bit; a missing or
+stale reply is emitted as `NA`, never replaced with an AS5600 value. Hip yaw has
+no dedicated AS5600 and is therefore available only from its motor encoder.
+
+The knee motor field is the upstream actuator-shaft angle at 1:1 scale. The
+mechanical linkage or digital twin is responsible for deriving the larger
+downstream knee motion from that shaft angle.
 
 ---
 

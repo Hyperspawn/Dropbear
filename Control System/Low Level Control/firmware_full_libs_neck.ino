@@ -45,6 +45,9 @@
  *     Bluetooth name NECK_BT, and adds neck-specific portal state/diagnostics.
  */
 
+static const char *DROPBEAR_FIRMWARE_VERSION =
+  "behemoth-db2-native-angle-2026.09.15";
+
 // -----------------------------------------------------------------------------
 // Hardware
 // -----------------------------------------------------------------------------
@@ -123,6 +126,12 @@ As5600PwmCapture as5600Capture[AS5600_SENSOR_COUNT];
 static const int AS5600_PINS[AS5600_SENSOR_COUNT] = {
   PIN_OUTER_CALF, PIN_INNER_CALF, PIN_HIP_PITCH, PIN_KNEE, PIN_HIP_ROLL
 };
+
+// Arduino 1.8 generates prototypes before later sketch declarations. Keep this
+// incomplete declaration above the first function so its generated prototype
+// for loadJointConstraintsFromFile() is valid; the full definition follows in
+// Shared state.
+struct JointConstraints;
 
 void IRAM_ATTR handleAs5600Edge(uint8_t index, int pin) {
   const uint32_t now = micros();
@@ -254,6 +263,30 @@ const unsigned long ACTUATOR_ID_RIGHT_HIP_YAW = ACTUATOR_IDS[RIGHT_HIP_YAW];
 const unsigned long ACTUATOR_ID_LEFT_HIP_YAW = ACTUATOR_IDS[LEFT_HIP_YAW];
 const unsigned long ACTUATOR_ID_RIGHT_HIP_ROLL = ACTUATOR_IDS[RIGHT_HIP_ROLL];
 const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
+
+// Read-only RMD V4.4 0x92 multi-turn angle polling. One motor is queried per
+// slot to avoid a six-frame burst. Replies are emitted beside the five
+// external AS5600 angles in the versioned DB2 serial record. This request
+// cannot command motion, but it does add bounded CAN traffic.
+static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
+static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 5;
+static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
+static const uint8_t RIGHT_MOTOR_TELEMETRY_ORDER[6] = {
+  RIGHT_OUTER_CALF, RIGHT_INNER_CALF, RIGHT_HIP_PITCH,
+  RIGHT_KNEE, RIGHT_HIP_YAW, RIGHT_HIP_ROLL
+};
+static const uint8_t LEFT_MOTOR_TELEMETRY_ORDER[6] = {
+  LEFT_OUTER_CALF, LEFT_INNER_CALF, LEFT_HIP_PITCH,
+  LEFT_KNEE, LEFT_HIP_YAW, LEFT_HIP_ROLL
+};
+
+volatile float motorNativeDegrees[ACTUATOR_COUNT] = {0.0f};
+volatile uint32_t motorNativeReceivedMs[ACTUATOR_COUNT] = {0};
+volatile bool motorNativeValid[ACTUATOR_COUNT] = {false};
+volatile uint32_t motorNativeQueries = 0;
+volatile uint32_t motorNativeQueryFailures = 0;
+volatile uint32_t motorNativeResponses = 0;
+volatile uint32_t motorNativeMalformedResponses = 0;
 
 // -----------------------------------------------------------------------------
 // Shared state
@@ -689,12 +722,28 @@ String *activeCommandCapture = nullptr;
 
 String selectedRoleName();
 String desiredPortalSSID();
+String commandTargetName(CommandTarget target);
+CommandTarget currentCommandTarget();
+CommandTarget parseCommandTarget(String token);
+bool parseDB1Envelope(const String &rawCommand, CommandTarget &target,
+                      String &payload, bool &usedLegacy);
 void requestPortalRestart();
 void appendWebLog(const String &line);
 void dbPrintln(const String &line);
 void dbPrintf(const char *format, ...);
 void setupPortal();
+bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen);
 void portalTask(void *parameter);
+const char *sensorHealthStatus(const SensorDiagnostic &d);
+void markHyperspawnCommand(HyperspawnControlMode mode);
+void executeQueuedWebCommand(const WebCommand &item);
+void saveJointConstraintsToFile(File &file, JointConstraints constraints,
+                                const char *jointName);
+JointConstraints loadJointConstraintsFromFile(
+  String line, JointConstraints defaultConstraints);
+String constraintJson(const JointConstraints &c);
+const JointConstraints &selectedConstraintForSensor(int index);
+void parseConstraintArg(const char *name, JointConstraints &c);
 void handleConfigurationCommand(String command);
 void processPayloadCommand(String command, const char *source = "serial");
 void processRoutedCommand(String command, const char *source = "serial");
@@ -1016,6 +1065,49 @@ int actuatorIndexFromCanId(uint32_t actuatorID) {
     if (ACTUATOR_IDS[i] == actuatorID) return i;
   }
   return -1;
+}
+
+const uint8_t *selectedMotorTelemetryOrder() {
+  return isLeft ? LEFT_MOTOR_TELEMETRY_ORDER : RIGHT_MOTOR_TELEMETRY_ORDER;
+}
+
+int actuatorIndexFromMotorFeedbackId(uint32_t responseID) {
+  // RMD V4.4 responses use the motor request ID plus 0x100. Reject request-ID
+  // frames so a local CAN echo can never be admitted as measured feedback.
+  if (responseID < 0x100) return -1;
+  const int index = actuatorIndexFromCanId(responseID - 0x100);
+  return actuatorBelongsToSelectedLeg(index) ? index : -1;
+}
+
+bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) {
+  if (!MOTOR_NATIVE_FEEDBACK_ENABLED || len != 8 || data[0] != 0x92) return false;
+  const int index = actuatorIndexFromMotorFeedbackId(responseID);
+  // Bytes 1..3 are reserved in the documented 0x92 response. Treat any
+  // nonzero value as malformed instead of turning an unrelated frame into an
+  // angle measurement.
+  if (index < 0 || data[1] != 0 || data[2] != 0 || data[3] != 0) {
+    motorNativeMalformedResponses++;
+    return false;
+  }
+  const uint32_t raw = static_cast<uint32_t>(data[4]) |
+                       (static_cast<uint32_t>(data[5]) << 8) |
+                       (static_cast<uint32_t>(data[6]) << 16) |
+                       (static_cast<uint32_t>(data[7]) << 24);
+  int32_t signedRaw = 0;
+  memcpy(&signedRaw, &raw, sizeof(signedRaw));
+  motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
+  motorNativeReceivedMs[index] = millis();
+  motorNativeValid[index] = true;
+  motorNativeResponses++;
+  return true;
+}
+
+void requestMotorNativeFeedback(uint8_t actuatorIndex) {
+  if (!MOTOR_NATIVE_FEEDBACK_ENABLED || !runtimeControlReady ||
+      !canInitialized || !actuatorBelongsToSelectedLeg(actuatorIndex)) return;
+  const byte request[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
+  if (canSendFrame(ACTUATOR_IDS[actuatorIndex], request, 8)) motorNativeQueries++;
+  else motorNativeQueryFailures++;
 }
 
 void updateSensorDiagnosticSample(int index, int raw) {
@@ -1624,7 +1716,9 @@ void canReceiveTask(void *parameter) {
           if (result == CAN_OK) {
             canRxFrames++;
             lastCanRxMs = millis();
-            handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len);
+            if (!ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)) {
+              handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len);
+            }
           } else {
             canRxErrors++;
           }
@@ -1635,6 +1729,15 @@ void canReceiveTask(void *parameter) {
 
       if (!available) break;
       drained++;
+    }
+    static uint32_t lastMotorQueryMs = 0;
+    static uint8_t motorQuerySlot = 0;
+    const uint32_t now = millis();
+    if (MOTOR_NATIVE_FEEDBACK_ENABLED && runtimeControlReady &&
+        now - lastMotorQueryMs >= MOTOR_NATIVE_QUERY_SLOT_MS) {
+      requestMotorNativeFeedback(selectedMotorTelemetryOrder()[motorQuerySlot]);
+      motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
+      lastMotorQueryMs = now;
     }
     vTaskDelay(pdMS_TO_TICKS(1));
   }
@@ -1798,6 +1901,12 @@ void primeSensorFilter() {
 }
 void printReadings() {
   if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    const uint32_t now = millis();
+    if (MOTOR_NATIVE_FEEDBACK_ENABLED) {
+      Serial.print("DB2,");
+      Serial.print(now);
+      Serial.print(',');
+    }
     Serial.print(normalizedOuter, 1);
     Serial.print(',');
     Serial.print(normalizedInner, 1);
@@ -1806,7 +1915,21 @@ void printReadings() {
     Serial.print(',');
     Serial.print(normalizedKnee, 1);
     Serial.print(',');
-    Serial.println(normalizedButt, 1);
+    Serial.print(normalizedButt, 1);
+    if (MOTOR_NATIVE_FEEDBACK_ENABLED) {
+      const uint8_t *order = selectedMotorTelemetryOrder();
+      for (uint8_t slot = 0; slot < 6; ++slot) {
+        const uint8_t index = order[slot];
+        Serial.print(',');
+        if (motorNativeValid[index] &&
+            now - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS) {
+          Serial.print(motorNativeDegrees[index], 2);
+        } else {
+          Serial.print("NA");
+        }
+      }
+    }
+    Serial.println();
     xSemaphoreGive(serialMutex);
   }
 }
@@ -3135,7 +3258,9 @@ void readIMU() {
       continue;
     }
 
-    const uint8_t received = Wire.requestFrom((int)IMU_DEVICE_ADDRESS, 14, true);
+    const size_t received = Wire.requestFrom(
+      static_cast<uint8_t>(IMU_DEVICE_ADDRESS), static_cast<size_t>(14), true
+    );
     if (received < 14) {
       diag.readFail++;
       continue;
@@ -4108,6 +4233,7 @@ String buildDiagnosticsJson() {
 
   out += "{";
   out += "\"timestamp_ms\":" + String(now) + ",";
+  out += "\"firmware_version\":\"" + String(DROPBEAR_FIRMWARE_VERSION) + "\",";
   out += "\"overall\":\"" + String(overallDiagnosticStatus()) + "\",";
   out += "\"role\":\"" + selectedRoleName() + "\",";
   out += "\"role_at_boot\":\"" + jsonEscape(roleAtBoot) + "\",";
@@ -4185,7 +4311,11 @@ String buildDiagnosticsJson() {
   out += "\"last_result\":" + String(lastCanResult) + ",";
   out += "\"last_tx_age_ms\":" + ageJsonValue(lastCanTxMs) + ",";
   out += "\"last_failure_age_ms\":" + ageJsonValue(lastCanFailureMs) + ",";
-  out += "\"feedback\":\"rx_transport_active_rmd_decoder_pending\"";
+  out += "\"feedback\":\"rmd_v44_0x92_multi_turn\",";
+  out += "\"motor_angle_queries\":" + String(motorNativeQueries) + ",";
+  out += "\"motor_angle_query_failures\":" + String(motorNativeQueryFailures) + ",";
+  out += "\"motor_angle_responses\":" + String(motorNativeResponses) + ",";
+  out += "\"motor_angle_malformed\":" + String(motorNativeMalformedResponses);
   out += "},";
 
   out += "\"i2c\":{";
@@ -4264,7 +4394,7 @@ String buildDiagnosticsJson() {
   out += "\"calibration_torque\":" + String(calibrationTorqueValue) + ",";
   out += "\"reboot_required\":" + String(rebootRequired ? "true" : "false") + ",";
   out += "\"command_watchdog\":\"" + String(operatingMode == OPERATING_HYPERSPAWN_ROUTE ? (hyperspawnWatchdogTripped ? "tripped" : "armed") : "inactive") + "\",";
-  out += "\"can_feedback_monitoring\":\"rx_transport_active_decoder_pending\"";
+  out += "\"can_feedback_monitoring\":\"rmd_v44_0x92_multi_turn\"";
   out += "},";
 
   out += "\"sensors\":[";
@@ -4304,6 +4434,8 @@ String buildDiagnosticsJson() {
     const bool selected = legRuntime && actuatorBelongsToSelectedLeg(i);
     const ActuatorDiagnostic &d = actuatorDiagnostics[i];
     const uint32_t age = diagnosticAgeMs(d.lastTxMs);
+    const bool motorFeedbackFresh = motorNativeValid[i] &&
+      now - motorNativeReceivedMs[i] <= MOTOR_NATIVE_STALE_MS;
     const bool outputExpected = selected && (playMode || calibrationOverrideActive || stopBurstRemaining > 0);
     const char *status = "inactive";
     if (selected) {
@@ -4322,7 +4454,12 @@ String buildDiagnosticsJson() {
     out += "\"status\":\"" + String(status) + "\",";
     out += "\"selected\":" + String(selected ? "true" : "false") + ",";
     out += "\"can_id\":\"" + String(idHex) + "\",";
-    out += "\"feedback\":\"can_rx_unparsed\",";
+    out += "\"feedback\":\"" + String(motorFeedbackFresh ? "measured" :
+      (motorNativeValid[i] ? "stale" : "unavailable")) + "\",";
+    out += "\"motor_position_deg\":";
+    out += motorFeedbackFresh ? String(motorNativeDegrees[i], 2) : String("null");
+    out += ",";
+    out += "\"feedback_age_ms\":" + ageJsonValue(motorNativeReceivedMs[i]) + ",";
     String commandSource;
     if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
       commandSource = hyperspawnControlMode == HS_CONTROL_POSITION ? "hyperspawn_position" :
@@ -5021,7 +5158,7 @@ function renderDiagnostics(){
   moduleCard('SPIFFS',m.spiffs,[['mounted',boolText(m.spiffs?.mounted)],['usage',`${m.spiffs?.used} / ${m.spiffs?.total}`],['config.txt',boolText(m.spiffs?.config_exists)],['config.bak',boolText(m.spiffs?.backup_exists)],['read / write',`${m.spiffs?.reads} / ${m.spiffs?.writes}`],['errors',m.spiffs?.errors]])+
   moduleCard('SPI bus',m.spi,[['initialized',boolText(m.spi?.initialized)],['SCK',m.spi?.sck],['MISO',m.spi?.miso],['MOSI',m.spi?.mosi],['CS',m.spi?.cs]])+
   moduleCard('AS5600 encoder I/O',m.encoder_io,[['interface',m.encoder_io?.interface],['pins',(m.encoder_io?.pins||[]).join(', ')],['nominal Hz',(m.encoder_io?.supported_nominal_hz||[]).join('/')]])+
-  moduleCard('MCP2515 / CAN',m.can,[['initialized',boolText(m.can?.initialized)],['bus','1 Mbps @ 8 MHz'],['CS / INT',`${m.can?.cs_gpio} / ${m.can?.int_gpio}`],['TX ok / fail',`${m.can?.tx_success} / ${m.can?.tx_failure}`],['consecutive fail',m.can?.consecutive_failures],['last TX',age(m.can?.last_tx_age_ms)],['feedback','TX ONLY']])+
+  moduleCard('MCP2515 / CAN',m.can,[['initialized',boolText(m.can?.initialized)],['bus','1 Mbps @ 8 MHz'],['CS / INT',`${m.can?.cs_gpio} / ${m.can?.int_gpio}`],['TX ok / fail',`${m.can?.tx_success} / ${m.can?.tx_failure}`],['RX frames',m.can?.rx_frames],['angle query ok / fail',`${m.can?.motor_angle_queries} / ${m.can?.motor_angle_query_failures}`],['angle responses',m.can?.motor_angle_responses],['last TX',age(m.can?.last_tx_age_ms)],['feedback',m.can?.feedback]])+
   moduleCard('I²C / IMU mux',m.i2c,[['initialized',boolText(m.i2c?.initialized)],['SDA',m.i2c?.sda],['SCL',m.i2c?.scl],['TCA9548A',m.i2c?.mux_seen?'0x70 present':'not seen'],['mux ok / fail',`${m.i2c?.mux_select_ok} / ${m.i2c?.mux_select_fail}`]])+
   moduleCard('HyperSpawn / ROS2 route',d.hyperspawn_route,[['active',boolText(d.hyperspawn_route?.active)],['node',d.hyperspawn_route?.node_id],['control',d.hyperspawn_route?.control_mode],['last command',age(d.hyperspawn_route?.last_command_age_ms)],['RX targeted',d.hyperspawn_route?.targeted_rx],['RX legacy',d.hyperspawn_route?.legacy_rx],['completed cmds',d.hyperspawn_route?.completed_commands],['fragment timeouts',d.hyperspawn_route?.fragment_timeouts],['state TX',d.hyperspawn_route?.state_tx],['watchdog trips',d.hyperspawn_route?.watchdog_trips]])+
   moduleCard('Command transport',m.commands,[['queue',`${m.commands?.queue_depth} / ${m.commands?.queue_capacity}`],['web queued',m.commands?.web_queued],['web processed',m.commands?.web_processed],['queue full',m.commands?.queue_full_events],['serial processed',m.commands?.serial_processed]])+
@@ -5029,7 +5166,7 @@ function renderDiagnostics(){
  const sensors=d.sensors||[];
  document.getElementById('diagSensors').innerHTML=`<table><thead><tr><th>Health</th><th>Sensor</th><th>GPIO</th><th>Raw</th><th>Filtered</th><th>Angle</th><th>PWM duty</th><th>PWM Hz</th><th>Pulse age</th><th>Sample age</th><th>Observed raw range</th><th>Constraint</th><th>Notes</th></tr></thead><tbody>${sensors.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.gpio} / PWM</td><td class="mono">${x.raw}</td><td class="mono">${Number(x.filtered_raw).toFixed(1)}</td><td class="mono">${Number(x.angle).toFixed(1)}°</td><td class="mono">${Number(x.duty_percent||0).toFixed(2)}%</td><td class="mono">${Number(x.frequency_hz||0).toFixed(1)}</td><td>${x.pulse_age_us===4294967295?'never':((x.pulse_age_us||0)/1000).toFixed(1)+' ms'}</td><td>${age(x.sample_age_ms)}</td><td class="mono">${x.min_raw_seen}…${x.max_raw_seen}</td><td class="mono">${x.constraint_min}…${x.constraint_max}°</td><td>${x.signal_valid?'PWM VALID':'PWM INVALID'} · change ${age(x.last_change_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const acts=d.actuators||[];
- document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Feedback</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td>${x.feedback==='can_rx_unparsed'?'CAN RX ACTIVE — RMD DECODE PENDING':x.feedback}</td></tr>`).join('')}</tbody></table>`;
+ document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Motor angle</th><th>Feedback</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td class="mono">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</td><td>${x.feedback} · ${age(x.feedback_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const neck=d.neck_steppers||[];
  document.getElementById('diagNeck').innerHTML=`<table><thead><tr><th>Health</th><th>Motor</th><th>STEP</th><th>DIR</th><th>Current</th><th>Target</th><th>Moving</th><th>Limits</th><th>Feedback</th></tr></thead><tbody>${neck.map(x=>`<tr><td>${healthPill(x.status)}</td><td>M${x.motor}</td><td class="mono">${x.step_gpio}</td><td class="mono">${x.dir_gpio}</td><td class="mono">${Number(x.current_mm).toFixed(2)} mm / ${x.current_steps}</td><td class="mono">${Number(x.target_mm).toFixed(2)} mm / ${x.target_steps}</td><td>${boolText(x.moving)}</td><td class="mono">${x.min_mm}…${x.max_mm} mm</td><td>${x.feedback}</td></tr>`).join('')}</tbody></table>`;
  const tasks=d.tasks||[];
@@ -5226,6 +5363,8 @@ void portalTask(void *parameter) {
 void setup() {
   Serial.begin(115200);
   delay(200);
+  Serial.print("FIRMWARE:");
+  Serial.println(DROPBEAR_FIRMWARE_VERSION);
 
   serialMutex = xSemaphoreCreateMutex();
   canMutex = xSemaphoreCreateMutex();

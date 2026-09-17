@@ -1714,6 +1714,20 @@ raw config editor
 reboot
 ```
 
+Leg and neck motion is locked after every boot and every SoftAP restart. The
+portal requires three ordered acknowledgements:
+
+1. the robot is mechanically supported;
+2. the E-stop and power disconnect are ready; and
+3. the operator types `ENABLE LEFTLEG`, `ENABLE RIGHTLEG`, or
+   `ENABLE HEADNECK`, matching the controller's DB1 identity.
+
+The resulting web-motion lease lasts 90 seconds. Expiry clears torque
+setpoints, disables play, and queues a three-frame stop burst. `STOP` and the
+dedicated **LOCK + STOP NOW** control remain available without an unlock.
+Ingress and command-queue execution both enforce the lease; hiding or
+reenabling a disabled browser button cannot bypass it.
+
 Role-specific panels are shown for:
 
 ```text
@@ -1737,6 +1751,19 @@ The target identity is still validated by the backend.
 
 The portal does not bypass DB1.
 
+## Bounded leg motor test
+
+Each of the six selected-leg rows includes a 250 ms torque-pulse test. The
+firmware accepts pulse commands only in standalone leg mode, only while the
+portal motion lease is active, and only when fresh RMD `0x92` motor angle
+feedback exists. The five AS5600-equipped axes must also have completed their
+boot alignment without an alignment fault. Hip yaw uses its fresh motor-native
+angle because it has no external AS5600.
+
+The pulse command is bounded to `-25..25` firmware torque units and
+`50..500 ms`. During the pulse, every other motor owned by that ESP32 receives
+zero. Completion sends zero to all six motors and queues a stop burst.
+
 ---
 
 # 26. Portal API
@@ -1754,6 +1781,8 @@ POST /api/config/reload
 POST /api/config/raw
 
 POST /api/command
+POST /api/safety/advance
+POST /api/safety/lock
 GET  /api/log
 
 GET  /api/spiffs/list
@@ -1766,6 +1795,7 @@ POST /api/reboot
 Captive-check routes include common Android, Apple, and Windows endpoints.
 
 State-changing API requests are target-aware.
+Motion requests return HTTP `423` until the server-side portal lease is active.
 
 ## Command endpoint
 
@@ -1818,6 +1848,10 @@ AS5600 channels
 joint state
 impedance
 actuator output
+raw RMD motor angle
+AS5600-aligned continuous control angle
+boot zero offset and AS5600 cross-check error
+portal safety stage, lease, rejects, and torque-pulse state
 stop state
 HyperSpawn protocol
 ```

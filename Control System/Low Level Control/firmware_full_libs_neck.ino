@@ -48,7 +48,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-motor-feedback-zeroed-2026.09.16";
+  "behemoth-portal-safe-motor-feedback-2026.09.16";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -611,6 +611,9 @@ IPAddress portalSubnet(255, 255, 255, 0);
 static const uint16_t DNS_PORT = 53;
 static const size_t WEB_COMMAND_MAX = 192;
 static const size_t WEB_LOG_CAPACITY = 96;
+static const uint32_t PORTAL_MOTION_LEASE_MS = 90000;
+static const uint32_t PORTAL_TORQUE_TEST_MAX_MS = 500;
+static const int16_t PORTAL_TORQUE_TEST_MAX_COMMAND = 25;
 
 struct WebCommand {
   uint32_t id;
@@ -635,6 +638,14 @@ volatile bool portalRebootRequested = false;
 volatile uint32_t portalRebootAtMs = 0;
 bool portalRoutesRegistered = false;
 String portalSSID = "DROPBEAR-SETUP";
+volatile uint8_t portalSafetyStage = 0;
+volatile uint32_t portalMotionLeaseUntilMs = 0;
+volatile uint32_t portalSafetyUnlocks = 0;
+volatile uint32_t portalSafetyRejects = 0;
+volatile bool portalTorqueTestActive = false;
+volatile int portalTorqueTestActuatorIndex = -1;
+volatile int16_t portalTorqueTestValue = 0;
+volatile uint32_t portalTorqueTestUntilMs = 0;
 
 // -----------------------------------------------------------------------------
 // Runtime diagnostics
@@ -748,6 +759,9 @@ CommandTarget parseCommandTarget(String token);
 bool parseDB1Envelope(const String &rawCommand, CommandTarget &target,
                       String &payload, bool &usedLegacy);
 void requestPortalRestart();
+void lockPortalMotion(bool stopOutputs, const char *reason);
+bool portalMotionAuthorized();
+bool portalPayloadRequiresMotionUnlock(String payload);
 void appendWebLog(const String &line);
 void dbPrintln(const String &line);
 void dbPrintf(const char *format, ...);
@@ -1556,6 +1570,63 @@ void clearAllTorqueSetpoints() {
     hyperspawnTorqueBasePending = hyperspawnTorqueExtPending = false;
   }
 }
+
+bool portalMotionAuthorized() {
+  if (portalSafetyStage != 3 || portalMotionLeaseUntilMs == 0) return false;
+  return (int32_t)(portalMotionLeaseUntilMs - millis()) > 0;
+}
+
+uint32_t portalMotionRemainingMs() {
+  if (!portalMotionAuthorized()) return 0;
+  return portalMotionLeaseUntilMs - millis();
+}
+
+void lockPortalMotion(bool stopOutputs, const char *reason) {
+  const bool wasArmed = portalSafetyStage == 3 || portalTorqueTestActive;
+  portalSafetyStage = 0;
+  portalMotionLeaseUntilMs = 0;
+  portalTorqueTestActive = false;
+  portalTorqueTestActuatorIndex = -1;
+  portalTorqueTestValue = 0;
+  portalTorqueTestUntilMs = 0;
+  if (stopOutputs && wasArmed) {
+    clearAllTorqueSetpoints();
+    requestStop(3);
+  }
+  if (reason && reason[0]) appendWebLog(String("PORTAL SAFETY LOCK: ") + reason);
+}
+
+void expirePortalMotionLeaseIfNeeded() {
+  if (portalSafetyStage == 3 && !portalMotionAuthorized()) {
+    lockPortalMotion(true, "motion lease expired");
+  }
+}
+
+String payloadFromRoutedCommand(String command) {
+  command.trim();
+  if (!command.startsWith("<DB1:")) return command;
+  const int close = command.indexOf('>');
+  if (close < 0) return command;
+  String payload = command.substring(close + 1);
+  payload.trim();
+  return payload;
+}
+
+bool portalPayloadRequiresMotionUnlock(String payload) {
+  payload.trim();
+  String lower = payload;
+  lower.toLowerCase();
+  if (lower == "play" || lower.startsWith("torque ") ||
+      lower.startsWith("impedance ") || lower.startsWith("test_torque ") ||
+      lower.startsWith("calibratedirection ")) return true;
+  if (isHead) {
+    if (lower == "home" || lower == "home_soft" || lower == "home_brute" ||
+        lower.startsWith("neck ") || payload.indexOf(':') >= 0) return true;
+    if (payload.length() && strchr("XYZHSARP", payload.charAt(0)) != nullptr) return true;
+  }
+  return false;
+}
+
 bool isImpedanceEnabled(int index) {
   switch (index) {
     case RIGHT_OUTER_CALF: return impedanceEnabledRightOuterCalf;
@@ -2289,7 +2360,27 @@ void canOutputTask(void *parameter) {
     if (runtimeControlReady && !isCenter && !isHead) {
       const int start = firstSelectedActuatorIndex();
 
-      if (calibrationOverrideActive) {
+      if (portalTorqueTestActive) {
+        if ((int32_t)(portalTorqueTestUntilMs - millis()) <= 0) {
+          portalTorqueTestActive = false;
+          portalTorqueTestActuatorIndex = -1;
+          portalTorqueTestValue = 0;
+          portalTorqueTestUntilMs = 0;
+          for (int i = start; i < ACTUATOR_COUNT; i += 2) {
+            sendTorqueCommand(ACTUATOR_IDS[i], 0);
+          }
+          requestStop(3);
+          appendWebLog("TORQUE PULSE COMPLETE: zero command + stop burst queued");
+        } else {
+          // Bounded commissioning pulse: one selected motor receives the small
+          // test command; every other motor owned by this leg receives zero.
+          for (int i = start; i < ACTUATOR_COUNT; i += 2) {
+            const int16_t value = (i == portalTorqueTestActuatorIndex)
+              ? portalTorqueTestValue : 0;
+            sendTorqueCommand(ACTUATOR_IDS[i], value);
+          }
+        }
+      } else if (calibrationOverrideActive) {
         // During direction calibration, command only the selected test joint and
         // explicitly zero every other motor on this leg.
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
@@ -2341,6 +2432,7 @@ void canOutputTask(void *parameter) {
 void executeQueuedWebCommand(const WebCommand &item) {
   String command(item.text);
   command.trim();
+  const String payload = payloadFromRoutedCommand(command);
 
   String capture;
   capture.reserve(1024);
@@ -2348,7 +2440,16 @@ void executeQueuedWebCommand(const WebCommand &item) {
   appendWebLog(String("WEB #") + item.id + " > " + command);
   webCommandsProcessed++;
 
+  expirePortalMotionLeaseIfNeeded();
+  if (portalPayloadRequiresMotionUnlock(payload) && !portalMotionAuthorized()) {
+    portalSafetyRejects++;
+    appendWebLog(String("WEB #") + item.id + " < ERR|PORTAL_MOTION_LOCKED");
+    activeCommandCapture = nullptr;
+    return;
+  }
+
   processRoutedCommand(command, "web");
+  if (payload == "stop") lockPortalMotion(false, "STOP command accepted");
 
   activeCommandCapture = nullptr;
   if (!capture.length()) appendWebLog(String("WEB #") + item.id + " < (no textual response)");
@@ -3844,6 +3945,65 @@ void processTorqueCommand(const String &command) {
            currentCommandAddress().c_str(), appendage.c_str(), torqueValue);
 }
 
+void processTorquePulseTestCommand(const String &command) {
+  if (operatingMode == OPERATING_HYPERSPAWN_ROUTE || !runtimeControlReady ||
+      isCenter || isHead || calibrationOverrideActive) {
+    dbPrintln("Torque pulse rejected: standalone leg runtime must be ready and calibration idle.");
+    return;
+  }
+
+  String params = command.substring(String("test_torque ").length());
+  params.trim();
+  const int firstSpace = params.indexOf(' ');
+  const int secondSpace = firstSpace < 0 ? -1 : params.indexOf(' ', firstSpace + 1);
+  if (firstSpace < 1 || secondSpace < firstSpace + 2) {
+    dbPrintln("Usage: test_torque <joint> <command -25..25> <duration_ms 50..500>");
+    return;
+  }
+
+  String joint = params.substring(0, firstSpace);
+  String torqueText = params.substring(firstSpace + 1, secondSpace);
+  String durationText = params.substring(secondSpace + 1);
+  joint.trim(); torqueText.trim(); durationText.trim();
+  const int index = jointNameToActuatorIndex(joint);
+  const int requestedTorque = torqueText.toInt();
+  const uint32_t durationMs = (uint32_t)durationText.toInt();
+  if (index < 0 || !actuatorBelongsToSelectedLeg(index)) {
+    dbPrintln("Torque pulse rejected: joint is not owned by this controller.");
+    return;
+  }
+  if (requestedTorque == 0 || abs(requestedTorque) > PORTAL_TORQUE_TEST_MAX_COMMAND ||
+      durationMs < 50 || durationMs > PORTAL_TORQUE_TEST_MAX_MS) {
+    dbPrintln("Torque pulse rejected: require nonzero command -25..25 and duration 50..500 ms.");
+    return;
+  }
+
+  bool feedbackReady = false;
+  float measuredDegrees = 0.0f;
+  if (as5600SensorIndexForActuator(index) >= 0) {
+    feedbackReady = readMotorControlDegrees(index, measuredDegrees);
+  } else {
+    feedbackReady = motorNativeValid[index] &&
+      millis() - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS;
+    if (feedbackReady) measuredDegrees = motorNativeDegrees[index];
+  }
+  if (!feedbackReady) {
+    dbPrintln("Torque pulse rejected: fresh verified motor-native angle feedback is required.");
+    return;
+  }
+
+  clearAllTorqueSetpoints();
+  playMode = false;
+  stopBurstRemaining = 0;
+  portalTorqueTestActuatorIndex = index;
+  portalTorqueTestValue = clampTorqueCommand((float)requestedTorque);
+  portalTorqueTestUntilMs = millis() + durationMs;
+  portalTorqueTestActive = true;
+  dbPrintf("OK|target=%s|command=test_torque|joint=%s|value=%d|duration_ms=%lu|position_deg=%.2f\n",
+           currentCommandAddress().c_str(), joint.c_str(), portalTorqueTestValue,
+           (unsigned long)durationMs, measuredDegrees);
+}
+
 void processRoutedCommand(String command, const char *source) {
   command.trim();
   if (!command.length()) return;
@@ -3979,6 +4139,8 @@ void processPayloadCommand(String command, const char *source) {
     return;
   } else if (command.startsWith("constrain ")) {
     constrainJoint(command);
+  } else if (command.startsWith("test_torque ")) {
+    processTorquePulseTestCommand(command);
   } else if (command.startsWith("torque ")) {
     processTorqueCommand(command);
   } else if (command == "mac") {
@@ -4211,6 +4373,17 @@ String buildStateJson() {
   out += "\"uptime_ms\":" + String(millis()) + ",";
   out += "\"stop_burst\":" + String(stopBurstRemaining) + ",";
   out += "\"calibration_override\":" + String(calibrationOverrideActive ? "true" : "false") + ",";
+  out += "\"portal_safety\":{";
+  out += "\"stage\":" + String(portalSafetyStage) + ",";
+  out += "\"motion_unlocked\":" + String(portalMotionAuthorized() ? "true" : "false") + ",";
+  out += "\"lease_remaining_ms\":" + String(portalMotionRemainingMs()) + ",";
+  out += "\"expected_phrase\":\"ENABLE " + currentCommandAddress() + "\",";
+  out += "\"torque_test_active\":" + String(portalTorqueTestActive ? "true" : "false") + ",";
+  out += "\"torque_test_actuator\":" + String(portalTorqueTestActuatorIndex) + ",";
+  out += "\"torque_test_value\":" + String(portalTorqueTestValue) + ",";
+  out += "\"unlocks\":" + String(portalSafetyUnlocks) + ",";
+  out += "\"rejects\":" + String(portalSafetyRejects);
+  out += "},";
 
   out += "\"angles\":{";
   out += "\"outer_calf\":" + String(normalizedOuter, 2) + ",";
@@ -4582,6 +4755,14 @@ String buildDiagnosticsJson() {
   out += "\"calibration_override\":" + String(calibrationOverrideActive ? "true" : "false") + ",";
   out += "\"calibration_actuator_index\":" + String(calibrationActuatorIndex) + ",";
   out += "\"calibration_torque\":" + String(calibrationTorqueValue) + ",";
+  out += "\"portal_safety_stage\":" + String(portalSafetyStage) + ",";
+  out += "\"portal_motion_unlocked\":" + String(portalMotionAuthorized() ? "true" : "false") + ",";
+  out += "\"portal_lease_remaining_ms\":" + String(portalMotionRemainingMs()) + ",";
+  out += "\"portal_unlocks\":" + String(portalSafetyUnlocks) + ",";
+  out += "\"portal_rejects\":" + String(portalSafetyRejects) + ",";
+  out += "\"torque_test_active\":" + String(portalTorqueTestActive ? "true" : "false") + ",";
+  out += "\"torque_test_actuator_index\":" + String(portalTorqueTestActuatorIndex) + ",";
+  out += "\"torque_test_value\":" + String(portalTorqueTestValue) + ",";
   out += "\"reboot_required\":" + String(rebootRequired ? "true" : "false") + ",";
   out += "\"command_watchdog\":\"" + String(operatingMode == OPERATING_HYPERSPAWN_ROUTE ? (hyperspawnWatchdogTripped ? "tripped" : "armed") : "inactive") + "\",";
   out += "\"can_feedback_monitoring\":\"rmd_v44_0x92_multi_turn\"";
@@ -5050,6 +5231,14 @@ void handleApiCommand() {
     if (close > 5) command = command.substring(0, close + 1) + " calibrate save";
   }
 
+  expirePortalMotionLeaseIfNeeded();
+  if (portalPayloadRequiresMotionUnlock(apiPayload) && !portalMotionAuthorized()) {
+    portalSafetyRejects++;
+    server.send(423, "application/json",
+                "{\"ok\":false,\"error\":\"portal_motion_locked\",\"required\":\"three_stage_unlock\"}");
+    return;
+  }
+
   if (!command.length() || command.length() >= WEB_COMMAND_MAX) {
     server.send(400, "application/json", "{\"ok\":false,\"error\":\"bad_length\"}");
     return;
@@ -5081,6 +5270,60 @@ void handleApiCommand() {
 
   server.send(202, "application/json",
               "{\"ok\":true,\"queued\":true,\"id\":" + String(item.id) + "}");
+}
+
+String portalSafetyJson() {
+  return "{\"ok\":true,\"stage\":" + String(portalSafetyStage) +
+         ",\"motion_unlocked\":" + String(portalMotionAuthorized() ? "true" : "false") +
+         ",\"lease_remaining_ms\":" + String(portalMotionRemainingMs()) +
+         ",\"expected_phrase\":\"ENABLE " + currentCommandAddress() + "\"}";
+}
+
+void handleApiSafetyAdvance() {
+  portalHttpRequests++;
+  sendNoCacheHeaders();
+  if (!validateApiTargetArg()) return;
+  expirePortalMotionLeaseIfNeeded();
+  const int requestedStage = server.hasArg("stage") ? server.arg("stage").toInt() : 0;
+
+  bool accepted = false;
+  if (requestedStage == 1 && portalSafetyStage == 0) {
+    portalSafetyStage = 1;
+    accepted = true;
+  } else if (requestedStage == 2 && portalSafetyStage == 1) {
+    portalSafetyStage = 2;
+    accepted = true;
+  } else if (requestedStage == 3 && portalSafetyStage == 2) {
+    const String expected = "ENABLE " + currentCommandAddress();
+    const String phrase = server.hasArg("phrase") ? server.arg("phrase") : "";
+    const bool runtimeReady = isHead ? runtimeNeckReady :
+      ((!isCenter) && runtimeControlReady && operatingMode == OPERATING_STANDALONE);
+    if (phrase == expected && runtimeReady && !rebootRequired) {
+      portalSafetyStage = 3;
+      portalMotionLeaseUntilMs = millis() + PORTAL_MOTION_LEASE_MS;
+      portalSafetyUnlocks++;
+      accepted = true;
+      appendWebLog("PORTAL SAFETY UNLOCK: 90-second motion lease granted");
+    }
+  }
+
+  if (!accepted) {
+    portalSafetyRejects++;
+    lockPortalMotion(true, "invalid or out-of-order safety acknowledgement");
+    server.send(409, "application/json",
+                "{\"ok\":false,\"error\":\"safety_stage_rejected\",\"stage\":" +
+                String(portalSafetyStage) + "}");
+    return;
+  }
+  server.send(200, "application/json", portalSafetyJson());
+}
+
+void handleApiSafetyLock() {
+  portalHttpRequests++;
+  sendNoCacheHeaders();
+  if (!validateApiTargetArg()) return;
+  lockPortalMotion(true, "operator locked portal motion");
+  server.send(200, "application/json", portalSafetyJson());
 }
 
 void handleApiLog() {
@@ -5202,6 +5445,7 @@ h1{font-size:19px;letter-spacing:.12em;margin:0 0 6px;font-weight:700}h2{font-si
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}.stack{display:flex;flex-direction:column;gap:9px}
 button,.btn{border:1px solid #343b41;background:#1a1f23;color:var(--text);padding:8px 11px;border-radius:4px;cursor:pointer;font-size:12px}
 button:hover{background:#22282d}.primary{background:#d4d9dc;color:#0b0d0f;border-color:#d4d9dc}.danger{background:#411f22;border-color:#70373d;color:#ffc5c8}.warn{background:#3a3020;border-color:#665335;color:#efd39d}
+button:disabled,input:disabled{opacity:.42;cursor:not-allowed}.safety-steps{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:8px}.safety-step{border:1px solid var(--line);padding:10px;border-radius:4px}.safety-step.done{border-color:#3c5840;background:#172219}
 input,select,textarea{background:#0c0f11;color:var(--text);border:1px solid #30363b;border-radius:3px;padding:8px;font-size:12px;min-width:0}input[type=number]{width:88px}select{min-width:96px}
 textarea{width:100%;min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical}.joint{display:grid;grid-template-columns:120px 80px 1fr 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #20252a}
 .joint:last-child{border-bottom:0}.jointname{font-size:12px}.canid{color:var(--muted);font-family:monospace;font-size:11px}.tiny{font-size:10px;color:var(--muted)}
@@ -5212,7 +5456,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
 .constraint{display:grid;grid-template-columns:1fr 82px 82px;gap:6px;align-items:center}.file{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #22282c;font-size:11px}
 .diagcards{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}.diagcard{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:11px}.diaghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}.diagtitle{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em}.health{display:inline-block;border:1px solid var(--line);padding:3px 6px;border-radius:3px;font-size:9px;text-transform:uppercase;letter-spacing:.08em}.health.ok{color:#b5d5b6;border-color:#3c5840}.health.warn,.health.idle{color:#e6c381;border-color:#625032}.health.fault{color:#efadad;border-color:#673f3f}.health.inactive{color:#8d979e;border-color:#343b41}.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:10px}.kv .k{color:var(--muted)}.kv .v{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:right}.diagtable{overflow:auto}.diagtable table{min-width:850px}.diagtable td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.diag-note{font-size:10px;color:var(--muted);line-height:1.5}.overall{font-size:30px;font-weight:700;letter-spacing:.08em}.overall.ok{color:#b5d5b6}.overall.warn{color:#e6c381}.overall.fault{color:#efadad}
 @media(max-width:800px){.diagcards{grid-template-columns:1fr}}
-@media(max-width:800px){.span8,.span6,.span4,.span3{grid-column:span 12}.joint{grid-template-columns:1fr 80px}.joint .controls{grid-column:1/-1}.cfgline{grid-template-columns:1fr repeat(2,1fr)}.cfgline input:nth-of-type(n+3){margin-top:2px}.constraints{grid-template-columns:1fr}}
+@media(max-width:800px){.span8,.span6,.span4,.span3{grid-column:span 12}.joint{grid-template-columns:1fr 80px}.joint .controls{grid-column:1/-1}.cfgline{grid-template-columns:1fr repeat(2,1fr)}.cfgline input:nth-of-type(n+3){margin-top:2px}.constraints,.safety-steps{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -5234,7 +5478,16 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
 
  <section id="control" class="view active">
   <div class="grid">
-   <div class="card span12"><div class="row between"><div class="row"><button class="danger" onclick="cmd('stop')">STOP</button><button class="primary" onclick="cmd('play')">PLAY</button><button onclick="cmd('zero')">ZERO TORQUE</button><button onclick="cmd('status')">STATUS</button></div><div class="tiny">All web commands pass through the same command queue/parser as USB Serial.</div></div></div>
+   <div class="card span12">
+    <div class="row between"><div><h2>Portal motion interlock</h2><div class="tiny">Motion starts locked after every boot. Complete the stages in order for a 90-second lease. STOP remains available at all times.</div></div><span id="safetyLease" class="health fault">LOCKED</span></div>
+    <div class="safety-steps" style="margin-top:10px">
+     <div id="safetyStep1" class="safety-step"><div class="tiny">STAGE 1</div><div>Robot is mechanically supported.</div><button id="safetyButton1" onclick="advanceSafety(1)">CONFIRM SUPPORT</button></div>
+     <div id="safetyStep2" class="safety-step"><div class="tiny">STAGE 2</div><div>E-stop and power disconnect are ready.</div><button id="safetyButton2" onclick="advanceSafety(2)" disabled>CONFIRM E-STOP</button></div>
+     <div id="safetyStep3" class="safety-step"><div class="tiny">STAGE 3</div><div>Type the exact controller phrase.</div><input id="safetyPhrase" autocomplete="off" spellcheck="false" placeholder="ENABLE LEFTLEG"><button id="safetyButton3" onclick="advanceSafety(3)" disabled>UNLOCK 90 SECONDS</button></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="danger" onclick="lockSafety()">LOCK + STOP NOW</button><span id="safetyDetail" class="tiny">No web motion authority.</span></div>
+   </div>
+   <div class="card span12"><div class="row between"><div class="row"><button class="danger" onclick="cmd('stop')">STOP</button><button class="primary requires-motion-unlock" onclick="cmd('play')">PLAY</button><button onclick="cmd('zero')">ZERO TORQUE</button><button onclick="cmd('status')">STATUS</button></div><div class="tiny">All web commands pass through the same command queue/parser as USB Serial.</div></div></div>
    <div class="card span12" id="legStateCard">
     <h2>Joint state</h2>
     <div class="grid">
@@ -5250,8 +5503,8 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
     <div id="jointControls"></div>
    </div>
    <div class="card span12" id="neckControlCard" style="display:none">
-    <div class="row between"><div><h2>Head / neck Stewart platform</h2><div class="tiny">Six A4988/NEMA17 axes via FastAccelStepper. Position is OPEN LOOP step count unless physical feedback is added.</div></div><div class="row"><button class="danger" onclick="cmd('stop')">STOP ALL</button><button onclick="cmd('HOME_SOFT')">HOME SOFT</button><button class="warn" onclick="cmd('HOME_BRUTE')">HOME BRUTE</button><button onclick="cmd('neck zero')">SOFTWARE ZERO</button></div></div>
-    <div class="section-title">Pose command</div><div class="row"><label>X <input id="nx" type="number" value="0"></label><label>Y <input id="ny" type="number" value="0"></label><label>Z <input id="nz" type="number" value="0"></label><label>H mm <input id="nh" type="number" value="0"></label><label>Roll <input id="nr" type="number" value="0"></label><label>Pitch <input id="np" type="number" value="0"></label><label>Speed × <input id="ns" type="number" step=".1" value="1"></label><label>Accel × <input id="na" type="number" step=".1" value="1"></label><button class="primary" onclick="sendNeckPose()">Move pose</button></div>
+    <div class="row between"><div><h2>Head / neck Stewart platform</h2><div class="tiny">Six A4988/NEMA17 axes via FastAccelStepper. Position is OPEN LOOP step count unless physical feedback is added.</div></div><div class="row"><button class="danger" onclick="cmd('stop')">STOP ALL</button><button class="requires-motion-unlock" onclick="cmd('HOME_SOFT')">HOME SOFT</button><button class="warn requires-motion-unlock" onclick="cmd('HOME_BRUTE')">HOME BRUTE</button><button onclick="cmd('neck zero')">SOFTWARE ZERO</button></div></div>
+    <div class="section-title">Pose command</div><div class="row"><label>X <input id="nx" type="number" value="0"></label><label>Y <input id="ny" type="number" value="0"></label><label>Z <input id="nz" type="number" value="0"></label><label>H mm <input id="nh" type="number" value="0"></label><label>Roll <input id="nr" type="number" value="0"></label><label>Pitch <input id="np" type="number" value="0"></label><label>Speed × <input id="ns" type="number" step=".1" value="1"></label><label>Accel × <input id="na" type="number" step=".1" value="1"></label><button class="primary requires-motion-unlock" onclick="sendNeckPose()">Move pose</button></div>
     <div class="section-title">Actuators</div><div id="neckMotors"></div>
    </div>
   </div>
@@ -5260,7 +5513,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
  <section id="diagnostics" class="view">
   <div class="grid">
    <div class="card span12">
-    <div class="row between"><div><h2>Runtime diagnostic wrapper</h2><div class="diag-note">Health is computed from the actual runtime acquisition/transmit points. Motor rows verify the ESP32→MCP2515 transmit path only; actuator health remains unverified until CAN RX is implemented.</div></div><button onclick="loadDiagnostics()">Refresh now</button></div>
+    <div class="row between"><div><h2>Runtime diagnostic wrapper</h2><div class="diag-note">Health is computed from actual runtime acquisition and transmit points. Motor rows include RMD 0x92 CAN replies, AS5600 boot alignment, continuous motor-native control angle, cross-check error, command source, and CAN TX status.</div></div><button onclick="loadDiagnostics()">Refresh now</button></div>
     <div class="row" style="margin-top:12px;gap:16px"><div id="diagOverall" class="overall">—</div><div class="stack tiny"><span id="diagTime">—</span><span id="diagRole">—</span></div></div>
    </div>
    <div class="card span12"><h2>Modules</h2><div id="diagModules" class="diagcards"></div></div>
@@ -5373,14 +5626,14 @@ function renderDiagnostics(){
  const sensors=d.sensors||[];
  document.getElementById('diagSensors').innerHTML=`<table><thead><tr><th>Health</th><th>Sensor</th><th>GPIO</th><th>Raw</th><th>Filtered</th><th>Angle</th><th>PWM duty</th><th>PWM Hz</th><th>Pulse age</th><th>Sample age</th><th>Observed raw range</th><th>Constraint</th><th>Notes</th></tr></thead><tbody>${sensors.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.gpio} / PWM</td><td class="mono">${x.raw}</td><td class="mono">${Number(x.filtered_raw).toFixed(1)}</td><td class="mono">${Number(x.angle).toFixed(1)}°</td><td class="mono">${Number(x.duty_percent||0).toFixed(2)}%</td><td class="mono">${Number(x.frequency_hz||0).toFixed(1)}</td><td>${x.pulse_age_us===4294967295?'never':((x.pulse_age_us||0)/1000).toFixed(1)+' ms'}</td><td>${age(x.sample_age_ms)}</td><td class="mono">${x.min_raw_seen}…${x.max_raw_seen}</td><td class="mono">${x.constraint_min}…${x.constraint_max}°</td><td>${x.signal_valid?'PWM VALID':'PWM INVALID'} · change ${age(x.last_change_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const acts=d.actuators||[];
- document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Motor angle</th><th>Feedback</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td class="mono">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</td><td>${x.feedback} · ${age(x.feedback_age_ms)}</td></tr>`).join('')}</tbody></table>`;
+ document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Raw motor</th><th>Control angle</th><th>Boot offset</th><th>AS5600 error</th><th>Feedback state</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td class="mono">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</td><td class="mono">${x.control_position_deg==null?'—':fmtDeg(x.control_position_deg)}</td><td class="mono">${x.boot_zero_offset_deg==null?'—':fmtDeg(x.boot_zero_offset_deg)}</td><td class="mono">${x.as5600_crosscheck_error_deg==null?'—':fmtDeg(x.as5600_crosscheck_error_deg)}</td><td>${x.control_feedback} · ${x.feedback} · ${age(x.feedback_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const neck=d.neck_steppers||[];
  document.getElementById('diagNeck').innerHTML=`<table><thead><tr><th>Health</th><th>Motor</th><th>STEP</th><th>DIR</th><th>Current</th><th>Target</th><th>Moving</th><th>Limits</th><th>Feedback</th></tr></thead><tbody>${neck.map(x=>`<tr><td>${healthPill(x.status)}</td><td>M${x.motor}</td><td class="mono">${x.step_gpio}</td><td class="mono">${x.dir_gpio}</td><td class="mono">${Number(x.current_mm).toFixed(2)} mm / ${x.current_steps}</td><td class="mono">${Number(x.target_mm).toFixed(2)} mm / ${x.target_steps}</td><td>${boolText(x.moving)}</td><td class="mono">${x.min_mm}…${x.max_mm} mm</td><td>${x.feedback}</td></tr>`).join('')}</tbody></table>`;
  const tasks=d.tasks||[];
  document.getElementById('diagTasks').innerHTML=`<table><thead><tr><th>Health</th><th>Task</th><th>Active</th><th>Expected rate</th><th>Loop count</th><th>Heartbeat age</th><th>Min free stack</th></tr></thead><tbody>${tasks.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name}</td><td>${boolText(x.active)}</td><td>${x.expected_hz} Hz</td><td class="mono">${x.loops}</td><td>${age(x.age_ms)}</td><td class="mono">${x.stack_high_water_words} words</td></tr>`).join('')}</tbody></table>`;
  const imus=d.imus||[];
  document.getElementById('diagImus').innerHTML=`<table><thead><tr><th>Health</th><th>Index</th><th>Mux CH</th><th>Address</th><th>Seen</th><th>Read ok/fail</th><th>Last seen</th><th>Accel raw</th><th>Gyro raw</th></tr></thead><tbody>${imus.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.index}</td><td>${x.mux_channel}</td><td class="mono">${x.address}</td><td>${boolText(x.ever_seen)}</td><td class="mono">${x.read_ok}/${x.read_fail}</td><td>${age(x.seen_age_ms)}</td><td class="mono">${(x.accel||[]).join(', ')}</td><td class="mono">${(x.gyro||[]).join(', ')}</td></tr>`).join('')}</tbody></table>`;
- const sf=d.safety||{};document.getElementById('diagSafety').innerHTML=kvRows([['play',boolText(sf.play)],['stop bursts',sf.stop_burst_remaining],['calibration override',boolText(sf.calibration_override)],['calibration motor',sf.calibration_actuator_index],['calibration torque',sf.calibration_torque],['reboot required',boolText(sf.reboot_required)],['command watchdog',sf.command_watchdog],['CAN feedback monitor',sf.can_feedback_monitoring]]);
+ const sf=d.safety||{};document.getElementById('diagSafety').innerHTML=kvRows([['play',boolText(sf.play)],['stop bursts',sf.stop_burst_remaining],['portal stage',sf.portal_safety_stage],['portal unlocked',boolText(sf.portal_motion_unlocked)],['lease remaining',`${Math.ceil((sf.portal_lease_remaining_ms||0)/1000)} s`],['portal unlocks / rejects',`${sf.portal_unlocks||0} / ${sf.portal_rejects||0}`],['torque pulse',sf.torque_test_active?`motor ${sf.torque_test_actuator_index} @ ${sf.torque_test_value}`:'inactive'],['calibration override',boolText(sf.calibration_override)],['calibration motor',sf.calibration_actuator_index],['calibration torque',sf.calibration_torque],['reboot required',boolText(sf.reboot_required)],['command watchdog',sf.command_watchdog],['CAN feedback monitor',sf.can_feedback_monitoring]]);
 }
 async function loadDiagnostics(){try{diagnostics=await jfetch('/api/diagnostics');renderDiagnostics()}catch(e){const b=document.getElementById('diagBadge');b.textContent='DIAG OFFLINE';b.className='badge bad'}}
 
@@ -5400,8 +5653,8 @@ function renderJoints(){
   const d=document.createElement('div');d.className='joint';
   d.innerHTML=`<div><div class="jointname">${j.replaceAll('_',' ')}</div><div class="canid">${ids[side][k]}</div></div>
    <div><span class="tiny">τ now</span><br><span id="tn_${j}">${state?.torque?.[i]??0}</span></div>
-   <div class="controls row"><input id="t_${j}" type="number" value="${state?.torque?.[i]??0}" placeholder="torque"><button onclick="sendTorque('${j}')">Set torque</button></div>
-   <div class="controls row">${sensed.has(j)?`<label><input id="ie_${j}" type="checkbox" ${enabled?'checked':''}> impedance</label><input id="ip_${j}" type="number" step=".1" value="180" placeholder="position"><input id="iv_${j}" type="number" step=".1" value="0" placeholder="velocity"><button onclick="sendImpedance('${j}')">Apply</button>`:'<span class="tiny">Direct torque only</span>'}</div>`;
+   <div class="controls row"><input class="requires-motion-unlock" id="t_${j}" type="number" min="-25" max="25" value="${state?.torque?.[i]??0}" placeholder="torque"><button class="requires-motion-unlock" onclick="sendTorque('${j}')">Set torque</button><button class="requires-motion-unlock" onclick="sendTorquePulse('${j}')">Pulse 250 ms</button></div>
+   <div class="controls row">${sensed.has(j)?`<label><input class="requires-motion-unlock" id="ie_${j}" type="checkbox" ${enabled?'checked':''}> impedance</label><input class="requires-motion-unlock" id="ip_${j}" type="number" step=".1" value="180" placeholder="position"><input class="requires-motion-unlock" id="iv_${j}" type="number" step=".1" value="0" placeholder="velocity"><button class="requires-motion-unlock" onclick="sendImpedance('${j}')">Apply</button>`:'<span class="tiny">Direct torque only · fresh RMD feedback required for pulse</span>'}</div>`;
   box.appendChild(d);
  });
 }
@@ -5420,19 +5673,23 @@ async function loadState(){
   else if(state.role==='head')notice('HEAD / NECK personality active — FastAccelStepper OPEN-LOOP state. STOP remains available at all times.');
   else if(state.operating_mode==='hyperspawn')notice('HYPERSPAWN / ROS2 ROUTE ACTIVE — portal motion controls are read-only; STOP, diagnostics, configuration and terminal remain available.');
   else notice('');
-  renderJoints();renderNeck();
+  renderJoints();renderNeck();renderPortalSafety();
  }catch(e){}
 }
 function targetForRole(r,configured=true){if(!configured)return 'SETUP';if(r==='left')return 'LEFTLEG';if(r==='right')return 'RIGHTLEG';if(r==='center')return 'CENTER';if(r==='head')return 'HEADNECK';return 'SETUP'}
 function routeTarget(){return targetForRole(state?.role,!!state?.configured)}
 function routed(c){c=(c||'').trim();if(c.startsWith('<DB1:'))return c;return `<DB1:${routeTarget()}> ${c}`}
 async function cmd(c){try{const wire=routed(c);await jfetch('/api/command',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({cmd:wire})});}catch(e){notice('Command failed: '+e.message)}}
+function renderPortalSafety(){const s=state?.portal_safety||{};const stage=Number(s.stage||0),unlocked=!!s.motion_unlocked;for(let i=1;i<=3;i++){document.getElementById('safetyStep'+i).classList.toggle('done',stage>=i);document.getElementById('safetyButton'+i).disabled=unlocked||(i===1?stage!==0:stage!==i-1)}const lease=document.getElementById('safetyLease');lease.textContent=unlocked?`UNLOCKED ${Math.ceil((s.lease_remaining_ms||0)/1000)} s`:'LOCKED';lease.className='health '+(unlocked?'ok':'fault');document.getElementById('safetyPhrase').placeholder=s.expected_phrase||'ENABLE LEFTLEG';document.getElementById('safetyPhrase').disabled=unlocked||stage!==2;document.getElementById('safetyDetail').textContent=unlocked?`Web motion authority active for ${Math.ceil((s.lease_remaining_ms||0)/1000)} seconds. Torque pulse ${s.torque_test_active?'ACTIVE':'idle'}.`:'No web motion authority. Motion requests receive HTTP 423.';document.querySelectorAll('.requires-motion-unlock').forEach(e=>e.disabled=!unlocked)}
+async function advanceSafety(stage){try{const p=new URLSearchParams({target:routeTarget(),stage:String(stage)});if(stage===3)p.set('phrase',document.getElementById('safetyPhrase').value);await jfetch('/api/safety/advance',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:p});await loadState()}catch(e){notice('Safety unlock reset: '+e.message);await loadState()}}
+async function lockSafety(){try{await jfetch('/api/safety/lock?target='+encodeURIComponent(routeTarget()),{method:'POST'});notice('Portal motion locked and stop requested.',true);await loadState()}catch(e){notice('Safety lock failed: '+e.message)}}
 function sendTerminal(){const e=document.getElementById('termInput');const c=e.value.trim();if(c){cmd(c);e.value=''}}
 function sendTorque(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');if(state.operating_mode==='hyperspawn')return notice('Manual torque is locked: HyperSpawn/ROS2 owns command authority. STOP remains available.');cmd(`torque ${j} ${document.getElementById('t_'+j).value}`)}
+function sendTorquePulse(j){if(!state?.portal_safety?.motion_unlocked)return notice('Complete the three-stage portal motion unlock first.');cmd(`test_torque ${j} ${document.getElementById('t_'+j).value} 250`)}
 function sendImpedance(j){if(!state||!['left','right'].includes(state.role))return notice('Configure a leg role first.');if(state.operating_mode==='hyperspawn')return notice('Manual impedance is locked: HyperSpawn/ROS2 owns command authority.');const on=document.getElementById('ie_'+j).checked?1:0;cmd(`impedance ${j} ${on} ${document.getElementById('ip_'+j).value} ${document.getElementById('iv_'+j).value}`)}
 function sendNeckPose(){cmd(`X${document.getElementById('nx').value},Y${document.getElementById('ny').value},Z${document.getElementById('nz').value},H${document.getElementById('nh').value},S${document.getElementById('ns').value},A${document.getElementById('na').value},R${document.getElementById('nr').value},P${document.getElementById('np').value}`)}
 function sendNeckMotor(i){const e=document.getElementById('nm_'+i);if(e)cmd(`${i}:${e.value}`)}
-function renderNeck(){const isHead=state?.role==='head';document.getElementById('neckControlCard').style.display=isHead?'block':'none';document.getElementById('legStateCard').style.display=isHead?'none':'block';document.getElementById('legActuatorCard').style.display=isHead?'none':'block';if(!isHead)return;const b=document.getElementById('neckMotors');const motors=state?.neck?.motors||[];b.innerHTML=motors.map(m=>`<div class="joint"><div><div class="jointname">Motor ${m.index}</div><div class="canid">STEP ${m.step_gpio} · DIR ${m.dir_gpio}</div></div><div><span class="tiny">current</span><br>${Number(m.current_mm).toFixed(2)} mm</div><div><span class="tiny">target ${Number(m.target_mm).toFixed(2)} mm · ${m.moving?'MOVING':'IDLE'}</span><div style="height:5px;background:#20252a;margin-top:5px"><div style="height:100%;background:#aeb7bd;width:${Math.max(0,Math.min(100,100*(m.current_mm-m.min_mm)/Math.max(.001,m.max_mm-m.min_mm)))}%"></div></div></div><div class="row"><input id="nm_${m.index}" type="number" step=".1" value="${Number(m.target_mm).toFixed(2)}"><button onclick="sendNeckMotor(${m.index})">Move mm</button></div></div>`).join('')}
+function renderNeck(){const isHead=state?.role==='head';document.getElementById('neckControlCard').style.display=isHead?'block':'none';document.getElementById('legStateCard').style.display=isHead?'none':'block';document.getElementById('legActuatorCard').style.display=isHead?'none':'block';if(!isHead)return;const b=document.getElementById('neckMotors');const motors=state?.neck?.motors||[];b.innerHTML=motors.map(m=>`<div class="joint"><div><div class="jointname">Motor ${m.index}</div><div class="canid">STEP ${m.step_gpio} · DIR ${m.dir_gpio}</div></div><div><span class="tiny">current</span><br>${Number(m.current_mm).toFixed(2)} mm</div><div><span class="tiny">target ${Number(m.target_mm).toFixed(2)} mm · ${m.moving?'MOVING':'IDLE'}</span><div style="height:5px;background:#20252a;margin-top:5px"><div style="height:100%;background:#aeb7bd;width:${Math.max(0,Math.min(100,100*(m.current_mm-m.min_mm)/Math.max(.001,m.max_mm-m.min_mm)))}%"></div></div></div><div class="row"><input class="requires-motion-unlock" id="nm_${m.index}" type="number" step=".1" value="${Number(m.target_mm).toFixed(2)}"><button class="requires-motion-unlock" onclick="sendNeckMotor(${m.index})">Move mm</button></div></div>`).join('')}
 
 function buildConfigFields(){
  const df=document.getElementById('dirFields');df.innerHTML='';dirNames.forEach((n,i)=>{const d=document.createElement('div');d.className='constraint';d.innerHTML=`<span>${n.replaceAll('_',' ')}</span><select id="dm${i}"><option value="1">+</option><option value="-1">−</option></select><span></span>`;df.appendChild(d)});
@@ -5489,6 +5746,8 @@ void registerPortalRoutes() {
   server.on("/api/config/reload", HTTP_POST, handleApiConfigReload);
   server.on("/api/config/raw", HTTP_POST, handleApiRawConfigPost);
   server.on("/api/command", HTTP_POST, handleApiCommand);
+  server.on("/api/safety/advance", HTTP_POST, handleApiSafetyAdvance);
+  server.on("/api/safety/lock", HTTP_POST, handleApiSafetyLock);
   server.on("/api/log", HTTP_GET, handleApiLog);
   server.on("/api/spiffs/list", HTTP_GET, handleApiSPIFFSList);
   server.on("/api/spiffs/read", HTTP_GET, handleApiSPIFFSRead);
@@ -5507,6 +5766,7 @@ void registerPortalRoutes() {
 }
 
 void startOrRestartSoftAP() {
+  lockPortalMotion(true, "SoftAP starting or restarting");
   portalSSID = desiredPortalSSID();
 
   portalOnline = false;
@@ -5552,6 +5812,7 @@ void portalTask(void *parameter) {
 
     dnsServer.processNextRequest();
     server.handleClient();
+    expirePortalMotionLeaseIfNeeded();
 
     if (portalRebootRequested && (int32_t)(millis() - portalRebootAtMs) >= 0) {
       portalRebootRequested = false;
@@ -5642,7 +5903,10 @@ void setup() {
       runtimeControlReady = true;
       runtimeImuReady = false;
       runtimeNeckReady = false;
-      playMode = (operatingMode == OPERATING_STANDALONE);
+      // A reboot never arms physical leg output. Serial, portal, or the
+      // HyperSpawn route must explicitly establish its own authority.
+      playMode = false;
+      dbPrintln("Leg output starts STOPPED after boot; explicit arming is required.");
       if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
         dbPrintln("HyperSpawn/ROS2 route selected. Waiting for a valid CAN command before actuator output is armed.");
       }

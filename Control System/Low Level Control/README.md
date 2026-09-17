@@ -11,7 +11,7 @@ The firmware choices in this directory are:
 
 | Source | Intended use |
 |---|---|
-| `firmware_full_libs_neck.ino` | Recommended universal Behemoth build for left leg, right leg, center, and head/neck roles. |
+| `firmware_full_libs_neck.ino` | Recommended universal Behemoth build for left leg, right leg, center, and head/neck roles. Its role-named captive portal exposes live CAN/AS5600 state and guarded control; leg output boots stopped and web motion requires the timed three-stage interlock. |
 | `esp32_devkitc_v4_hybrid.ino` | Existing hybrid leg PWM/CAN deployments. |
 | `esp32_devkit_v1_observation_safe.ino` | Fail-closed observation migration with no motion command path. |
 | `esp32_devkit_v1.ino` | Legacy/development leg implementation retained for compatibility. |

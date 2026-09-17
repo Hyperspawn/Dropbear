@@ -34,7 +34,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn('Serial.print("NA")', SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-motor-feedback-zeroed-2026.09.16", SOURCE)
+        self.assertIn("behemoth-portal-safe-motor-feedback-2026.09.16", SOURCE)
         self.assertIn("rmd_v44_0x92_multi_turn", SOURCE)
 
     def test_as5600_boot_zero_then_can_feedback_drives_impedance(self):

@@ -41,7 +41,7 @@ The controller sources live in [`Control System/Low Level Control`](https://gith
 
 | Firmware | Use |
 |---|---|
-| [`firmware_full_libs_neck.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/firmware_full_libs_neck.ino) | Recommended universal Behemoth image. One build supports left leg, right leg, center IMU, or head/neck roles selected from persistent configuration. |
+| [`firmware_full_libs_neck.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/firmware_full_libs_neck.ino) | Recommended universal Behemoth image. One build supports left leg, right leg, center IMU, or head/neck roles, exposes the role-named captive portal, boots leg output stopped, and guards web motion with an expiring three-stage interlock. |
 | [`esp32_devkitc_v4_hybrid.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkitc_v4_hybrid.ino) | Hybrid leg controller retained for existing PWM/CAN deployments. |
 | [`esp32_devkit_v1_observation_safe.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkit_v1_observation_safe.ino) | Observation-only migration image. Motion commands stay disabled while five AS5600 and six motor-native CAN angles are reported. |
 | [`esp32_devkit_v1.ino`](https://github.com/Hyperspawn/Dropbear/blob/main/Control%20System/Low%20Level%20Control/esp32_devkit_v1.ino) | Legacy/development leg controller. Keep it for compatibility and comparison; use Behemoth for new universal deployments. |

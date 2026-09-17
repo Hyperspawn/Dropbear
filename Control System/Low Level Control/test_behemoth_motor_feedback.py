@@ -20,8 +20,8 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         route = SOURCE.index("handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len)", native)
         self.assertLess(native, route)
 
-    def test_db2_keeps_five_external_and_six_motor_fields(self):
-        self.assertIn('Serial.print("DB2,")', SOURCE)
+    def test_db3_keeps_external_and_raw_motor_fields_then_adds_aligned_motor_fields(self):
+        self.assertIn('Serial.print("DB3,")', SOURCE)
         self.assertIn("for (uint8_t slot = 0; slot < 6; ++slot)", SOURCE)
         for external in (
             "normalizedOuter",
@@ -32,10 +32,25 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         ):
             self.assertIn(f"Serial.print({external}, 1)", SOURCE)
         self.assertIn('Serial.print("NA")', SOURCE)
+        self.assertIn("readMotorControlDegrees(index, controlDegrees)", SOURCE)
+        self.assertIn("freshMask", SOURCE)
+        self.assertIn("controlMask", SOURCE)
+        self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-portal-safe-motor-feedback-2026.09.16", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.17", SOURCE)
         self.assertIn("rmd_v44_0x92_multi_turn", SOURCE)
+
+    def test_observation_protocol_is_addressed_and_does_not_enable_play(self):
+        self.assertIn('DROPBEAR_COMMAND_PROTOCOL = "DB1"', SOURCE)
+        self.assertIn("version-v1;health-v1;observe-stream-v1;db1-required", SOURCE)
+        self.assertIn('command.equalsIgnoreCase("observe on")', SOURCE)
+        observation_block = SOURCE[
+            SOURCE.index('if (command.equalsIgnoreCase("observe on")'):
+            SOURCE.index('if (command.equalsIgnoreCase("observe off")')
+        ]
+        self.assertNotIn("playMode = true", observation_block)
+        self.assertIn('server.on("/api/version", HTTP_GET, handleApiVersion)', SOURCE)
 
     def test_as5600_boot_zero_then_can_feedback_drives_impedance(self):
         self.assertIn("MOTOR_BOOT_ZERO_SAMPLE_COUNT", SOURCE)

@@ -8,7 +8,11 @@
 #include <freertos/task.h>
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "observation-safe-db2-rmd-2026.09.16";
+  "observation-safe-db2-protocol-2026.09.17";
+static const char *DROPBEAR_COMMAND_PROTOCOL = "LEGACY";
+static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB2";
+static const char *DROPBEAR_CAPABILITIES =
+  "version-v1;health-v1;observe-stream-v1;motor-angle-rmd-0x92;observation-only";
 
 // Struct to hold joint constraints
 struct JointConstraints {
@@ -78,6 +82,12 @@ const bool LEGACY_SERIAL_MOTION_ALLOWED = false;
 const bool MOTOR_FEEDBACK_QUERY_ALLOWED = true;
 bool canReady = false;
 bool chiralityConfigured = false;
+bool telemetryStreamingEnabled = true;
+uint32_t motorQueryCount = 0;
+uint32_t motorResponseCount = 0;
+uint32_t motorQueryFailureCount = 0;
+uint32_t malformedMotorResponseCount = 0;
+uint16_t canConsecutiveFailures = 0;
 
 const uint32_t TELEMETRY_PERIOD_MS = 20;  // 50 Hz; values are degrees on the wire.
 const uint32_t MOTOR_QUERY_PERIOD_MS = 5;
@@ -153,7 +163,10 @@ void ingestMotorFeedbackFrames() {
     unsigned char frame[8] = { 0 };
     if (CAN.readMsgBuf(&responseID, &length, frame) != CAN_OK) return;
     const int index = actuatorIndexFromMotorResponseId(responseID);
-    if (index < 0 || length != 8 || frame[0] != 0x92) continue;
+    if (index < 0 || length != 8 || frame[0] != 0x92) {
+      malformedMotorResponseCount++;
+      continue;
+    }
 
     const uint32_t unsignedRaw = static_cast<uint32_t>(frame[4])
       | (static_cast<uint32_t>(frame[5]) << 8)
@@ -164,6 +177,7 @@ void ingestMotorFeedbackFrames() {
     motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
     motorNativeReceivedMs[index] = millis();
     motorNativeValid[index] = true;
+    motorResponseCount++;
   }
 }
 
@@ -171,10 +185,20 @@ void requestMotorNativeAngle(size_t actuatorIndex) {
   if (!MOTOR_FEEDBACK_QUERY_ALLOWED || !canReady
       || !actuatorBelongsToThisController(actuatorIndex)) return;
   byte frame[8] = { 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-  CAN.sendMsgBuf(ACTUATOR_IDS[actuatorIndex], 0, 8, frame);
+  motorQueryCount++;
+  if (CAN.sendMsgBuf(ACTUATOR_IDS[actuatorIndex], 0, 8, frame) == CAN_OK) {
+    canConsecutiveFailures = 0;
+  } else {
+    motorQueryFailureCount++;
+    canConsecutiveFailures++;
+  }
 }
 
 SemaphoreHandle_t serialMutex;
+
+const char *serialRoleAddress();
+void printVersionRecord();
+void printHealthRecord();
 
 // Low-pass filter to smooth the incoming angle readings
 float filteredAngle(float currentAngle, float previousAngle, float alpha = 0.1) {
@@ -395,6 +419,7 @@ void setup() {
   }
 
   loadConfig();
+  printVersionRecord();
 
   // Observation-only builds initialize MCP2515 only for bounded RMD 0x92 angle
   // queries. A missing chirality configuration prevents CAN ownership from
@@ -448,6 +473,7 @@ void checkChiralityTask(void *parameter) {
 void readAndComputeTask(void *parameter) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint32_t lastTelemetryMs = 0;
+  uint32_t lastHealthMs = 0;
 
   while (true) {
     if (!isCenter) {
@@ -455,9 +481,13 @@ void readAndComputeTask(void *parameter) {
       computeAverages();
       normalizeReadings();
       const uint32_t now = millis();
-      if (now - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+      if (telemetryStreamingEnabled && now - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
         printReadings();
         lastTelemetryMs = now;
+      }
+      if (telemetryStreamingEnabled && now - lastHealthMs >= 1000) {
+        printHealthRecord();
+        lastHealthMs = now;
       }
     }
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
@@ -726,6 +756,30 @@ void processSerialCommand(String command) {
   command.trim();
 
   if (xSemaphoreTake(serialMutex, portMAX_DELAY) == pdTRUE) {
+    if (command == "version" || command == "/version" || command == "capabilities") {
+      xSemaphoreGive(serialMutex);
+      printVersionRecord();
+      return;
+    }
+    if (command == "health") {
+      xSemaphoreGive(serialMutex);
+      printHealthRecord();
+      return;
+    }
+    if (command == "observe on") {
+      telemetryStreamingEnabled = true;
+      Serial.printf("DBO1,%s,on,ok\n", serialRoleAddress());
+      xSemaphoreGive(serialMutex);
+      printVersionRecord();
+      printHealthRecord();
+      return;
+    }
+    if (command == "observe off") {
+      telemetryStreamingEnabled = false;
+      Serial.printf("DBO1,%s,off,ok\n", serialRoleAddress());
+      xSemaphoreGive(serialMutex);
+      return;
+    }
     const bool legacyMotionCommand = command == "play"
       || command.startsWith("torque")
       || command.startsWith("impedance")
@@ -1276,6 +1330,45 @@ void printReadings() {
   }
 }
 
+const char *serialRoleAddress() {
+  if (isCenter) return "CENTER";
+  return isLeft ? "LEFTLEG" : "RIGHTLEG";
+}
+
+void printVersionRecord() {
+  if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(20)) != pdTRUE) return;
+  Serial.printf("DBV1,%s,%s,%s,%s,%s\n",
+    serialRoleAddress(), DROPBEAR_FIRMWARE_VERSION, DROPBEAR_COMMAND_PROTOCOL,
+    DROPBEAR_TELEMETRY_PROTOCOL, DROPBEAR_CAPABILITIES);
+  if (serialMutex) xSemaphoreGive(serialMutex);
+}
+
+void printHealthRecord() {
+  if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(20)) != pdTRUE) return;
+  const uint32_t now = millis();
+  uint32_t freshMask = 0;
+  const size_t *indices = ownedTelemetryIndices();
+  for (size_t slot = 0; slot < OWNED_ACTUATOR_COUNT; ++slot) {
+    const size_t index = indices[slot];
+    if (motorNativeValid[index]
+        && now - motorNativeReceivedMs[index] <= MOTOR_FEEDBACK_STALE_MS) {
+      freshMask |= (1UL << slot);
+    }
+  }
+  const bool overallOk = chiralityConfigured && canReady
+    && freshMask == ((1UL << OWNED_ACTUATOR_COUNT) - 1);
+  Serial.printf("DBH1,%s,%lu,%s,%u,%u,0,%lu,0,0,%lu,%lu,%lu,%lu,%u\n",
+    serialRoleAddress(), static_cast<unsigned long>(now), overallOk ? "ok" : "degraded",
+    chiralityConfigured ? 1 : 0, canReady ? 1 : 0,
+    static_cast<unsigned long>(freshMask),
+    static_cast<unsigned long>(motorQueryCount),
+    static_cast<unsigned long>(motorResponseCount),
+    static_cast<unsigned long>(motorQueryFailureCount),
+    static_cast<unsigned long>(malformedMotorResponseCount),
+    static_cast<unsigned int>(canConsecutiveFailures));
+  if (serialMutex) xSemaphoreGive(serialMutex);
+}
+
 int wrapAngle(int angle) {
   if (angle >= 360) return angle - 360;
   if (angle < 0) return angle + 360;
@@ -1431,6 +1524,11 @@ void saveJointConstraintsToFile(File &file, JointConstraints constraints, const 
 
 void printHelp() {
   Serial.println("Available Commands:");
+
+  Serial.println("0. version | /version | capabilities | health");
+  Serial.println("   Report DBV1 protocol/capabilities or DBH1 health without changing actuator state.");
+  Serial.println("0a. observe on | observe off");
+  Serial.println("   Start or stop passive DB2 telemetry. This never enables motor commands.");
 
   Serial.println("1. config");
   Serial.println("   Enter configuration mode.");

@@ -48,7 +48,14 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-portal-safe-motor-feedback-2026.09.16";
+  "behemoth-observation-protocol-2026.09.17";
+static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
+static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
+static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
+static const char *DROPBEAR_CAPABILITIES =
+  "version-v1;health-v1;observe-stream-v1;db1-required;"
+  "motor-angle-rmd-0x92;motor-control-aligned-v1;as5600-crosscheck-v1;"
+  "portal-safety-v1";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -268,7 +275,7 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 
 // Read-only RMD V4.4 0x92 multi-turn angle polling. One motor is queried per
 // slot to avoid a six-frame burst. Replies are emitted beside the five
-// external AS5600 angles in the versioned DB2 serial record. This request
+// external AS5600 angles in the versioned DB3 serial record. This request
 // cannot command motion, but it does add bounded CAN traffic.
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
 static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 5;
@@ -342,6 +349,9 @@ bool isCenter = false;
 bool isHead = false;
 bool rawMode = false;
 bool playMode = false;
+// Observation is independent of actuator play. `observe on` enables only
+// serial telemetry; it never arms torque output or changes playMode.
+volatile bool telemetryStreamingEnabled = false;
 bool configMode = false;
 
 // Stop burst is handled by the CAN output task. Three repeated 0x81 frames are
@@ -784,6 +794,8 @@ void processRoutedCommand(String command, const char *source = "serial");
 void readIMU();
 void saveConfig();
 void printHelp();
+void printVersionRecord();
+void printHealthRecord();
 void hyperspawnRouteTask(void *parameter);
 void canReceiveTask(void *parameter);
 void processHyperspawnSerialCommand(const String &command);
@@ -1183,12 +1195,24 @@ void resetMotorBootZeroAccumulator(int actuatorIndex) {
 
 void updateMotorControlReference(int actuatorIndex, float nativeDegrees) {
   const int sensorIndex = as5600SensorIndexForActuator(actuatorIndex);
-  if (sensorIndex < 0 || motorControlAlignmentFault[actuatorIndex]) return;
+  if (motorControlAlignmentFault[actuatorIndex]) return;
+
+  const float directedNative = nativeDegrees * motorFeedbackDirectionForActuator(actuatorIndex);
+  if (sensorIndex < 0) {
+    // Hip yaw has no AS5600. Establish a boot-relative zero from the first
+    // verified RMD 0x92 response, then preserve the continuous motor delta.
+    if (!motorControlZeroed[actuatorIndex]) {
+      motorControlZeroOffsetDegrees[actuatorIndex] = -directedNative;
+      motorControlZeroed[actuatorIndex] = true;
+    }
+    motorControlDegrees[actuatorIndex] =
+      directedNative + motorControlZeroOffsetDegrees[actuatorIndex];
+    return;
+  }
 
   float externalDegrees = 0.0f;
   if (!readFreshAs5600Reference(actuatorIndex, externalDegrees)) return;
 
-  const float directedNative = nativeDegrees * motorFeedbackDirectionForActuator(actuatorIndex);
   if (motorControlZeroed[actuatorIndex]) {
     const float aligned = directedNative + motorControlZeroOffsetDegrees[actuatorIndex];
     motorControlDegrees[actuatorIndex] = aligned;
@@ -2155,7 +2179,7 @@ void printReadings() {
   if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
     const uint32_t now = millis();
     if (MOTOR_NATIVE_FEEDBACK_ENABLED) {
-      Serial.print("DB2,");
+      Serial.print("DB3,");
       Serial.print(now);
       Serial.print(',');
     }
@@ -2180,10 +2204,108 @@ void printReadings() {
           Serial.print("NA");
         }
       }
+      uint8_t freshMask = 0;
+      uint8_t controlMask = 0;
+      uint8_t alignmentFaultMask = 0;
+      for (uint8_t slot = 0; slot < 6; ++slot) {
+        const uint8_t index = order[slot];
+        const bool fresh = motorNativeValid[index] &&
+          now - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS;
+        if (fresh) freshMask |= static_cast<uint8_t>(1U << slot);
+        float controlDegrees = 0.0f;
+        const bool controlReady = readMotorControlDegrees(index, controlDegrees);
+        Serial.print(',');
+        if (controlReady) {
+          controlMask |= static_cast<uint8_t>(1U << slot);
+          Serial.print(controlDegrees, 2);
+        } else {
+          Serial.print("NA");
+        }
+        if (motorControlAlignmentFault[index]) {
+          alignmentFaultMask |= static_cast<uint8_t>(1U << slot);
+        }
+      }
+      Serial.print(',');
+      Serial.print(freshMask);
+      Serial.print(',');
+      Serial.print(controlMask);
+      Serial.print(',');
+      Serial.print(alignmentFaultMask);
     }
     Serial.println();
     xSemaphoreGive(serialMutex);
   }
+}
+
+void printVersionRecord() {
+  if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(20)) != pdTRUE) return;
+  Serial.print(DROPBEAR_CAPABILITY_SCHEMA);
+  Serial.print(',');
+  Serial.print(currentCommandAddress());
+  Serial.print(',');
+  Serial.print(DROPBEAR_FIRMWARE_VERSION);
+  Serial.print(',');
+  Serial.print(DROPBEAR_COMMAND_PROTOCOL);
+  Serial.print(',');
+  Serial.print(DROPBEAR_TELEMETRY_PROTOCOL);
+  Serial.print(',');
+  Serial.println(DROPBEAR_CAPABILITIES);
+  xSemaphoreGive(serialMutex);
+}
+
+void printHealthRecord() {
+  if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(20)) != pdTRUE) return;
+  const uint32_t now = millis();
+  uint8_t sensorMask = 0;
+  uint8_t freshMask = 0;
+  uint8_t controlMask = 0;
+  uint8_t alignmentFaultMask = 0;
+  if (isLegRole()) {
+    for (uint8_t sensor = 0; sensor < AS5600_SENSOR_COUNT; ++sensor) {
+      const SensorDiagnostic &diagnostic = sensorDiagnostics[sensor];
+      if (diagnostic.signalValid && diagnostic.pulseAgeUs <= AS5600_STALE_US) {
+        sensorMask |= static_cast<uint8_t>(1U << sensor);
+      }
+    }
+    const uint8_t *order = selectedMotorTelemetryOrder();
+    for (uint8_t slot = 0; slot < 6; ++slot) {
+      const uint8_t index = order[slot];
+      if (motorNativeValid[index] &&
+          now - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS) {
+        freshMask |= static_cast<uint8_t>(1U << slot);
+      }
+      float ignored = 0.0f;
+      if (readMotorControlDegrees(index, ignored)) {
+        controlMask |= static_cast<uint8_t>(1U << slot);
+      }
+      if (motorControlAlignmentFault[index]) {
+        alignmentFaultMask |= static_cast<uint8_t>(1U << slot);
+      }
+    }
+  }
+  const bool runtimeReady = isHead ? runtimeNeckReady :
+    (isCenter ? runtimeImuReady : runtimeControlReady);
+  const bool canReady = !isLegRole() || canInitialized;
+  const bool hardFault = !runtimeReady || !canReady || alignmentFaultMask != 0;
+  const bool degraded = isLegRole() && (sensorMask != 0x1F || freshMask != 0x3F ||
+                                        controlMask != 0x3F || canConsecutiveFailures > 0);
+  const char *overall = hardFault ? "fault" : (degraded ? "warn" : "ok");
+  Serial.print("DBH1,");
+  Serial.print(currentCommandAddress());
+  Serial.print(','); Serial.print(now);
+  Serial.print(','); Serial.print(overall);
+  Serial.print(','); Serial.print(runtimeReady ? 1 : 0);
+  Serial.print(','); Serial.print(canReady ? 1 : 0);
+  Serial.print(','); Serial.print(sensorMask);
+  Serial.print(','); Serial.print(freshMask);
+  Serial.print(','); Serial.print(controlMask);
+  Serial.print(','); Serial.print(alignmentFaultMask);
+  Serial.print(','); Serial.print(motorNativeQueries);
+  Serial.print(','); Serial.print(motorNativeResponses);
+  Serial.print(','); Serial.print(motorNativeQueryFailures);
+  Serial.print(','); Serial.print(motorNativeMalformedResponses);
+  Serial.print(','); Serial.println(canConsecutiveFailures);
+  xSemaphoreGive(serialMutex);
 }
 
 // -----------------------------------------------------------------------------
@@ -2255,6 +2377,7 @@ int getEncoderReading(String joint) {
 void readAndComputeTask(void *parameter) {
   TickType_t lastWake = xTaskGetTickCount();
   unsigned long lastTelemetry = 0;
+  unsigned long lastHealth = 0;
 
   while (true) {
     sensorTaskLoops++;
@@ -2265,9 +2388,13 @@ void readAndComputeTask(void *parameter) {
       normalizeReadings();
 
       // Preserve high-rate sensing without saturating the serial port.
-      if (playMode && millis() - lastTelemetry >= 20) {
+      if (telemetryStreamingEnabled && millis() - lastTelemetry >= 20) {
         printReadings();
         lastTelemetry = millis();
+      }
+      if (telemetryStreamingEnabled && millis() - lastHealth >= 1000) {
+        printHealthRecord();
+        lastHealth = millis();
       }
     }
     vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1));
@@ -4064,6 +4191,33 @@ void processPayloadCommand(String command, const char *source) {
 
   if (serialMutex && xSemaphoreTake(serialMutex, portMAX_DELAY) != pdTRUE) return;
 
+  if (command.equalsIgnoreCase("version") || command.equalsIgnoreCase("/version") ||
+      command.equalsIgnoreCase("capabilities")) {
+    xSemaphoreGive(serialMutex);
+    printVersionRecord();
+    return;
+  }
+  if (command.equalsIgnoreCase("health")) {
+    xSemaphoreGive(serialMutex);
+    printHealthRecord();
+    return;
+  }
+  if (command.equalsIgnoreCase("observe on")) {
+    telemetryStreamingEnabled = isLegRole();
+    dbPrintf("DBO1,%s,%s\n", currentCommandAddress().c_str(),
+             telemetryStreamingEnabled ? "on" : "unsupported");
+    xSemaphoreGive(serialMutex);
+    printVersionRecord();
+    printHealthRecord();
+    return;
+  }
+  if (command.equalsIgnoreCase("observe off")) {
+    telemetryStreamingEnabled = false;
+    dbPrintf("DBO1,%s,off\n", currentCommandAddress().c_str());
+    xSemaphoreGive(serialMutex);
+    return;
+  }
+
   // Preserve Dropbear-Neck-Assembly command compatibility while keeping shared
   // role/config/safety commands in the universal parser.
   if (isHead && (command.startsWith("neck ") || command.equalsIgnoreCase("HEALTH") ||
@@ -4219,6 +4373,10 @@ void printHelp() {
   dbPrintln("    <DB1:SETUP> role left   (fresh/unconfigured board)");
   dbPrintln("  Unaddressed commands are rejected unless LegacyUnaddressedCommands is explicitly enabled.");
   dbPrintln("Available payloads after the DB1 header:");
+  dbPrintln("  version | capabilities | health");
+  dbPrintln("      Machine-readable DBV1/DBH1 identity and live subsystem health.");
+  dbPrintln("  observe on | observe off");
+  dbPrintln("      Start/stop DB3 state telemetry without enabling actuator output.");
   dbPrintln("  role | role left | role right | role center | role head");
   dbPrintln("      Select boot-time hardware personality. HEAD_NECK uses an entirely separate STEP/DIR pin graph.");
   dbPrintln("  mode");
@@ -4348,8 +4506,11 @@ String buildStateJson() {
   out.reserve(6500);
   out += "{";
   out += "\"role\":\"" + selectedRoleName() + "\",";
+  out += "\"firmware_version\":\"" + String(DROPBEAR_FIRMWARE_VERSION) + "\",";
   out += "\"command_address\":\"" + currentCommandAddress() + "\",";
-  out += "\"command_protocol\":\"DB1\",";
+  out += "\"command_protocol\":\"" + String(DROPBEAR_COMMAND_PROTOCOL) + "\",";
+  out += "\"telemetry_protocol\":\"" + String(DROPBEAR_TELEMETRY_PROTOCOL) + "\",";
+  out += "\"observation_streaming\":" + String(telemetryStreamingEnabled ? "true" : "false") + ",";
   out += "\"control_stack\":\"" + String(isHead ? "neck_stepper" : (isCenter ? "imu_center" : (operatingMode == OPERATING_HYPERSPAWN_ROUTE ? "hyperspawn" : "standalone_leg"))) + "\",";
   out += "\"operating_mode\":\"" + operatingModeName() + "\",";
   out += "\"portal_enabled\":" + String(DROPBEAR_ENABLE_WIFI_PORTAL ? "true" : "false") + ",";
@@ -4993,6 +5154,26 @@ void handleApiState() {
   server.send(200, "application/json", buildStateJson());
 }
 
+String buildVersionJson() {
+  String out;
+  out.reserve(640);
+  out += "{\"schema\":\"DBV1\",";
+  out += "\"role\":\"" + currentCommandAddress() + "\",";
+  out += "\"firmware\":\"" + String(DROPBEAR_FIRMWARE_VERSION) + "\",";
+  out += "\"command_protocol\":\"" + String(DROPBEAR_COMMAND_PROTOCOL) + "\",";
+  out += "\"telemetry_protocol\":\"" + String(DROPBEAR_TELEMETRY_PROTOCOL) + "\",";
+  out += "\"capabilities\":\"" + String(DROPBEAR_CAPABILITIES) + "\",";
+  out += "\"observation_streaming\":" + String(telemetryStreamingEnabled ? "true" : "false");
+  out += "}";
+  return out;
+}
+
+void handleApiVersion() {
+  portalHttpRequests++;
+  sendNoCacheHeaders();
+  server.send(200, "application/json", buildVersionJson());
+}
+
 void handleApiConfigGet() {
   portalHttpRequests++;
   sendNoCacheHeaders();
@@ -5462,7 +5643,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
 <body>
 <div class="shell">
  <div class="top">
-  <div><h1>DROPBEAR // <span id="roleTitle">...</span></h1><div class="sub">ESP32 low-level control · captive portal · <span id="operatingText">STANDALONE</span> <span id="ipText"></span></div></div>
+  <div><h1>DROPBEAR // <span id="roleTitle">...</span></h1><div class="sub">ESP32 low-level control · captive portal · <span id="operatingText">STANDALONE</span> · <span id="firmwareText">FW …</span> <span id="ipText"></span></div></div>
   <div class="badges">
    <span class="badge" id="diagBadge">DIAG</span><span class="badge" id="addressBadge">DB1</span><span class="badge" id="playBadge">STATE</span><span class="badge" id="canBadge">ROLE</span><span class="badge" id="clientBadge">0 CLIENTS</span><span class="badge" id="heapBadge">HEAP</span>
   </div>
@@ -5661,7 +5842,7 @@ function renderJoints(){
 async function loadState(){
  try{
   state=await jfetch('/api/state');
-  document.getElementById('roleTitle').textContent=(state.role||'unconfigured').toUpperCase();document.getElementById('addressBadge').textContent='DB1:'+String(state.command_address||routeTarget());document.getElementById('operatingText').textContent=state.role==='head'?'NECK STEPPER':(state.operating_mode||'standalone').toUpperCase();
+  document.getElementById('roleTitle').textContent=(state.role||'unconfigured').toUpperCase();document.getElementById('addressBadge').textContent='DB1:'+String(state.command_address||routeTarget());document.getElementById('operatingText').textContent=state.role==='head'?'NECK STEPPER':(state.operating_mode||'standalone').toUpperCase();document.getElementById('firmwareText').textContent='FW '+String(state.firmware_version||'unknown')+' · '+String(state.telemetry_protocol||'unknown');
   document.getElementById('ipText').textContent='@ '+state.ip+' · '+state.ssid+(state.role==='head'?' · 6× A4988 STEP/DIR':' · AS5600 GPIO '+(state.sensor_pins||[]).join('/'));
   const pb=document.getElementById('playBadge');pb.textContent=state.play?'PLAY':'STOPPED';pb.className='badge '+(state.play?'ok':'bad');
   const cb=document.getElementById('canBadge');const ready=state.control_ready||state.imu_ready||state.neck_ready;cb.textContent=ready?'RUNTIME READY':(state.configured?'REBOOT REQUIRED':'SETUP');cb.className='badge '+(ready?'ok':'warn');
@@ -5739,6 +5920,7 @@ void registerPortalRoutes() {
   portalRoutesRegistered = true;
 
   server.on("/", HTTP_GET, handlePortalRoot);
+  server.on("/api/version", HTTP_GET, handleApiVersion);
   server.on("/api/state", HTTP_GET, handleApiState);
   server.on("/api/diagnostics", HTTP_GET, handleApiDiagnostics);
   server.on("/api/config", HTTP_GET, handleApiConfigGet);
@@ -5854,6 +6036,7 @@ void setup() {
   operatingModeAtBoot = operatingModeName();
   dbPrintf("DB1 command address: %s | unaddressed legacy commands: %s\n",
            currentCommandAddress().c_str(), legacyUnaddressedCommands ? "ENABLED" : "DISABLED");
+  printVersionRecord();
 
   // Hardware graphs are initialized only after the persisted role is known.
   // HEAD_NECK shares many GPIOs with SPI/I2C/AS5600 and must never initialize

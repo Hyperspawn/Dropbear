@@ -69,17 +69,18 @@ table while preserving the settings bytes in place.
 
 ## USB angle telemetry
 
-Leg roles emit a versioned `DB2` line at 50 Hz:
+After an addressed `observe on`, leg roles emit a versioned `DB3` line at 50 Hz:
 
 ```text
-DB2,<controller_ms>,<outer AS5600>,<inner AS5600>,<hip-pitch AS5600>,<knee-actuator AS5600>,<hip-roll AS5600>,<outer motor>,<inner motor>,<hip-pitch motor>,<knee motor>,<hip-yaw motor>,<hip-roll motor>
+DB3,<controller_ms>,<five AS5600 degrees>,<six raw RMD degrees>,<six AS5600-aligned RMD control degrees>,<fresh mask>,<control mask>,<alignment-fault mask>
 ```
 
 Every angle is in degrees. The five AS5600 fields remain independent absolute
 measurements. The six motor fields come from read-only RMD V4.4 `0x92`
 multi-turn-angle replies at `0.01°` per least-significant bit; a missing or
 stale reply is emitted as `NA`, never replaced with an AS5600 value. Hip yaw has
-no dedicated AS5600 and is therefore available only from its motor encoder.
+no dedicated AS5600; its aligned field is boot-relative to the first verified
+motor reply.
 
 The knee motor field is the upstream actuator-shaft angle at 1:1 scale. The
 mechanical linkage or digital twin is responsible for deriving the larger
@@ -94,6 +95,17 @@ replaced by AS5600 during control. A stale CAN value produces zero impedance
 torque, and three consecutive disagreements above 12 degrees latch an alignment
 fault until restart. Hip yaw remains motor telemetry only because it has no
 external absolute reference.
+
+The serial identity and health records are:
+
+```text
+DBV1,<role>,<firmware>,DB1,DB3,<capability;list>
+DBH1,<role>,<ms>,<overall>,<runtime>,<can>,<sensor_mask>,<motor_fresh_mask>,<motor_control_mask>,<alignment_fault_mask>,<queries>,<responses>,<query_failures>,<malformed>,<can_failures>
+```
+
+Use `<DB1:LEFTLEG> version`, `<DB1:RIGHTLEG> health`, and the corresponding
+addressed `observe on|off` commands. `GET /api/version` exposes the same
+contract through the captive portal.
 
 ---
 
@@ -2412,7 +2424,7 @@ Therefore:
 
 All leg firmware images poll their six owned actuators with the non-motion RMD
 V4.4 `0x92` request. Motor-side multi-turn position is decoded at `0.01°` per
-least-significant bit, emitted in `DB2`, and used continuously after the five
+least-significant bit, emitted as raw and aligned fields in `DB3`, and used continuously after the five
 AS5600-equipped axes complete restart zeroing.
 
 The remaining RMD response families are not yet decoded into:

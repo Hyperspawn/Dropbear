@@ -16,6 +16,34 @@ The firmware choices in this directory are:
 | `esp32_devkit_v1_observation_safe.ino` | Fail-closed observation migration with no motion command path. |
 | `esp32_devkit_v1.ino` | Legacy/development leg implementation retained for compatibility. |
 
+## Dashboard observation protocol
+
+All four images answer `version`, `/version`, `capabilities`, and `health` on
+USB Serial. They also accept `observe on` and `observe off`; these commands
+only select telemetry and never change `playMode` or motor output.
+
+Behemoth requires every command to carry its saved role, for example:
+
+```text
+<DB1:LEFTLEG> version
+<DB1:RIGHTLEG> health
+<DB1:RIGHTLEG> observe on
+```
+
+Hybrid, V1, and Observation Safe retain bare legacy command framing. The
+firmware reports the exact choice instead of making the host guess:
+
+```text
+DBV1,<role>,<firmware>,<command_protocol>,<telemetry_protocol>,<capability;list>
+DBH1,<role>,<ms>,<overall>,<runtime>,<can>,<sensor_mask>,<motor_fresh_mask>,<motor_control_mask>,<alignment_fault_mask>,<queries>,<responses>,<query_failures>,<malformed>,<can_failures>
+```
+
+Behemoth, Hybrid, and V1 emit `DB3`: five external sensor degrees, six raw
+RMD `0x92` multi-turn degrees, six CAN angles aligned at restart to the
+external sensor coordinates, then three six-bit freshness/control/fault masks.
+Observation Safe emits `DB2` with the five external and six raw CAN fields.
+The captive portals expose the same identity at `GET /api/version`.
+
 All dashboard builds copy this directory's `partitions.csv`. It provides a
 2.5 MiB application region while preserving the standard deployed SPIFFS
 settings region at `0x290000` with size `0x160000`. The dashboard uses

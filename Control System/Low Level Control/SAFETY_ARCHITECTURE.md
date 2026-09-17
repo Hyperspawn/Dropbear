@@ -11,7 +11,7 @@ flowchart LR
   B --> C[Stored side offsets\nwrapped degrees]
   C --> D[50 Hz USB telemetry]
   D --> E[AGX O_RDONLY reader]
-  E --> F[Strict legacy5 / DB2 parser]
+  E --> F[Strict legacy5 / DB2 / DB3 parser]
   F --> G[Freshness + side provenance]
   G --> H[Browser software zero]
   H --> I[Corrected USD twin]
@@ -26,10 +26,10 @@ flowchart LR
   O -. always denies .-> P[Actuator command gateway]
 ```
 
-Solid arrows are active in the host observation stack. Dashed motor-feedback
-arrows are staged in source and disabled by
-`MOTOR_FEEDBACK_QUERY_ALLOWED = false`. The physical gateway is absent and the
-frontend endpoint returns `PHYSICAL_TRANSPORT_LOCKED` after all three clicks.
+Solid arrows are active in the host observation stack. RMD `0x92` requests are
+non-motion CAN queries and run independently of actuator play. The physical
+motion gateway is absent and the frontend endpoint returns
+`PHYSICAL_TRANSPORT_LOCKED` after all three clicks.
 
 ## Controller gates
 
@@ -39,10 +39,10 @@ frontend endpoint returns `PHYSICAL_TRANSPORT_LOCKED` after all three clicks.
 | Chirality | Must exist in SPIFFS before CAN initialization | Saved `left` or `right`; reboot follows changes | Missing or invalid chirality leaves CAN disabled |
 | MCP2515 initialization | Skipped by the default build | `canReady` only after `CAN_OK` | Sensor telemetry continues after CAN initialization failure |
 | Knee mapping | AS5600 drives the upstream actuator shaft 1:1 | Corrected USD closure produces downstream bend | No extra firmware or host knee multiplier |
-| Motor-native feedback | Compile-time false | Six verified `0x92` responses per side in `DB2` | Each missing or stale channel emits `NA`; no AS5600 substitution |
+| Motor-native feedback | Continuous non-motion `0x92` queries | Six verified replies per side in `DB2` or `DB3` | Each missing or stale channel emits `NA`; no AS5600 substitution |
 | Legacy motion console | Compile-time false | None in this checkpoint | Motion requests are denied |
 | Torque output | Observation-only guard in every sender | Requires a future reviewed gateway and source release | No CAN torque or stop frames from this build |
-| Host USB | Opens leg tty paths read-only | Fresh sequence and zero transmitted bytes | Stale side remains visibly unavailable |
+| Host USB | Continuous readers are `O_RDONLY`; ephemeral writer admits only version/health/observe diagnostics | Fresh sequence plus audited diagnostic byte count | Motion text is rejected before opening a writer; stale sides remain unavailable |
 
 ## Dual-angle record
 
@@ -58,6 +58,11 @@ outer_calf,inner_calf,hip_pitch,knee_actuator,hip_roll
 DB2,millis,outer_ext,inner_ext,hip_pitch_ext,knee_ext,hip_roll_ext,
 outer_motor,inner_motor,hip_pitch_motor,knee_motor,hip_yaw_motor,hip_roll_motor
 ```
+
+`DB3` adds six restart-aligned CAN control angles plus `fresh`, `control`, and
+`alignment-fault` bitmasks. It is the preferred record for the dashboard USD.
+The five AS5600 channels establish restart alignment and remain independent
+cross-checks; ongoing model state comes from the aligned CAN fields.
 
 Angles are degrees. Motor values use `0.01°` RMD multi-turn units decoded as a
 signed 32-bit little-endian value. A missing response is `NA`. The request

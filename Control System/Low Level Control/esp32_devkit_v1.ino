@@ -38,6 +38,9 @@
  *   - Live state, command log, config, and SPIFFS inspection are exposed locally.
  */
 
+static const char *DROPBEAR_FIRMWARE_VERSION =
+  "legacy-v1-motor-feedback-zeroed-2026.09.16";
+
 // -----------------------------------------------------------------------------
 // Hardware
 // -----------------------------------------------------------------------------
@@ -2746,6 +2749,8 @@ void portalTask(void *parameter) {
 void setup() {
   Serial.begin(115200);
   delay(200);
+  Serial.print("FIRMWARE:");
+  Serial.println(DROPBEAR_FIRMWARE_VERSION);
 
   serialMutex = xSemaphoreCreateMutex();
   canMutex = xSemaphoreCreateMutex();

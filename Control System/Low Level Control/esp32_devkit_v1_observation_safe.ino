@@ -7,6 +7,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+static const char *DROPBEAR_FIRMWARE_VERSION =
+  "observation-safe-db2-rmd-2026.09.16";
+
 // Struct to hold joint constraints
 struct JointConstraints {
   int minAngle = 0;    // Default to 0
@@ -380,6 +383,9 @@ void impedanceControlTask(void *parameter) {
 
 void setup() {
   Serial.begin(115200);
+  delay(200);
+  Serial.print("FIRMWARE:");
+  Serial.println(DROPBEAR_FIRMWARE_VERSION);
   serialMutex = xSemaphoreCreateMutex();
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);  // Initialize I2C for IMU communication
 
@@ -390,8 +396,9 @@ void setup() {
 
   loadConfig();
 
-  // Observation-only builds deliberately leave the MCP2515 untouched. A missing
-  // chirality configuration also prevents CAN ownership from being assumed.
+  // Observation-only builds initialize MCP2515 only for bounded RMD 0x92 angle
+  // queries. A missing chirality configuration prevents CAN ownership from
+  // being assumed; all motion opcodes remain denied.
   if ((MOTOR_FEEDBACK_QUERY_ALLOWED || !OBSERVATION_ONLY_FIRMWARE)
       && chiralityConfigured && !isCenter) {
     if (CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK) {

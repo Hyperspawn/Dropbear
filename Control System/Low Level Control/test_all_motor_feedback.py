@@ -27,6 +27,8 @@ class ContinuousMotorFeedbackContract(unittest.TestCase):
     def test_every_leg_image_emits_versioned_dual_angle_telemetry(self):
         for name, source in LEG_FIRMWARE.items():
             with self.subTest(firmware=name):
+                self.assertIn("DROPBEAR_FIRMWARE_VERSION", source)
+                self.assertIn('Serial.print("FIRMWARE:")', source)
                 self.assertIn('Serial.print("DB2,")', source)
                 self.assertIn("normalizedOuter", source)
                 self.assertIn("motorNativeDegrees", source)

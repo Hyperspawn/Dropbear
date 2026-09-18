@@ -1763,9 +1763,11 @@ Once `play` is enabled, the controller continues transmitting the latest selecte
 
 A production locomotion controller should add a supervisory watchdog.
 
-## Startup enters play mode
+## Legacy V1 startup enters play mode
 
-At the end of `setup()`, `playMode` is set true.
+The legacy `esp32_devkit_v1.ino` sets `playMode` true at the end of `setup()`.
+The recommended Behemoth firmware boots with `playMode=false`; observation,
+version, and health requests do not enable it.
 
 Initial torque setpoints are zero, but the controller does begin active zero-torque A1 transmission automatically.
 

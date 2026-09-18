@@ -64,7 +64,7 @@ The design is split into subassemblies so you can inspect, print, assemble, and 
 1. **Choose your assembly.** Use the [Workshop](https://hyperspawn.org/platform/build) and [CAD files](https://github.com/Hyperspawn/dropbear_hardware) to understand the parts and how they connect.
 2. **Plan the parts and prints.** Review the [bill of materials](https://github.com/Hyperspawn/dropbear_bom/blob/main/bom.md), then select the matching [print files and settings](https://github.com/Hyperspawn/dropbear_printables). You can print them yourself or use a print service.
 3. **Assemble and document.** Follow the relevant [assembly documentation](https://github.com/Hyperspawn/dropbear_docs/tree/main/docs/03-assembly). Keep track of the design revision, substitutions, and anything the next builder should know.
-4. **Bring up one subsystem at a time.** Review the [low-level control source](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) and [firmware project](https://github.com/Hyperspawn/dropbear_firmware) against your hardware. Establish wiring, joint directions, limits, and calibration before attempting coordinated motion.
+4. **Bring up one subsystem at a time.** Review the [current low-level control source](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) and use [dropbear_control](https://github.com/robit-man/dropbear_control) for versioned observation, health, compile, and guarded upload. Establish wiring, joint directions, limits, and calibration before attempting coordinated motion.
 
 Build files, documentation, and control software are evolving at different speeds. Match revisions across them before ordering parts or powering an assembly. Use the BOM to develop a budget for your chosen configuration and local suppliers.
 
@@ -95,7 +95,7 @@ This repository is the project’s front door and contains the original hardware
 | Robot descriptions | [dropbear_urdf](https://github.com/Hyperspawn/dropbear_urdf) · [dropbear_mjcf](https://github.com/Hyperspawn/dropbear_mjcf) | Robot models and meshes for visualization and simulation. |
 | Simulation workspace | [dropbear_sim](https://github.com/Hyperspawn/dropbear_sim) | Links and submodules for the simulation projects. |
 | Locomotion research | [dropbear-locomotion](https://github.com/Hyperspawn/dropbear-locomotion) | Training, published policies, live viewing, and evaluations. |
-| Embedded control | [dropbear_firmware](https://github.com/Hyperspawn/dropbear_firmware) · [Original low-level control](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) | ESP32/CAN development and the original controller implementation. |
+| Embedded control | [Current low-level control](https://github.com/Hyperspawn/Dropbear/tree/main/Control%20System/Low%20Level%20Control) · [dropbear_control](https://github.com/robit-man/dropbear_control) | Versioned ESP32/CAN firmware plus the connected-robot dashboard, diagnostics, compile, and guarded upload workflow. |
 | Motor tools | [myactuator-can](https://github.com/Hyperspawn/myactuator-can) | MyActuator driver and diagnostics work. |
 
 [Browse all Hyperspawn repositories →](https://github.com/orgs/Hyperspawn/repositories)

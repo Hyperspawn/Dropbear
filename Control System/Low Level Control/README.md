@@ -1741,7 +1741,7 @@ This is low-level robot actuator firmware. Several current properties are import
 ## Partial CAN receive-state processing
 
 All leg firmware variants continuously request and decode actuator position
-with RMD V4.4 command `0x92`. The five external sensors establish the absolute
+with RMD V1.7/V4.2 command `0x92`. The five external sensors establish the absolute
 joint reference after restart; fresh motor-native feedback then provides the
 continuous position used by impedance control. Missing or stale CAN position
 fails to zero torque instead of falling back to continuous external-sensor

@@ -48,13 +48,13 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.17";
+  "behemoth-observation-protocol-2026.09.18";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
 static const char *DROPBEAR_CAPABILITIES =
   "version-v1;health-v1;observe-stream-v1;db1-required;"
-  "motor-angle-rmd-0x92;motor-control-aligned-v1;as5600-crosscheck-v1;"
+  "motor-angle-rmd-v17-v42-0x92;motor-control-aligned-v1;as5600-crosscheck-v1;"
   "portal-safety-v1";
 
 // -----------------------------------------------------------------------------
@@ -273,7 +273,9 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_YAW = ACTUATOR_IDS[LEFT_HIP_YAW];
 const unsigned long ACTUATOR_ID_RIGHT_HIP_ROLL = ACTUATOR_IDS[RIGHT_HIP_ROLL];
 const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 
-// Read-only RMD V4.4 0x92 multi-turn angle polling. One motor is queried per
+// Read-only RMD 0x92 multi-turn angle polling. The legacy X8 V1.7 reply stores
+// a signed 56-bit angle in bytes 1..7, while the newer X10 V4.2 reply stores a
+// signed 32-bit angle in bytes 4..7. One motor is queried per
 // slot to avoid a six-frame burst. Replies are emitted beside the five
 // external AS5600 angles in the versioned DB3 serial record. This request
 // cannot command motion, but it does add bounded CAN traffic.
@@ -1288,20 +1290,43 @@ bool readMotorControlDegrees(int actuatorIndex, float &degrees) {
 bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) {
   if (!MOTOR_NATIVE_FEEDBACK_ENABLED || len != 8 || data[0] != 0x92) return false;
   const int index = actuatorIndexFromMotorFeedbackId(responseID);
-  // Bytes 1..3 are reserved in the documented 0x92 response. Treat any
-  // nonzero value as malformed instead of turning an unrelated frame into an
-  // angle measurement.
-  if (index < 0 || data[1] != 0 || data[2] != 0 || data[3] != 0) {
+  if (index < 0) {
     motorNativeMalformedResponses++;
     return false;
   }
-  const uint32_t raw = static_cast<uint32_t>(data[4]) |
-                       (static_cast<uint32_t>(data[5]) << 8) |
-                       (static_cast<uint32_t>(data[6]) << 16) |
-                       (static_cast<uint32_t>(data[7]) << 24);
-  int32_t signedRaw = 0;
-  memcpy(&signedRaw, &raw, sizeof(signedRaw));
-  motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
+
+  float decodedDegrees = 0.0f;
+  if (index <= LEFT_INNER_CALF) {
+    // RMD-X8 Pro legacy protocol V1.7: DATA[1..7] are the low seven bytes of
+    // a signed int64 angle. Sign-extend the 56-bit two's-complement value.
+    uint64_t raw = 0;
+    for (uint8_t byteIndex = 1; byteIndex < 8; ++byteIndex) {
+      raw |= static_cast<uint64_t>(data[byteIndex]) << ((byteIndex - 1) * 8);
+    }
+    if ((raw & (1ULL << 55)) != 0) raw |= 0xFF00000000000000ULL;
+    int64_t signedRaw = 0;
+    memcpy(&signedRaw, &raw, sizeof(signedRaw));
+    decodedDegrees = static_cast<float>(static_cast<double>(signedRaw) * 0.01);
+  } else {
+    // RMD-X10 V3 / motion protocol V4.2+: DATA[1..3] are reserved and the
+    // signed int32 angle occupies DATA[4..7].
+    if (data[1] != 0 || data[2] != 0 || data[3] != 0) {
+      motorNativeMalformedResponses++;
+      return false;
+    }
+    const uint32_t raw = static_cast<uint32_t>(data[4]) |
+                         (static_cast<uint32_t>(data[5]) << 8) |
+                         (static_cast<uint32_t>(data[6]) << 16) |
+                         (static_cast<uint32_t>(data[7]) << 24);
+    int32_t signedRaw = 0;
+    memcpy(&signedRaw, &raw, sizeof(signedRaw));
+    decodedDegrees = static_cast<float>(signedRaw) * 0.01f;
+  }
+  if (!isfinite(decodedDegrees)) {
+    motorNativeMalformedResponses++;
+    return false;
+  }
+  motorNativeDegrees[index] = decodedDegrees;
   motorNativeReceivedMs[index] = millis();
   motorNativeValid[index] = true;
   updateMotorControlReference(index, motorNativeDegrees[index]);
@@ -4834,7 +4859,7 @@ String buildDiagnosticsJson() {
   out += "\"last_result\":" + String(lastCanResult) + ",";
   out += "\"last_tx_age_ms\":" + ageJsonValue(lastCanTxMs) + ",";
   out += "\"last_failure_age_ms\":" + ageJsonValue(lastCanFailureMs) + ",";
-  out += "\"feedback\":\"rmd_v44_0x92_multi_turn\",";
+  out += "\"feedback\":\"rmd_v17_v42_0x92_multi_turn\",";
   out += "\"position_feedback_policy\":\"as5600_boot_zero_then_can_continuous\",";
   out += "\"motor_angle_queries\":" + String(motorNativeQueries) + ",";
   out += "\"motor_angle_query_failures\":" + String(motorNativeQueryFailures) + ",";
@@ -4926,7 +4951,7 @@ String buildDiagnosticsJson() {
   out += "\"torque_test_value\":" + String(portalTorqueTestValue) + ",";
   out += "\"reboot_required\":" + String(rebootRequired ? "true" : "false") + ",";
   out += "\"command_watchdog\":\"" + String(operatingMode == OPERATING_HYPERSPAWN_ROUTE ? (hyperspawnWatchdogTripped ? "tripped" : "armed") : "inactive") + "\",";
-  out += "\"can_feedback_monitoring\":\"rmd_v44_0x92_multi_turn\"";
+  out += "\"can_feedback_monitoring\":\"rmd_v17_v42_0x92_multi_turn\"";
   out += "},";
 
   out += "\"sensors\":[";

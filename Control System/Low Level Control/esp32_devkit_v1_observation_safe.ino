@@ -8,11 +8,11 @@
 #include <freertos/task.h>
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "observation-safe-db2-protocol-2026.09.17";
+  "observation-safe-db2-protocol-2026.09.18";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "LEGACY";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB2";
 static const char *DROPBEAR_CAPABILITIES =
-  "version-v1;health-v1;observe-stream-v1;motor-angle-rmd-0x92;observation-only";
+  "version-v1;health-v1;observe-stream-v1;motor-angle-rmd-v17-v42-0x92;observation-only";
 
 // Struct to hold joint constraints
 struct JointConstraints {
@@ -168,13 +168,35 @@ void ingestMotorFeedbackFrames() {
       continue;
     }
 
-    const uint32_t unsignedRaw = static_cast<uint32_t>(frame[4])
-      | (static_cast<uint32_t>(frame[5]) << 8)
-      | (static_cast<uint32_t>(frame[6]) << 16)
-      | (static_cast<uint32_t>(frame[7]) << 24);
-    int32_t signedRaw = 0;
-    memcpy(&signedRaw, &unsignedRaw, sizeof(signedRaw));
-    motorNativeDegrees[index] = static_cast<float>(signedRaw) * 0.01f;
+    float decodedDegrees = 0.0f;
+    if (index <= 3) {
+      // RMD-X8 Pro protocol V1.7 encodes a signed 56-bit angle in bytes 1..7.
+      uint64_t raw = 0;
+      for (uint8_t byteIndex = 1; byteIndex < 8; ++byteIndex) {
+        raw |= static_cast<uint64_t>(frame[byteIndex]) << ((byteIndex - 1) * 8);
+      }
+      if ((raw & (1ULL << 55)) != 0) raw |= 0xFF00000000000000ULL;
+      int64_t signedRaw = 0;
+      memcpy(&signedRaw, &raw, sizeof(signedRaw));
+      decodedDegrees = static_cast<float>(static_cast<double>(signedRaw) * 0.01);
+    } else {
+      if (frame[1] != 0 || frame[2] != 0 || frame[3] != 0) {
+        malformedMotorResponseCount++;
+        continue;
+      }
+      const uint32_t raw = static_cast<uint32_t>(frame[4])
+        | (static_cast<uint32_t>(frame[5]) << 8)
+        | (static_cast<uint32_t>(frame[6]) << 16)
+        | (static_cast<uint32_t>(frame[7]) << 24);
+      int32_t signedRaw = 0;
+      memcpy(&signedRaw, &raw, sizeof(signedRaw));
+      decodedDegrees = static_cast<float>(signedRaw) * 0.01f;
+    }
+    if (!isfinite(decodedDegrees)) {
+      malformedMotorResponseCount++;
+      continue;
+    }
+    motorNativeDegrees[index] = decodedDegrees;
     motorNativeReceivedMs[index] = millis();
     motorNativeValid[index] = true;
     motorResponseCount++;

@@ -12,6 +12,9 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("const byte request[8] = {0x92, 0, 0, 0, 0, 0, 0, 0}", SOURCE)
         self.assertIn("data[0] != 0x92", SOURCE)
         self.assertIn("responseID - 0x100", SOURCE)
+        self.assertIn("index <= LEFT_INNER_CALF", SOURCE)
+        self.assertIn("0xFF00000000000000ULL", SOURCE)
+        self.assertIn("static_cast<double>(signedRaw) * 0.01", SOURCE)
         self.assertIn("data[1] != 0 || data[2] != 0 || data[3] != 0", SOURCE)
         self.assertIn("static_cast<float>(signedRaw) * 0.01f", SOURCE)
 
@@ -38,8 +41,9 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.17", SOURCE)
-        self.assertIn("rmd_v44_0x92_multi_turn", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.18", SOURCE)
+        self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
+        self.assertIn("rmd_v17_v42_0x92_multi_turn", SOURCE)
 
     def test_observation_protocol_is_addressed_and_does_not_enable_play(self):
         self.assertIn('DROPBEAR_COMMAND_PROTOCOL = "DB1"', SOURCE)

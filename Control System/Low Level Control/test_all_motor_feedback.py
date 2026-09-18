@@ -22,6 +22,10 @@ class ContinuousMotorFeedbackContract(unittest.TestCase):
             with self.subTest(firmware=name):
                 self.assertIn("0x92", source)
                 self.assertIn("motorNativeDegrees", source)
+                self.assertIn("motor-angle-rmd-v17-v42-0x92", source)
+                self.assertIn("0xFF00000000000000ULL", source)
+                self.assertIn("static_cast<double>(signedRaw) * 0.01", source)
+                self.assertIn("static_cast<float>(signedRaw) * 0.01f", source)
                 self.assertIn("MOTOR_FEEDBACK_STALE_MS" if "observation_safe" in name else "MOTOR_NATIVE_STALE_MS", source)
 
     def test_every_leg_image_emits_versioned_dual_angle_telemetry(self):

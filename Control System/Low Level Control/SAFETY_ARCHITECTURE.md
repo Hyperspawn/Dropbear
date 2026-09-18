@@ -64,11 +64,10 @@ outer_motor,inner_motor,hip_pitch_motor,knee_motor,hip_yaw_motor,hip_roll_motor
 The five AS5600 channels establish restart alignment and remain independent
 cross-checks; ongoing model state comes from the aligned CAN fields.
 
-Angles are degrees. Motor values use `0.01°` RMD multi-turn units decoded as a
-signed 32-bit little-endian value. A missing response is `NA`. The request
-opcode and response-ID rule are grounded in the `dropbear_control` RMD V4.4
-golden vectors, but applicability to the installed actuator firmware has not
-yet been verified.
+Angles are degrees. Motor values use `0.01°` RMD multi-turn units. The legacy
+RMD-X8 V1.7 reply is a signed 56-bit little-endian value in bytes 1–7; newer
+RMD-X10 replies use a signed 32-bit value in bytes 4–7. A missing response is
+`NA`. Both layouts retain the documented request ID / response ID offset.
 
 The knee external and motor fields both refer to the upstream actuator shaft.
 The downstream knee bend is a kinematic result of the linkage and belongs in

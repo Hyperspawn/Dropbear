@@ -76,7 +76,7 @@ DB3,<controller_ms>,<five AS5600 degrees>,<six raw RMD degrees>,<six AS5600-alig
 ```
 
 Every angle is in degrees. The five AS5600 fields remain independent absolute
-measurements. The six motor fields come from read-only RMD V4.4 `0x92`
+measurements. The six motor fields come from read-only RMD V1.7/V4.2 `0x92`
 multi-turn-angle replies at `0.01°` per least-significant bit; a missing or
 stale reply is emitted as `NA`, never replaced with an AS5600 value. Hip yaw has
 no dedicated AS5600; its aligned field is boot-relative to the first verified
@@ -2423,9 +2423,11 @@ Therefore:
 ## RMD CAN feedback
 
 All leg firmware images poll their six owned actuators with the non-motion RMD
-V4.4 `0x92` request. Motor-side multi-turn position is decoded at `0.01°` per
-least-significant bit, emitted as raw and aligned fields in `DB3`, and used continuously after the five
-AS5600-equipped axes complete restart zeroing.
+`0x92` request. The four RMD-X8 Pro calf IDs use the legacy V1.7 signed 56-bit
+reply in bytes 1–7. The RMD-X10 IDs use the V4.2 signed 32-bit reply in bytes
+4–7. Both represent output-shaft degrees at `0.01°` per least-significant bit.
+The decoded position is emitted as raw and aligned fields in `DB3`, and used
+continuously after the five AS5600-equipped axes complete restart zeroing.
 
 The remaining RMD response families are not yet decoded into:
 

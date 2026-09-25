@@ -13,6 +13,7 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <math.h>
+#include "dropbear_motor_protocol.h"
 
 /*
  * Dropbear ESP32 low-level leg controller
@@ -48,14 +49,15 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.18";
+  "behemoth-observation-protocol-2026.09.28";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
 static const char *DROPBEAR_CAPABILITIES =
   "version-v1;health-v1;observe-stream-v1;db1-required;"
-  "motor-angle-rmd-v17-v42-0x92;motor-control-aligned-v1;as5600-crosscheck-v1;"
-  "portal-safety-v1";
+  "motor-profile-v1;motor-angle-rmd-v17-v42-0x92;"
+  "motor-control-aligned-v1;as5600-crosscheck-v1;"
+  "boot-observability-v1;portal-safety-v1";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -259,6 +261,38 @@ static const uint32_t ACTUATOR_IDS[ACTUATOR_COUNT] = {
   0x14A  // left hip roll
 };
 
+// Explicit installed-motor profiles keep wire layout, physical reduction and
+// command opcodes out of control logic. RMD 0x92 reports output-shaft angle on
+// both installed families, so the 9:1 and 7:1 reductions are documented but
+// intentionally do not divide the reported joint angle. A future motor-shaft
+// codec can select ANGLE_REFERENCE_MOTOR_SHAFT and reuse the same conversion.
+static const dropbear::MotorProfile MOTOR_PROFILE_X8_V17 = {
+  "MyActuator RMD-X8 Pro 1:9", "V1.7", 9.0f,
+  dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7,
+  dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
+  0.01f, 0x92, 0xA1, 0x81
+};
+static const dropbear::MotorProfile MOTOR_PROFILE_X10_V42 = {
+  "MyActuator RMD-X10 1:7", "V4.2+", 7.0f,
+  dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7,
+  dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
+  0.01f, 0x92, 0xA1, 0x81
+};
+
+static const dropbear::MotorProfile *const ACTUATOR_MOTOR_PROFILES[ACTUATOR_COUNT] = {
+  &MOTOR_PROFILE_X8_V17,  &MOTOR_PROFILE_X8_V17,  // outer calves
+  &MOTOR_PROFILE_X8_V17,  &MOTOR_PROFILE_X8_V17,  // inner calves
+  &MOTOR_PROFILE_X10_V42, &MOTOR_PROFILE_X10_V42, // knees
+  &MOTOR_PROFILE_X10_V42, &MOTOR_PROFILE_X10_V42, // hip pitch
+  &MOTOR_PROFILE_X10_V42, &MOTOR_PROFILE_X10_V42, // hip yaw
+  &MOTOR_PROFILE_X10_V42, &MOTOR_PROFILE_X10_V42  // hip roll
+};
+
+const dropbear::MotorProfile *motorProfileForActuator(int actuatorIndex) {
+  if (actuatorIndex < 0 || actuatorIndex >= ACTUATOR_COUNT) return nullptr;
+  return ACTUATOR_MOTOR_PROFILES[actuatorIndex];
+}
+
 // Backward-compatible named constants.
 const unsigned long ACTUATOR_ID_RIGHT_CALF_OUTER = ACTUATOR_IDS[RIGHT_OUTER_CALF];
 const unsigned long ACTUATOR_ID_LEFT_CALF_OUTER = ACTUATOR_IDS[LEFT_OUTER_CALF];
@@ -273,15 +307,16 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_YAW = ACTUATOR_IDS[LEFT_HIP_YAW];
 const unsigned long ACTUATOR_ID_RIGHT_HIP_ROLL = ACTUATOR_IDS[RIGHT_HIP_ROLL];
 const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 
-// Read-only RMD 0x92 multi-turn angle polling. The legacy X8 V1.7 reply stores
-// a signed 56-bit angle in bytes 1..7, while the newer X10 V4.2 reply stores a
-// signed 32-bit angle in bytes 4..7. One motor is queried per
-// slot to avoid a six-frame burst. Replies are emitted beside the five
+// Read-only RMD 0x92 multi-turn angle polling is decoded through the installed
+// motor profile for each CAN ID. One motor is queried per slot to avoid a
+// six-frame burst. Replies are emitted beside the five
 // external AS5600 angles in the versioned DB3 serial record. This request
 // cannot command motion, but it does add bounded CAN traffic.
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
-static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 5;
+static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 10;
+static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 50;
 static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
+static const uint8_t CAN_RX_BURST_LIMIT = 4;
 static const uint8_t MOTOR_BOOT_ZERO_SAMPLE_COUNT = 8;
 static const float MOTOR_BOOT_ZERO_MAX_SPREAD_DEG = 2.0f;
 static const float MOTOR_AS5600_DIVERGENCE_LIMIT_DEG = 12.0f;
@@ -384,6 +419,7 @@ volatile bool rebootRequired = false;
 volatile bool runtimeControlReady = false;
 volatile bool runtimeImuReady = false;
 volatile bool runtimeNeckReady = false;
+volatile bool runtimeInitializationComplete = false;
 
 // -----------------------------------------------------------------------------
 // DB1 command addressing / routing
@@ -1288,40 +1324,24 @@ bool readMotorControlDegrees(int actuatorIndex, float &degrees) {
 }
 
 bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) {
-  if (!MOTOR_NATIVE_FEEDBACK_ENABLED || len != 8 || data[0] != 0x92) return false;
+  if (!MOTOR_NATIVE_FEEDBACK_ENABLED) return false;
   const int index = actuatorIndexFromMotorFeedbackId(responseID);
-  if (index < 0) {
+  // Shared CAN buses can carry HyperSpawn traffic, motor replies for the other
+  // leg, and vendor frames for commands other than 0x92. Those are not
+  // malformed angle replies and must remain available to the next decoder.
+  if (index < 0) return false;
+
+  const dropbear::MotorProfile *profile = motorProfileForActuator(index);
+  if (profile == nullptr || data == nullptr || len == 0 ||
+      data[0] != profile->readMultiTurnOpcode) return false;
+  double outputShaftDegrees = 0.0;
+  const dropbear::DecodeStatus decodeStatus =
+    dropbear::decodeMultiTurnAngle(*profile, data, len, &outputShaftDegrees);
+  if (decodeStatus != dropbear::DECODE_OK) {
     motorNativeMalformedResponses++;
     return false;
   }
-
-  float decodedDegrees = 0.0f;
-  if (index <= LEFT_INNER_CALF) {
-    // RMD-X8 Pro legacy protocol V1.7: DATA[1..7] are the low seven bytes of
-    // a signed int64 angle. Sign-extend the 56-bit two's-complement value.
-    uint64_t raw = 0;
-    for (uint8_t byteIndex = 1; byteIndex < 8; ++byteIndex) {
-      raw |= static_cast<uint64_t>(data[byteIndex]) << ((byteIndex - 1) * 8);
-    }
-    if ((raw & (1ULL << 55)) != 0) raw |= 0xFF00000000000000ULL;
-    int64_t signedRaw = 0;
-    memcpy(&signedRaw, &raw, sizeof(signedRaw));
-    decodedDegrees = static_cast<float>(static_cast<double>(signedRaw) * 0.01);
-  } else {
-    // RMD-X10 V3 / motion protocol V4.2+: DATA[1..3] are reserved and the
-    // signed int32 angle occupies DATA[4..7].
-    if (data[1] != 0 || data[2] != 0 || data[3] != 0) {
-      motorNativeMalformedResponses++;
-      return false;
-    }
-    const uint32_t raw = static_cast<uint32_t>(data[4]) |
-                         (static_cast<uint32_t>(data[5]) << 8) |
-                         (static_cast<uint32_t>(data[6]) << 16) |
-                         (static_cast<uint32_t>(data[7]) << 24);
-    int32_t signedRaw = 0;
-    memcpy(&signedRaw, &raw, sizeof(signedRaw));
-    decodedDegrees = static_cast<float>(signedRaw) * 0.01f;
-  }
+  const float decodedDegrees = static_cast<float>(outputShaftDegrees);
   if (!isfinite(decodedDegrees)) {
     motorNativeMalformedResponses++;
     return false;
@@ -1337,7 +1357,13 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
 void requestMotorNativeFeedback(uint8_t actuatorIndex) {
   if (!MOTOR_NATIVE_FEEDBACK_ENABLED || !runtimeControlReady ||
       !canInitialized || !actuatorBelongsToSelectedLeg(actuatorIndex)) return;
-  const byte request[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
+  const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
+  if (profile == nullptr) {
+    motorNativeQueryFailures++;
+    return;
+  }
+  byte request[8];
+  dropbear::encodeReadMultiTurnAngle(*profile, request);
   if (canSendFrame(ACTUATOR_IDS[actuatorIndex], request, 8)) motorNativeQueries++;
   else motorNativeQueryFailures++;
 }
@@ -1531,8 +1557,9 @@ bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
     canTxSuccess++;
     canConsecutiveFailures = 0;
     lastCanTxMs = now;
-    if (data[0] == 0xA1) canTorqueFrames++;
-    if (data[0] == 0x81) canStopFrames++;
+    const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
+    if (profile != nullptr && data[0] == profile->torqueOpcode) canTorqueFrames++;
+    if (profile != nullptr && data[0] == profile->stopOpcode) canStopFrames++;
   } else {
     canTxFailure++;
     canConsecutiveFailures++;
@@ -1541,13 +1568,14 @@ bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
 
   if (actuatorIndex >= 0) {
     ActuatorDiagnostic &d = actuatorDiagnostics[actuatorIndex];
+    const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
     d.lastOpcode = data[0];
     d.lastResult = result;
     d.lastTxMs = now;
-    if (data[0] == 0xA1) {
+    if (profile != nullptr && data[0] == profile->torqueOpcode) {
       d.lastCommand = static_cast<int16_t>(static_cast<uint16_t>(data[4]) |
                                            (static_cast<uint16_t>(data[5]) << 8));
-    } else if (data[0] == 0x81) {
+    } else if (profile != nullptr && data[0] == profile->stopOpcode) {
       d.lastCommand = 0;
     }
     if (ok) d.txOk++;
@@ -1562,17 +1590,20 @@ bool canSend(uint32_t actuatorID, const byte data[8]) {
 }
 
 void sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
-  byte buf[8] = {
-    0xA1, 0x00, 0x00, 0x00,
-    static_cast<byte>(torqueValue & 0xFF),
-    static_cast<byte>((static_cast<uint16_t>(torqueValue) >> 8) & 0xFF),
-    0x00, 0x00
-  };
+  const dropbear::MotorProfile *profile =
+    motorProfileForActuator(actuatorIndexFromCanId(actuatorID));
+  if (profile == nullptr) return;
+  byte buf[8];
+  dropbear::encodeTorqueCommand(*profile, torqueValue, buf);
   canSend(actuatorID, buf);
 }
 
 void sendStopCommand(unsigned long actuatorID) {
-  byte buf[8] = {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  const dropbear::MotorProfile *profile =
+    motorProfileForActuator(actuatorIndexFromCanId(actuatorID));
+  if (profile == nullptr) return;
+  byte buf[8];
+  dropbear::encodeStopCommand(*profile, buf);
   canSend(actuatorID, buf);
 }
 
@@ -1998,12 +2029,16 @@ void sendHyperspawnFault(uint8_t code) {
 }
 
 void canReceiveTask(void *parameter) {
+  while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
   while (true) {
     canRxTaskLoops++;
     lastCanRxTaskMs = millis();
 
     uint8_t drained = 0;
-    while (canInitialized && drained < 12) {
+    // A busy or electrically degraded bus must not monopolize core 1 and
+    // starve sensor/DB3 publication. Drain a bounded batch, then yield at the
+    // RTOS tick below so equal-priority control tasks get CPU time.
+    while (canInitialized && drained < CAN_RX_BURST_LIMIT) {
       bool available = false;
       if (canMutex && xSemaphoreTake(canMutex, pdMS_TO_TICKS(2)) == pdTRUE) {
         available = CAN.checkReceive() == CAN_MSGAVAIL;
@@ -2034,8 +2069,11 @@ void canReceiveTask(void *parameter) {
     static uint32_t lastMotorQueryMs = 0;
     static uint8_t motorQuerySlot = 0;
     const uint32_t now = millis();
+    const uint32_t queryInterval = canConsecutiveFailures >= 3
+      ? MOTOR_NATIVE_QUERY_BACKOFF_MS
+      : MOTOR_NATIVE_QUERY_SLOT_MS;
     if (MOTOR_NATIVE_FEEDBACK_ENABLED && runtimeControlReady &&
-        now - lastMotorQueryMs >= MOTOR_NATIVE_QUERY_SLOT_MS) {
+        now - lastMotorQueryMs >= queryInterval) {
       requestMotorNativeFeedback(selectedMotorTelemetryOrder()[motorQuerySlot]);
       motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
       lastMotorQueryMs = now;
@@ -2044,6 +2082,7 @@ void canReceiveTask(void *parameter) {
   }
 }
 void hyperspawnRouteTask(void *parameter) {
+  while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
   TickType_t lastWake = xTaskGetTickCount();
   uint32_t lastHeartbeat = 0;
 
@@ -2400,6 +2439,13 @@ int getEncoderReading(String joint) {
 // -----------------------------------------------------------------------------
 
 void readAndComputeTask(void *parameter) {
+  while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
+  // Finish boot and bring up the command/diagnostic path before sampling PWM.
+  // A noisy or absent AS5600 channel must never prevent version/health queries.
+  vTaskDelay(pdMS_TO_TICKS(40));
+  primeSensorFilter();
+  dbPrintln("BOOT|phase=as5600-prime|status=complete");
+
   TickType_t lastWake = xTaskGetTickCount();
   unsigned long lastTelemetry = 0;
   unsigned long lastHealth = 0;
@@ -2450,6 +2496,7 @@ void updateMotorReferencedImpedance(int actuatorIndex, ImpedanceControl &control
 }
 
 void impedanceControlTask(void *parameter) {
+  while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
   TickType_t lastWake = xTaskGetTickCount();
 
   while (true) {
@@ -2504,6 +2551,7 @@ void impedanceControlTask(void *parameter) {
 }
 
 void canOutputTask(void *parameter) {
+  while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
   TickType_t lastWake = xTaskGetTickCount();
 
   while (true) {
@@ -4772,6 +4820,11 @@ String buildDiagnosticsJson() {
     "right_knee", "left_knee", "right_hip_pitch", "left_hip_pitch",
     "right_hip_yaw", "left_hip_yaw", "right_hip_roll", "left_hip_roll"
   };
+  static const char *actuatorJointNames[ACTUATOR_COUNT] = {
+    "outer_calf", "outer_calf", "inner_calf", "inner_calf",
+    "knee", "knee", "hip_pitch", "hip_pitch",
+    "hip_yaw", "hip_yaw", "hip_roll", "hip_roll"
+  };
 
   String out;
   out.reserve(24000);
@@ -4993,9 +5046,18 @@ String buildDiagnosticsJson() {
     const uint32_t age = diagnosticAgeMs(d.lastTxMs);
     const bool motorFeedbackFresh = motorNativeValid[i] &&
       now - motorNativeReceivedMs[i] <= MOTOR_NATIVE_STALE_MS;
+    const dropbear::MotorProfile *profile = motorProfileForActuator(i);
     float controlPositionDegrees = 0.0f;
     const bool controlFeedbackReady = readMotorControlDegrees(i, controlPositionDegrees);
-    const bool hasExternalReference = as5600SensorIndexForActuator(i) >= 0;
+    const int sensorIndex = as5600SensorIndexForActuator(i);
+    const bool hasExternalReference = sensorIndex >= 0;
+    const bool externalValueBelongsToActuator = hasExternalReference &&
+      actuatorBelongsToSelectedLeg(i);
+    const SensorDiagnostic *external = externalValueBelongsToActuator
+      ? &sensorDiagnostics[sensorIndex] : nullptr;
+    const bool externalFresh = external != nullptr && external->signalValid &&
+      external->pulseAgeUs <= AS5600_STALE_US &&
+      diagnosticAgeMs(external->lastSampleMs) <= 100;
     const bool outputExpected = selected && (playMode || calibrationOverrideActive || stopBurstRemaining > 0);
     const char *status = "inactive";
     if (selected) {
@@ -5011,9 +5073,18 @@ String buildDiagnosticsJson() {
     snprintf(opHex, sizeof(opHex), "0x%02X", (unsigned int)d.lastOpcode);
     out += "{";
     out += "\"name\":\"" + String(actuatorNames[i]) + "\",";
+    out += "\"side\":\"" + String((i & 1) ? "left" : "right") + "\",";
+    out += "\"appendage\":\"" + String(actuatorJointNames[i]) + "\",";
     out += "\"status\":\"" + String(status) + "\",";
     out += "\"selected\":" + String(selected ? "true" : "false") + ",";
     out += "\"can_id\":\"" + String(idHex) + "\",";
+    out += "\"motor_model\":\"" + String(profile ? profile->model : "unknown") + "\",";
+    out += "\"motor_protocol\":\"" + String(profile ? profile->protocolVersion : "unknown") + "\",";
+    out += "\"gear_ratio\":" + String(profile ? profile->reductionRatio : 0.0f, 2) + ",";
+    out += "\"angle_reference\":\"" + String(profile
+      ? dropbear::angleReferenceName(profile->angleReference) : "unknown") + "\",";
+    out += "\"angle_payload\":\"" + String(profile
+      ? dropbear::angleLayoutName(profile->angleLayout) : "unknown") + "\",";
     out += "\"feedback\":\"" + String(motorFeedbackFresh ? "measured" :
       (motorNativeValid[i] ? "stale" : "unavailable")) + "\",";
     out += "\"motor_position_deg\":";
@@ -5034,6 +5105,20 @@ String buildDiagnosticsJson() {
     out += hasExternalReference && motorControlZeroed[i]
       ? String(motorAs5600ErrorDegrees[i], 2) : String("null");
     out += ",";
+    out += "\"as5600\":{";
+    out += "\"present\":" + String(hasExternalReference ? "true" : "false") + ",";
+    out += "\"sensor\":\"" + String(hasExternalReference ? sensorNames[sensorIndex] : "none") + "\",";
+    out += "\"gpio\":" + String(hasExternalReference ? sensorPins[sensorIndex] : -1) + ",";
+    out += "\"status\":\"" + String(!hasExternalReference ? "not_installed" :
+      (!externalValueBelongsToActuator ? "other_controller" :
+       (externalFresh ? "measured" : "unavailable"))) + "\",";
+    out += "\"signal_valid\":" + String(external != nullptr && external->signalValid ? "true" : "false") + ",";
+    out += "\"angle_deg\":";
+    out += externalFresh ? String(normalizedAs5600Degrees(sensorIndex), 2) : String("null");
+    out += ",\"sample_age_ms\":";
+    out += external != nullptr ? ageJsonValue(external->lastSampleMs) : String("-1");
+    out += ",\"pulse_age_us\":" + String(external != nullptr ? external->pulseAgeUs : UINT32_MAX);
+    out += "},";
     String commandSource;
     if (operatingMode == OPERATING_HYPERSPAWN_ROUTE) {
       commandSource = hyperspawnControlMode == HS_CONTROL_POSITION ? "hyperspawn_position" :
@@ -5661,6 +5746,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
 .section-title{font-size:11px;color:#aeb7bd;text-transform:uppercase;letter-spacing:.08em;margin:8px 0}.cfgline{display:grid;grid-template-columns:170px repeat(5,1fr);gap:6px;align-items:center}.constraints{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:8px}
 .constraint{display:grid;grid-template-columns:1fr 82px 82px;gap:6px;align-items:center}.file{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #22282c;font-size:11px}
 .diagcards{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}.diagcard{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:11px}.diaghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}.diagtitle{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em}.health{display:inline-block;border:1px solid var(--line);padding:3px 6px;border-radius:3px;font-size:9px;text-transform:uppercase;letter-spacing:.08em}.health.ok{color:#b5d5b6;border-color:#3c5840}.health.warn,.health.idle{color:#e6c381;border-color:#625032}.health.fault{color:#efadad;border-color:#673f3f}.health.inactive{color:#8d979e;border-color:#343b41}.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:10px}.kv .k{color:var(--muted)}.kv .v{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:right}.diagtable{overflow:auto}.diagtable table{min-width:850px}.diagtable td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.diag-note{font-size:10px;color:var(--muted);line-height:1.5}.overall{font-size:30px;font-weight:700;letter-spacing:.08em}.overall.ok{color:#b5d5b6}.overall.warn{color:#e6c381}.overall.fault{color:#efadad}
+.telemetry-sources{display:grid;grid-template-columns:1fr;gap:12px}.telemetry-source{border:1px solid var(--line);background:var(--panel2);border-radius:4px;overflow:hidden}.telemetry-source-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:11px 12px;border-bottom:1px solid var(--line)}.telemetry-source-head h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px}.telemetry-source-head p{font-size:10px;color:var(--muted);line-height:1.45;margin:0}.telemetry-source .diagtable{padding:0 7px 7px}.telemetry-source .diagtable table{min-width:760px}.source-kind{font:600 9px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--muted);border:1px solid var(--line);padding:4px 6px;white-space:nowrap}.value-main{font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.value-sub{display:block;color:var(--muted);font-size:9px;margin-top:2px}.model-name{font-weight:650}.model-detail{display:block;color:var(--muted);font-size:9px;margin-top:2px}
 @media(max-width:800px){.diagcards{grid-template-columns:1fr}}
 @media(max-width:800px){.span8,.span6,.span4,.span3{grid-column:span 12}.joint{grid-template-columns:1fr 80px}.joint .controls{grid-column:1/-1}.cfgline{grid-template-columns:1fr repeat(2,1fr)}.cfgline input:nth-of-type(n+3){margin-top:2px}.constraints,.safety-steps{grid-template-columns:1fr}}
 </style>
@@ -5695,13 +5781,16 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{text-align:left;b
    </div>
    <div class="card span12"><div class="row between"><div class="row"><button class="danger" onclick="cmd('stop')">STOP</button><button class="primary requires-motion-unlock" onclick="cmd('play')">PLAY</button><button onclick="cmd('zero')">ZERO TORQUE</button><button onclick="cmd('status')">STATUS</button></div><div class="tiny">All web commands pass through the same command queue/parser as USB Serial.</div></div></div>
    <div class="card span12" id="legStateCard">
-    <h2>Joint state</h2>
-    <div class="grid">
-     <div class="metric span3"><div class="k">Outer calf</div><div class="v" id="aOuter">—</div></div>
-     <div class="metric span3"><div class="k">Inner calf</div><div class="v" id="aInner">—</div></div>
-     <div class="metric span3"><div class="k">Hip pitch</div><div class="v" id="aHip">—</div></div>
-     <div class="metric span3"><div class="k">Knee</div><div class="v" id="aKnee">—</div></div>
-     <div class="metric span3"><div class="k">Hip roll</div><div class="v" id="aRoll">—</div></div>
+    <div class="row between"><div><h2>Live appendage state</h2><div class="diag-note">Motor CAN position and AS5600 PWM position are independent measurements. Aligned control angle is shown separately and is never substituted for stale motor feedback.</div></div><span id="liveRoleBadge" class="health inactive">WAITING</span></div>
+    <div class="telemetry-sources" style="margin-top:11px">
+     <section class="telemetry-source">
+      <div class="telemetry-source-head"><div><h3>Motor output-shaft state</h3><p>Every owned CAN actuator, decoded by its installed model/firmware profile.</p></div><span class="source-kind">RMD CAN · 0x92</span></div>
+      <div id="liveMotorState" class="diagtable"></div>
+     </section>
+     <section class="telemetry-source">
+      <div class="telemetry-source-head"><div><h3>AS5600 encoder state</h3><p>Five independent one-wire PWM sensors. Hip yaw has no AS5600.</p></div><span class="source-kind">GPIO PWM</span></div>
+      <div id="liveEncoderState" class="diagtable"></div>
+     </section>
     </div>
    </div>
    <div class="card span12" id="legActuatorCard">
@@ -5811,8 +5900,28 @@ function age(v){return +v<0?'never':(+v<1000?`${v} ms`:`${(+v/1000).toFixed(1)} 
 function boolText(v){return v?'YES':'NO'}
 function kvRows(rows){return rows.map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('')}
 function moduleCard(title,m,rows){return `<div class="diagcard"><div class="diaghead"><span class="diagtitle">${title}</span>${healthPill(m?.status)}</div><div class="kv">${kvRows(rows)}</div></div>`}
+function renderLiveTelemetry(){
+ const d=diagnostics;if(!d)return;
+ const role=String(d.role||'').toLowerCase();
+ const side=role.includes('left')?'left':role.includes('right')?'right':'';
+ const badge=document.getElementById('liveRoleBadge');
+ if(badge){badge.textContent=side?`${side.toUpperCase()}LEG · ${d.overall==='ok'?'LIVE':'CHECK'}`:'NO LEG ROLE';badge.className='health '+(side?healthClass(d.overall):'inactive')}
+ const motors=(d.actuators||[]).filter(x=>x.side===side);
+ const motorRows=motors.map(x=>{
+  const feedbackHealth=x.control_feedback==='alignment_fault'||x.feedback==='stale'?'fault':x.feedback==='measured'?(x.control_position_deg==null?'warn':'ok'):'fault';
+  const ratio=Number(x.gear_ratio)>0?`${Number(x.gear_ratio).toFixed(0)}:1`:'—';
+  return `<tr><td>${healthPill(feedbackHealth)}</td><td><span class="model-name">${x.appendage.replaceAll('_',' ')}</span><span class="model-detail">${x.can_id}</span></td><td><span class="model-name">${x.motor_model}</span><span class="model-detail">FW ${x.motor_protocol} · ${ratio} · ${x.angle_reference.replaceAll('_',' ')}</span></td><td><span class="value-main">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</span><span class="value-sub">${x.feedback.toUpperCase()} · ${age(x.feedback_age_ms)}</span></td><td><span class="value-main">${x.control_position_deg==null?'—':fmtDeg(x.control_position_deg)}</span><span class="value-sub">${x.control_feedback.replaceAll('_',' ')}</span></td><td><span class="value-main">${x.last_sent}</span><span class="value-sub">${x.command_source.replaceAll('_',' ')} · ${x.last_opcode}</span></td></tr>`
+ }).join('');
+ const motorBox=document.getElementById('liveMotorState');
+ if(motorBox)motorBox.innerHTML=`<table><thead><tr><th>State</th><th>Appendage / CAN</th><th>Installed motor</th><th>Raw motor 0x92</th><th>Aligned control</th><th>Command</th></tr></thead><tbody>${motorRows||'<tr><td colspan="6">No active LEFTLEG or RIGHTLEG role.</td></tr>'}</tbody></table>`;
+ const sensors=d.sensors||[];
+ const sensorRows=sensors.map(x=>`<tr><td>${healthPill(x.status)}</td><td><span class="model-name">${x.name.replaceAll('_',' ')}</span><span class="model-detail">independent joint encoder</span></td><td class="mono">GPIO ${x.gpio}</td><td><span class="value-main">${x.signal_valid?fmtDeg(x.angle):'—'}</span><span class="value-sub">raw ${x.raw} · filtered ${Number(x.filtered_raw).toFixed(1)}</span></td><td><span class="value-main">${x.signal_valid?Number(x.frequency_hz||0).toFixed(1)+' Hz':'NO SIGNAL'}</span><span class="value-sub">duty ${Number(x.duty_percent||0).toFixed(2)}% · pulse ${x.pulse_age_us===4294967295?'never':((x.pulse_age_us||0)/1000).toFixed(1)+' ms'}</span></td><td>${age(x.sample_age_ms)}</td><td>${x.signal_valid?'PWM VALID':'PWM INVALID'}</td></tr>`).join('');
+ const sensorBox=document.getElementById('liveEncoderState');
+ if(sensorBox)sensorBox.innerHTML=`<table><thead><tr><th>State</th><th>Appendage</th><th>Input</th><th>AS5600 angle</th><th>PWM signal</th><th>Sample age</th><th>Signal</th></tr></thead><tbody>${sensorRows}</tbody></table>`;
+}
 function renderDiagnostics(){
  const d=diagnostics;if(!d)return;
+ renderLiveTelemetry();
  const ov=document.getElementById('diagOverall');ov.textContent=String(d.overall||'—').toUpperCase();ov.className='overall '+healthClass(d.overall);
  document.getElementById('diagTime').textContent=`snapshot ${(d.timestamp_ms/1000).toFixed(1)} s uptime`;
  document.getElementById('diagRole').textContent=`role ${d.role} · operating ${state?.operating_mode||'standalone'} · boot topology ${d.role_at_boot}${d.reboot_required?' · REBOOT REQUIRED':''}`;
@@ -5832,7 +5941,7 @@ function renderDiagnostics(){
  const sensors=d.sensors||[];
  document.getElementById('diagSensors').innerHTML=`<table><thead><tr><th>Health</th><th>Sensor</th><th>GPIO</th><th>Raw</th><th>Filtered</th><th>Angle</th><th>PWM duty</th><th>PWM Hz</th><th>Pulse age</th><th>Sample age</th><th>Observed raw range</th><th>Constraint</th><th>Notes</th></tr></thead><tbody>${sensors.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.gpio} / PWM</td><td class="mono">${x.raw}</td><td class="mono">${Number(x.filtered_raw).toFixed(1)}</td><td class="mono">${Number(x.angle).toFixed(1)}°</td><td class="mono">${Number(x.duty_percent||0).toFixed(2)}%</td><td class="mono">${Number(x.frequency_hz||0).toFixed(1)}</td><td>${x.pulse_age_us===4294967295?'never':((x.pulse_age_us||0)/1000).toFixed(1)+' ms'}</td><td>${age(x.sample_age_ms)}</td><td class="mono">${x.min_raw_seen}…${x.max_raw_seen}</td><td class="mono">${x.constraint_min}…${x.constraint_max}°</td><td>${x.signal_valid?'PWM VALID':'PWM INVALID'} · change ${age(x.last_change_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const acts=d.actuators||[];
- document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Raw motor</th><th>Control angle</th><th>Boot offset</th><th>AS5600 error</th><th>Feedback state</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td class="mono">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</td><td class="mono">${x.control_position_deg==null?'—':fmtDeg(x.control_position_deg)}</td><td class="mono">${x.boot_zero_offset_deg==null?'—':fmtDeg(x.boot_zero_offset_deg)}</td><td class="mono">${x.as5600_crosscheck_error_deg==null?'—':fmtDeg(x.as5600_crosscheck_error_deg)}</td><td>${x.control_feedback} · ${x.feedback} · ${age(x.feedback_age_ms)}</td></tr>`).join('')}</tbody></table>`;
+ document.getElementById('diagActuators').innerHTML=`<table><thead><tr><th>TX path</th><th>Actuator</th><th>Motor profile</th><th>CAN ID</th><th>Owned</th><th>Source</th><th>Direct</th><th>Impedance</th><th>Last sent</th><th>Opcode</th><th>TX ok/fail</th><th>TX age</th><th>Raw motor</th><th>Control angle</th><th>Boot offset</th><th>AS5600 error</th><th>Feedback state</th></tr></thead><tbody>${acts.map(x=>`<tr><td>${healthPill(x.status)}</td><td>${x.name.replaceAll('_',' ')}</td><td><span class="model-name">${x.motor_model}</span><span class="model-detail">FW ${x.motor_protocol} · ${Number(x.gear_ratio).toFixed(0)}:1 · ${x.angle_payload}</span></td><td class="mono">${x.can_id}</td><td>${boolText(x.selected)}</td><td>${x.command_source}</td><td class="mono">${x.direct_setpoint}</td><td class="mono">${x.impedance_setpoint}${x.impedance_enabled?' *':''}</td><td class="mono">${x.last_sent}</td><td class="mono">${x.last_opcode}</td><td class="mono">${x.tx_ok}/${x.tx_fail}</td><td>${age(x.tx_age_ms)}</td><td class="mono">${x.motor_position_deg==null?'—':fmtDeg(x.motor_position_deg)}</td><td class="mono">${x.control_position_deg==null?'—':fmtDeg(x.control_position_deg)}</td><td class="mono">${x.boot_zero_offset_deg==null?'—':fmtDeg(x.boot_zero_offset_deg)}</td><td class="mono">${x.as5600_crosscheck_error_deg==null?'—':fmtDeg(x.as5600_crosscheck_error_deg)}</td><td>${x.control_feedback} · ${x.feedback} · ${age(x.feedback_age_ms)}</td></tr>`).join('')}</tbody></table>`;
  const neck=d.neck_steppers||[];
  document.getElementById('diagNeck').innerHTML=`<table><thead><tr><th>Health</th><th>Motor</th><th>STEP</th><th>DIR</th><th>Current</th><th>Target</th><th>Moving</th><th>Limits</th><th>Feedback</th></tr></thead><tbody>${neck.map(x=>`<tr><td>${healthPill(x.status)}</td><td>M${x.motor}</td><td class="mono">${x.step_gpio}</td><td class="mono">${x.dir_gpio}</td><td class="mono">${Number(x.current_mm).toFixed(2)} mm / ${x.current_steps}</td><td class="mono">${Number(x.target_mm).toFixed(2)} mm / ${x.target_steps}</td><td>${boolText(x.moving)}</td><td class="mono">${x.min_mm}…${x.max_mm} mm</td><td>${x.feedback}</td></tr>`).join('')}</tbody></table>`;
  const tasks=d.tasks||[];
@@ -5873,7 +5982,6 @@ async function loadState(){
   const cb=document.getElementById('canBadge');const ready=state.control_ready||state.imu_ready||state.neck_ready;cb.textContent=ready?'RUNTIME READY':(state.configured?'REBOOT REQUIRED':'SETUP');cb.className='badge '+(ready?'ok':'warn');
   document.getElementById('clientBadge').textContent=state.clients+' CLIENT'+(state.clients===1?'':'S');
   document.getElementById('heapBadge').textContent=Math.round(state.heap/1024)+' KB HEAP';
-  document.getElementById('aOuter').textContent=fmtDeg(state.angles.outer_calf);document.getElementById('aInner').textContent=fmtDeg(state.angles.inner_calf);document.getElementById('aHip').textContent=fmtDeg(state.angles.hip_pitch);document.getElementById('aKnee').textContent=fmtDeg(state.angles.knee);document.getElementById('aRoll').textContent=fmtDeg(state.angles.hip_roll);
   if(!state.configured)notice('Controller is not configured. Actuator tasks are disabled. Select a role under Configuration, save, then reboot.');
   else if(state.reboot_required)notice('Saved role or operating structure differs from the boot topology. Reboot is required before control authority changes.');
   else if(state.role==='head')notice('HEAD / NECK personality active — FastAccelStepper OPEN-LOOP state. STOP remains available at all times.');
@@ -6063,6 +6171,18 @@ void setup() {
            currentCommandAddress().c_str(), legacyUnaddressedCommands ? "ENABLED" : "DISABLED");
   printVersionRecord();
 
+  // Establish the read-only diagnostic path before any role-specific hardware
+  // initialization. This keeps both leg ports structurally observable even if
+  // a sensor or CAN peripheral stalls during boot.
+  if (xTaskCreatePinnedToCore(
+        checkChiralityTask, "command", 6144, nullptr, 2,
+        &commandTaskHandle, 0) != pdPASS) {
+    commandTaskHandle = nullptr;
+    dbPrintln("BOOT|phase=command-task|status=fault");
+  } else {
+    dbPrintln("BOOT|phase=command-task|status=ready");
+  }
+
   // Hardware graphs are initialized only after the persisted role is known.
   // HEAD_NECK shares many GPIOs with SPI/I2C/AS5600 and must never initialize
   // those leg/center peripherals in the same boot.
@@ -6099,18 +6219,26 @@ void setup() {
       canInitialized = true;
       dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, CS GPIO5.");
 
-      primeSensorFilter();
+      dbPrintln("BOOT|phase=as5600-prime|status=deferred");
 
       // Wi-Fi/networking lives primarily on core 0. Keep the control path on
       // core 1 so captive-portal traffic does not become sensor/control jitter.
       xTaskCreatePinnedToCore(readAndComputeTask, "sensors", 4096, nullptr, 3, &sensorTaskHandle, 1);
       xTaskCreatePinnedToCore(impedanceControlTask, "impedance", 4096, nullptr, 3, &impedanceTaskHandle, 1);
       xTaskCreatePinnedToCore(canOutputTask, "can-output", 4096, nullptr, 4, &canTaskHandle, 1);
-      xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 4, &canRxTaskHandle, 1);
+      // CAN RX shares priority with sensing/impedance so a saturated bus cannot
+      // starve DB3 telemetry. The bounded RX burst above keeps latency finite.
+      xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 3, &canRxTaskHandle, 1);
       xTaskCreatePinnedToCore(hyperspawnRouteTask, "hyperspawn", 4096, nullptr, 2, &hyperspawnTaskHandle, 1);
-      runtimeControlReady = true;
+      runtimeControlReady = sensorTaskHandle && impedanceTaskHandle &&
+        canTaskHandle && canRxTaskHandle && hyperspawnTaskHandle;
       runtimeImuReady = false;
       runtimeNeckReady = false;
+      if (!runtimeControlReady) {
+        dbPrintln("BOOT|phase=leg-runtime-tasks|status=fault");
+      } else {
+        dbPrintln("BOOT|phase=leg-runtime-tasks|status=ready");
+      }
       // A reboot never arms physical leg output. Serial, portal, or the
       // HyperSpawn route must explicitly establish its own authority.
       playMode = false;
@@ -6133,8 +6261,7 @@ void setup() {
     dbPrintln("Controller is unconfigured. CAN/IMU/neck runtime tasks are intentionally disabled.");
   }
 
-  // One command task consumes both Serial and web-command queue traffic.
-  xTaskCreatePinnedToCore(checkChiralityTask, "command", 6144, nullptr, 2, &commandTaskHandle, 1);
+  runtimeInitializationComplete = true;
 
   dbPrintf("Dropbear controller ready: role=%s stack=%s portal=%s SSID=%s. Type 'help'.\n",
            selectedRoleName().c_str(), isHead ? "neck" : (isCenter ? "imu" : operatingModeName().c_str()),

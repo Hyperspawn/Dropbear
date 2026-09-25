@@ -5,18 +5,28 @@ import unittest
 
 
 SOURCE = (Path(__file__).parent / "firmware_full_libs_neck.ino").read_text()
+PROTOCOL = (Path(__file__).parent / "dropbear_motor_protocol.h").read_text()
 
 
 class BehemothMotorFeedbackContract(unittest.TestCase):
     def test_read_only_rmd_query_and_decoder_are_present(self):
-        self.assertIn("const byte request[8] = {0x92, 0, 0, 0, 0, 0, 0, 0}", SOURCE)
-        self.assertIn("data[0] != 0x92", SOURCE)
+        self.assertIn("dropbear::encodeReadMultiTurnAngle(*profile, request)", SOURCE)
+        self.assertIn("dropbear::decodeMultiTurnAngle(*profile, data, len", SOURCE)
         self.assertIn("responseID - 0x100", SOURCE)
-        self.assertIn("index <= LEFT_INNER_CALF", SOURCE)
-        self.assertIn("0xFF00000000000000ULL", SOURCE)
-        self.assertIn("static_cast<double>(signedRaw) * 0.01", SOURCE)
-        self.assertIn("data[1] != 0 || data[2] != 0 || data[3] != 0", SOURCE)
-        self.assertIn("static_cast<float>(signedRaw) * 0.01f", SOURCE)
+        self.assertIn("ANGLE_SIGNED_56_LE_BYTES_1_TO_7", PROTOCOL)
+        self.assertIn("ANGLE_SIGNED_32_LE_BYTES_4_TO_7", PROTOCOL)
+        self.assertIn("DECODE_RESERVED_BYTES_NONZERO", PROTOCOL)
+
+    def test_motor_profiles_are_explicit_per_actuator(self):
+        self.assertIn('"MyActuator RMD-X8 Pro 1:9", "V1.7", 9.0f', SOURCE)
+        self.assertIn('"MyActuator RMD-X10 1:7", "V4.2+", 7.0f', SOURCE)
+        self.assertIn("ACTUATOR_MOTOR_PROFILES[ACTUATOR_COUNT]", SOURCE)
+        self.assertIn("ANGLE_REFERENCE_OUTPUT_SHAFT", SOURCE)
+        self.assertIn("motorProfileForActuator", SOURCE)
+
+    def test_command_encoding_uses_motor_profile_library(self):
+        self.assertIn("dropbear::encodeTorqueCommand(*profile, torqueValue, buf)", SOURCE)
+        self.assertIn("dropbear::encodeStopCommand(*profile, buf)", SOURCE)
 
     def test_motor_feedback_is_consumed_before_control_route_frames(self):
         native = SOURCE.index("ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)")
@@ -41,8 +51,23 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.18", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.28", SOURCE)
+        self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
+        self.assertIn("boot-observability-v1", SOURCE)
+
+    def test_diagnostic_task_precedes_deferred_sensor_priming(self):
+        setup = SOURCE[SOURCE.index("void setup()") : SOURCE.index("void loop()")]
+        self.assertLess(setup.index("checkChiralityTask"), setup.index("status=deferred"))
+        self.assertNotIn("primeSensorFilter();", setup)
+        sensor_start = SOURCE.index("void readAndComputeTask(void *parameter) {")
+        sensor_task = SOURCE[
+            sensor_start : SOURCE.index("void updateMotorReferencedImpedance", sensor_start)
+        ]
+        self.assertIn("primeSensorFilter();", sensor_task)
+        self.assertIn("while (!runtimeInitializationComplete)", sensor_task)
+        setup = SOURCE[SOURCE.index("void setup()") : SOURCE.index("void loop()")]
+        self.assertIn("&commandTaskHandle, 0", setup)
         self.assertIn("rmd_v17_v42_0x92_multi_turn", SOURCE)
 
     def test_observation_protocol_is_addressed_and_does_not_enable_play(self):
@@ -64,11 +89,37 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertNotIn("outerCalfControlLeft.update(normalizedOuter", SOURCE)
         self.assertIn("as5600_boot_zero_then_rmd_0x92", SOURCE)
 
+    def test_portal_exposes_motor_profiles_and_independent_sensor_state(self):
+        for field in (
+            "motor_model",
+            "motor_protocol",
+            "gear_ratio",
+            "angle_reference",
+            "angle_payload",
+            "as5600",
+        ):
+            self.assertIn(field, SOURCE)
+        self.assertIn("Live appendage state", SOURCE)
+        self.assertIn("Motor output-shaft state", SOURCE)
+        self.assertIn("AS5600 encoder state", SOURCE)
+
     def test_stale_or_divergent_can_feedback_fails_to_zero_torque(self):
         self.assertIn("MOTOR_AS5600_DIVERGENCE_LIMIT_DEG", SOURCE)
         self.assertIn("motorControlAlignmentFault[actuatorIndex] = true", SOURCE)
         self.assertIn("impedanceTorqueValues[actuatorIndex] = 0", SOURCE)
         self.assertIn("millis() - motorNativeReceivedMs[actuatorIndex] > MOTOR_NATIVE_STALE_MS", SOURCE)
+
+    def test_busy_can_bus_cannot_starve_sensor_telemetry(self):
+        self.assertIn("CAN_RX_BURST_LIMIT", SOURCE)
+        self.assertIn("drained < CAN_RX_BURST_LIMIT", SOURCE)
+        self.assertIn("MOTOR_NATIVE_QUERY_BACKOFF_MS", SOURCE)
+        self.assertIn("canConsecutiveFailures >= 3", SOURCE)
+        self.assertIn(
+            'xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 3',
+            SOURCE,
+        )
+        self.assertIn("if (index < 0) return false;", SOURCE)
+        self.assertIn("data[0] != profile->readMultiTurnOpcode", SOURCE)
 
 
 if __name__ == "__main__":

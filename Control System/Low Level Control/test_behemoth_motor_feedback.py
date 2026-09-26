@@ -51,7 +51,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.38", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.41", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
@@ -163,9 +163,11 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("MOTOR_NATIVE_QUERY_BACKOFF_MS", SOURCE)
         self.assertIn("canConsecutiveFailures >= 3", SOURCE)
         self.assertIn(
-            'xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 3',
+            'xTaskCreatePinnedToCore(canReceiveTask, "can-io", 5120, nullptr, 5',
             SOURCE,
         )
+        self.assertIn("serviceCanTxQueueOne();", SOURCE)
+        self.assertIn("xQueueSendToFront(canTxQueue", SOURCE)
         self.assertIn("if (index < 0) return false;", SOURCE)
         self.assertIn("data[0] != profile->readMultiTurnOpcode", SOURCE)
 
@@ -195,7 +197,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("canDeferredReadSubmissions++", sender)
         self.assertIn("if (actuatorIndex >= 0 && motionFrame)", sender)
 
-    def test_error_passive_overflow_and_command_bursts_are_recovered(self):
+    def test_error_passive_backs_off_without_reset_and_overflow_is_cleared(self):
         scheduler = SOURCE[
             SOURCE.index("void canReceiveTask(void *parameter) {"):
             SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
@@ -208,12 +210,24 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
             "MCP_EFLG_RX1OVR",
         ):
             self.assertIn(flag, scheduler)
+        recovery_condition = scheduler[
+            scheduler.index("const bool controllerModeFault"):
+            scheduler.index("if (canDeferredTxPending")
+        ]
+        self.assertIn("MCP_EFLG_TXBO", recovery_condition)
+        self.assertNotIn("MCP_EFLG_TXEP) != 0", recovery_condition)
+        self.assertIn("clearCanRxOverflowFlags();", scheduler)
         output = SOURCE[
             SOURCE.index("void canOutputTask(void *parameter) {"):
             SOURCE.index("void executeQueuedWebCommand(const WebCommand &item) {")
         ]
         self.assertGreaterEqual(output.count("paceCanCommandBurst();"), 5)
-        self.assertIn("CAN_COMMAND_INTERFRAME_TICKS", SOURCE)
+        pacing = SOURCE[
+            SOURCE.index("void paceCanCommandBurst()"):
+            SOURCE.index("void neckStopAll();", SOURCE.index("void paceCanCommandBurst()"))
+        ]
+        self.assertIn("taskYIELD();", pacing)
+        self.assertNotIn("vTaskDelay", pacing)
         self.assertGreaterEqual(SOURCE.count("CAN.enOneShotTX()"), 2)
         self.assertIn("abortPendingCanTx(\"deferred_read_timeout\")", scheduler)
         self.assertIn("MCP_TXB0CTRL", SOURCE)
@@ -225,13 +239,102 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("attachInterrupt(digitalPinToInterrupt(CAN0_INT)", SOURCE)
         self.assertIn("bit_timing_datasheet_compliant", SOURCE)
         self.assertIn("out_of_spec_8mhz_1mbps", SOURCE)
-        recovery = SOURCE[
-            SOURCE.index("bool recoverCanController() {"):
-            SOURCE.index("int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,\n"
-                         "                       bool allowDeferredRead) {")
-        ]
+        recovery_start = SOURCE.index("bool recoverCanController() {")
+        recovery_end = SOURCE.index("uint8_t encodeCanResultForNotification", recovery_start)
+        recovery = SOURCE[recovery_start:recovery_end]
         self.assertIn("xSemaphoreTake(serialMutex", recovery)
         self.assertIn("canOneShotEnabled = true", recovery)
+
+    def test_one_shot_transmit_checks_wire_outcome_and_uses_deadline_queue(self):
+        direct_start = SOURCE.index("int mcp2515SendStandardFrameDirect")
+        direct_end = SOURCE.index("bool abortPendingCanTx", direct_start)
+        direct = SOURCE[direct_start:direct_end]
+        self.assertIn("MCP_TXB_TXERR_M", direct)
+        self.assertIn("MCP_TXB_MLOA_M", direct)
+        self.assertIn("MCP_TXB_ABTF_M", direct)
+        self.assertIn("CAN_TX_COMPLETION_TIMEOUT_US", direct)
+        self.assertIn("const uint8_t controlAddress = MCP_TXB0CTRL", direct)
+        self.assertNotIn("TX_CONTROL[3]", direct)
+        self.assertIn("MCP_TX0IF | MCP_ERRIF | MCP_MERRF", direct)
+        sender_start = SOURCE.index("int canSendFrameResult(uint32_t actuatorID", direct_end)
+        sender_end = SOURCE.index("bool canSendFrame(uint32_t", sender_start)
+        sender = SOURCE[sender_start:sender_end]
+        self.assertIn("xQueueSendToFront(canTxQueue", sender)
+        self.assertIn("CAN_TX_QUEUE_DEADLINE_US", sender)
+        self.assertIn("CAN_TX_CALLER_TIMEOUT_MS", sender)
+        self.assertIn("xTaskGetCurrentTaskHandle() == canRxTaskHandle", sender)
+
+    def test_missing_nodes_back_off_and_serial_diagnostics_are_bounded(self):
+        self.assertIn("MOTOR_NATIVE_OFFLINE_RETRY_MS = 5000", SOURCE)
+        request = SOURCE[
+            SOURCE.index("bool requestMotorNativeFeedback"):
+            SOURCE.index("void updateSensorDiagnosticSample")
+        ]
+        self.assertIn('abortPendingCanTx("read_mailbox_busy")', request)
+        bus_start = SOURCE.index("void printCanBusStatus()", SOURCE.index("const char *canResultName"))
+        bus = SOURCE[
+            bus_start:SOURCE.index("void printCanRegisterSnapshot()", bus_start)
+        ]
+        self.assertIn("char line[256];", bus)
+        self.assertIn('DBC1,%s,BUS,', bus)
+        self.assertIn('DBC1,%s,ERRORS,', bus)
+        self.assertIn('DBC1,%s,TIMING,', bus)
+        self.assertNotIn('emitCanDiagnosticLine(', bus)
+
+    def test_8mhz_1mbps_override_disables_library_triple_sampling(self):
+        timing = SOURCE[
+            SOURCE.index("int configureCanTimingAndNormalMode()"):
+            SOURCE.index("int mcp2515SendStandardFrameDirect")
+        ]
+        self.assertIn("CAN.setMode(MODE_CONFIG)", timing)
+        self.assertIn("CAN_CNF1_8MHZ_1MBPS = 0x00", SOURCE)
+        self.assertIn("CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE = 0x80", SOURCE)
+        self.assertIn("CAN_CNF3_8MHZ_1MBPS = 0x80", SOURCE)
+        self.assertIn("mcp2515ReadRegisterDirect(MCP_CNF2)", timing)
+        self.assertIn("configureCanTimingAndNormalMode()", SOURCE[SOURCE.index("void setup()") :])
+        recovery = SOURCE[
+            SOURCE.index("bool recoverCanController()"):
+            SOURCE.index("uint8_t encodeCanResultForNotification")
+        ]
+        self.assertIn("configureCanTimingAndNormalMode()", recovery)
+
+    def test_rtos_transport_has_measured_deadlines_and_nonblocking_diagnostics(self):
+        scheduler = SOURCE[
+            SOURCE.index("void canReceiveTask(void *parameter) {"):
+            SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
+        ]
+        self.assertIn("const bool servicedQueuedTx = serviceCanTxQueueOne();", scheduler)
+        self.assertIn("!servicedQueuedTx", scheduler)
+        self.assertIn("canIoLoopBudgetMisses++", scheduler)
+        self.assertIn("canRxDrainMaxUs", scheduler)
+        sender_start = SOURCE.index("int performCanTransmit(uint32_t id")
+        sender = SOURCE[
+            sender_start:SOURCE.index("bool canSendFrame(uint32_t", sender_start)
+        ]
+        self.assertIn("canTxQueueLatencyMaxUs", sender)
+        self.assertIn("canTxExecutionMaxUs", sender)
+        output = SOURCE[
+            SOURCE.index("void canOutputTask(void *parameter) {"):
+            SOURCE.index("void executeQueuedWebCommand", SOURCE.index("void canOutputTask"))
+        ]
+        self.assertIn("canOutputDeadlineMisses++", output)
+        self.assertIn("canStopBatchFailures++", output)
+        stop_batch = output[output.index("} else if (stopBurstRemaining > 0)"):]
+        self.assertNotIn("break;", stop_batch.split("if (motionBatchAttempted", 1)[0])
+        diagnostic = SOURCE[
+            SOURCE.index("void emitCanDiagnosticCStringNow"):
+            SOURCE.index("bool sendReadOnlyDiagnosticFrame")
+        ]
+        self.assertIn("xQueueSend(canDiagnosticLineQueue", diagnostic)
+        self.assertIn("emitCanDiagnosticFrame(\"RX\"", diagnostic)
+        self.assertIn("flushDeferredCanDiagnosticLines(4);", SOURCE)
+
+    def test_polling_can_be_quiesced_for_non_interleaved_diagnostics(self):
+        self.assertIn('normalized == "can poll off"', SOURCE)
+        self.assertIn('normalized == "can poll on"', SOURCE)
+        self.assertIn('normalized == "can registers"', SOURCE)
+        self.assertIn("quiesceMotorNativePolling();", SOURCE)
+        self.assertIn("MOTOR_NATIVE_FEEDBACK_ENABLED && motorNativePollingEnabled", SOURCE)
 
     def test_stale_observation_retains_last_value_but_control_remains_fail_closed(self):
         readings = SOURCE[

@@ -12,6 +12,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include <freertos/queue.h>
 #include <math.h>
 #include "dropbear_motor_protocol.h"
 
@@ -49,7 +50,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.38";
+  "behemoth-observation-protocol-2026.09.41";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -62,7 +63,12 @@ static const char *DROPBEAR_CAPABILITIES =
   "can-discovery-v1;can-bus-recovery-v1;can-transaction-scheduler-v1;"
   "can-oneshot-tx-v1;"
   "can-deferred-tx-abort-v1;can-interrupt-rx-v1;"
-  "can-timing-observability-v1;"
+  "can-timing-observability-v1;can-wire-tx-status-v1;"
+  "can-overflow-recovery-v1;can-poll-control-v1;"
+  "can-register-snapshot-v1;can-rtos-deadline-v1;"
+  "can-nonblocking-diagnostic-queue-v1;can-single-mailbox-v1;"
+  "can-offline-backoff-v1;can-bounded-records-v1;"
+  "can-single-sample-1mbps-v1;"
   "config-records-v1;calibration-result-v1";
 
 // -----------------------------------------------------------------------------
@@ -149,6 +155,7 @@ static const int AS5600_PINS[AS5600_SENSOR_COUNT] = {
 // for loadJointConstraintsFromFile() is valid; the full definition follows in
 // Shared state.
 struct JointConstraints;
+enum CommandTarget : uint8_t;
 
 void IRAM_ATTR handleAs5600Edge(uint8_t index, int pin) {
   const uint32_t now = micros();
@@ -320,23 +327,37 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 // cannot command motion, but it does add bounded CAN traffic.
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
 // The installed MCP2515 modules are documented as 8 MHz while the actuator bus
-// is fixed at 1 Mbit/s. Microchip requires PS2 >= 2 TQ; the MCP_CAN_lib preset
-// uses CNF1/CNF2/CNF3 = 00/C0/80 (PS2 = 1 TQ). Keep the deployed bitrate for
-// compatibility with the motors, but report this hardware timing limitation
-// explicitly. A 16 MHz MCP2515 clock is the compliant 1 Mbit/s hardware fix.
+// is fixed at 1 Mbit/s. Microchip requires PS2 >= 2 TQ; even the single-sample
+// CNF1/CNF2/CNF3 = 00/80/80 override below has PS2 = 1 TQ. Keep the deployed
+// bitrate for compatibility with the motors, but report this hardware timing
+// limitation explicitly. A 16 MHz MCP2515 clock is the compliant hardware fix.
 static const uint32_t CAN_CONTROLLER_CLOCK_HZ = 8000000;
 static const uint32_t CAN_BUS_BITRATE_BPS = 1000000;
 static const bool CAN_BIT_TIMING_DATASHEET_COMPLIANT = false;
+static const uint8_t CAN_CNF1_8MHZ_1MBPS = 0x00;
+static const uint8_t CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE = 0x80;
+static const uint8_t CAN_CNF3_8MHZ_1MBPS = 0x80;
 static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 12;
 static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 50;
 static const uint32_t MOTOR_NATIVE_REPLY_TIMEOUT_MS = 10;
 static const uint8_t MOTOR_NATIVE_OFFLINE_AFTER_MISSES = 3;
-static const uint32_t MOTOR_NATIVE_OFFLINE_RETRY_MS = 500;
+// A missing node costs eight TEC counts per no-ACK attempt. Re-probing every
+// 500 ms can keep an otherwise healthy multi-node controller error-passive,
+// especially when two configured addresses are absent. Five seconds still
+// discovers a repaired connection promptly without poisoning healthy reads.
+static const uint32_t MOTOR_NATIVE_OFFLINE_RETRY_MS = 5000;
 static const uint32_t MOTOR_NATIVE_STALE_MS = 750;
 static const uint8_t CAN_RX_BURST_LIMIT = 12;
-static const TickType_t CAN_COMMAND_INTERFRAME_TICKS = 1;
 static const uint32_t CAN_DEFERRED_TX_ABORT_MS = 12;
 static const uint32_t CAN_TX_ABORT_TIMEOUT_US = 2000;
+static const uint32_t CAN_TX_COMPLETION_TIMEOUT_US = 3500;
+static const uint32_t CAN_TX_QUEUE_DEADLINE_US = 8000;
+static const uint32_t CAN_TX_CALLER_TIMEOUT_MS = 12;
+static const uint8_t CAN_TX_QUEUE_DEPTH = 12;
+static const uint32_t CAN_OUTPUT_PERIOD_US = 10000;
+static const uint32_t CAN_IO_LOOP_BUDGET_US = 5000;
+static const uint8_t CAN_DIAGNOSTIC_LINE_QUEUE_DEPTH = 16;
+static const size_t CAN_DIAGNOSTIC_LINE_MAX = 384;
 static const uint32_t CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS = 1000;
 static const uint32_t CAN_DIAGNOSTIC_MAX_CAPTURE_MS = 10000;
 static const uint32_t CAN_DIAGNOSTIC_SNIFF_MAX_MS = 2000;
@@ -401,6 +422,42 @@ volatile uint32_t motorNativeNextEligibleMs[ACTUATOR_COUNT] = {0};
 volatile bool canDeferredTxPending = false;
 volatile uint32_t canDeferredTxSinceMs = 0;
 volatile bool canDeferredTxAbortAttempted = false;
+// This switch controls only automatic 0x92 polling. It never arms motion and
+// lets diagnostics prove whether controller errors occur on an otherwise idle
+// bus. Diagnostic transactions pause and restore it explicitly.
+volatile bool motorNativePollingEnabled = true;
+
+struct CanTxRequest {
+  uint32_t id;
+  byte data[8];
+  byte length;
+  bool allowDeferredRead;
+  bool highPriority;
+  uint32_t token;
+  uint32_t enqueuedUs;
+  uint32_t deadlineUs;
+  TaskHandle_t requester;
+};
+
+struct CanDiagnosticLineRecord {
+  char text[CAN_DIAGNOSTIC_LINE_MAX];
+};
+
+QueueHandle_t canTxQueue = nullptr;
+QueueHandle_t canDiagnosticLineQueue = nullptr;
+volatile uint32_t canTxQueueToken = 0;
+volatile uint32_t canTxQueueAccepted = 0;
+volatile uint32_t canTxQueueCompleted = 0;
+volatile uint32_t canTxQueueFull = 0;
+volatile uint32_t canTxQueueExpired = 0;
+volatile uint32_t canTxCallerTimeouts = 0;
+volatile uint32_t canTxQueueLatencyLastUs = 0;
+volatile uint32_t canTxQueueLatencyMaxUs = 0;
+volatile uint32_t canTxExecutionLastUs = 0;
+volatile uint32_t canTxExecutionMaxUs = 0;
+volatile uint32_t canDiagnosticLinesQueued = 0;
+volatile uint32_t canDiagnosticLinesDrained = 0;
+volatile uint32_t canDiagnosticLineDrops = 0;
 
 // -----------------------------------------------------------------------------
 // Shared state
@@ -861,6 +918,27 @@ volatile uint32_t canTxAbortSuccesses = 0;
 volatile uint32_t canTxAbortFailures = 0;
 volatile uint32_t lastCanTxAbortReportMs = 0;
 volatile uint32_t canMotionFailClosed = 0;
+volatile uint32_t canTxWireErrors = 0;
+volatile uint32_t canTxArbitrationLosses = 0;
+volatile uint32_t canTxControllerAborts = 0;
+volatile uint32_t canRxOverflowEvents = 0;
+volatile uint32_t canRxOverflowClears = 0;
+volatile uint32_t canOutputBatchLastUs = 0;
+volatile uint32_t canOutputBatchMaxUs = 0;
+volatile uint32_t canOutputDeadlineMisses = 0;
+volatile uint32_t canStopBatchFailures = 0;
+volatile uint32_t canIoLoopLastUs = 0;
+volatile uint32_t canIoLoopMaxUs = 0;
+volatile uint32_t canIoLoopBudgetMisses = 0;
+volatile uint32_t canRxDrainLastUs = 0;
+volatile uint32_t canRxDrainMaxUs = 0;
+volatile uint8_t canControllerMode = MODE_CONFIG;
+volatile uint8_t canControlRegister = 0;
+volatile uint8_t canInterruptFlags = 0;
+volatile uint8_t canTxBufferControl[3] = {0, 0, 0};
+volatile uint8_t canBitTimingRegisters[3] = {0, 0, 0};
+volatile uint8_t canInterruptEnable = 0;
+volatile uint8_t canRxBufferControl[2] = {0, 0};
 
 volatile uint32_t sensorTaskLoops = 0;
 volatile uint32_t impedanceTaskLoops = 0;
@@ -915,8 +993,12 @@ int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
 void sampleCanControllerErrors();
 bool recoverCanController();
 bool abortPendingCanTx(const char *reason);
+bool clearCanRxOverflowFlags();
+bool quiesceMotorNativePolling();
+void restoreMotorNativePolling(bool wasEnabled);
 void IRAM_ATTR onCanInterrupt();
 void printCanBusStatus();
+void printCanRegisterSnapshot();
 bool processCanDiagnosticCommand(String command);
 void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len);
 void portalTask(void *parameter);
@@ -1030,7 +1112,7 @@ String desiredPortalSSID() {
   return isLeft ? "LEFTLEG" : "RIGHTLEG";
 }
 
-String commandTargetName(CommandTarget target) {
+const char *commandTargetCString(CommandTarget target) {
   switch (target) {
     case TARGET_SETUP: return "SETUP";
     case TARGET_LEFTLEG: return "LEFTLEG";
@@ -1042,6 +1124,10 @@ String commandTargetName(CommandTarget target) {
     case TARGET_ALL: return "ALL";
     default: return "INVALID";
   }
+}
+
+String commandTargetName(CommandTarget target) {
+  return String(commandTargetCString(target));
 }
 
 CommandTarget currentCommandTarget() {
@@ -1510,11 +1596,14 @@ bool requestMotorNativeFeedback(uint8_t actuatorIndex) {
   byte request[8];
   dropbear::encodeReadMultiTurnAngle(*profile, request);
   const int result = canSendFrameResult(ACTUATOR_IDS[actuatorIndex], request, 8, true);
-  // MCP_CAN_lib can return SEND_MSG_TIMEOUT after loading TXREQ even though
-  // the frame later wins arbitration and receives a valid motor reply. Keep
-  // that transaction pending; only GET_TX_BUFFER_TIMEOUT proves no new frame
-  // was queued.
+  // A SEND_MSG_TIMEOUT can leave the owned mailbox loaded even though the
+  // frame later wins arbitration and receives a valid motor reply. Keep that
+  // transaction pending. A busy mailbox means stale ownership and is aborted
+  // before the scheduler is allowed to probe another node.
   if (result != CAN_OK && result != CAN_SENDMSGTIMEOUT) {
+    if (result == CAN_GETTXBFTIMEOUT) {
+      abortPendingCanTx("read_mailbox_busy");
+    }
     motorNativeQueryFailures++;
     return false;
   }
@@ -1768,14 +1857,76 @@ bool selectedDiagnosticMotorId(uint32_t requestId) {
          requestId <= RMD_DISCOVERY_LAST_ID;
 }
 
-void emitCanDiagnosticLine(const String &line, bool countDrop = false) {
+void emitCanDiagnosticCStringNow(const char *line, bool countDrop) {
+  if (line == nullptr || line[0] == '\0') return;
   if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
     Serial.println(line);
     xSemaphoreGive(serialMutex);
-    appendWebLog(line);
+    appendWebLog(String(line));
     return;
   }
   if (countDrop) canDiagnosticSerialDrops++;
+}
+
+void emitCanDiagnosticCString(const char *line, bool countDrop = false) {
+  if (line == nullptr || line[0] == '\0') return;
+  // Serial and the web-log mutex are not real-time transports. The sole CAN
+  // I/O task may only copy a bounded record into a non-blocking queue; core 0
+  // formats/drains it later. This prevents diagnostics from delaying RX drain,
+  // TX completion, or error recovery on core 1.
+  if (canRxTaskHandle != nullptr &&
+      xTaskGetCurrentTaskHandle() == canRxTaskHandle) {
+    if (canDiagnosticLineQueue != nullptr) {
+      CanDiagnosticLineRecord record = {};
+      snprintf(record.text, sizeof(record.text), "%s", line);
+      if (xQueueSend(canDiagnosticLineQueue, &record, 0) == pdTRUE) {
+        canDiagnosticLinesQueued++;
+        return;
+      }
+    }
+    canDiagnosticLineDrops++;
+    if (countDrop) canDiagnosticSerialDrops++;
+    return;
+  }
+  emitCanDiagnosticCStringNow(line, countDrop);
+}
+
+void emitCanDiagnosticLine(const String &line, bool countDrop = false) {
+  emitCanDiagnosticCString(line.c_str(), countDrop);
+}
+
+void emitCanDiagnosticFrame(const char *direction, uint32_t timestampMs,
+                            uint32_t id, const byte *data, byte len,
+                            bool countDrop = false) {
+  if (direction == nullptr || data == nullptr || len > 8) return;
+  char line[192] = {0};
+  int used = snprintf(line, sizeof(line), "DBC1,%s,%s,%lu,0x%03lX,%u",
+                      commandTargetCString(currentCommandTarget()), direction,
+                      static_cast<unsigned long>(timestampMs),
+                      static_cast<unsigned long>(id),
+                      static_cast<unsigned int>(len));
+  if (used < 0) return;
+  size_t offset = static_cast<size_t>(used);
+  for (byte index = 0; index < len && offset < sizeof(line); ++index) {
+    const int appended = snprintf(line + offset, sizeof(line) - offset,
+                                  ",%02X", data[index]);
+    if (appended < 0 || static_cast<size_t>(appended) >= sizeof(line) - offset) {
+      line[sizeof(line) - 1] = '\0';
+      break;
+    }
+    offset += static_cast<size_t>(appended);
+  }
+  emitCanDiagnosticCString(line, countDrop);
+}
+
+void flushDeferredCanDiagnosticLines(uint8_t limit) {
+  if (canDiagnosticLineQueue == nullptr) return;
+  CanDiagnosticLineRecord record;
+  for (uint8_t index = 0; index < limit; ++index) {
+    if (xQueueReceive(canDiagnosticLineQueue, &record, 0) != pdTRUE) break;
+    canDiagnosticLinesDrained++;
+    emitCanDiagnosticCStringNow(record.text, true);
+  }
 }
 
 String canDiagnosticFrameLine(const char *direction, uint32_t id,
@@ -1817,11 +1968,6 @@ void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) 
   }
   if (!canDiagnosticCaptureAll &&
       !isExpectedCanDiagnosticReplyId(canDiagnosticRequestId, responseId)) return;
-  if (!canDiagnosticCaptureAll) {
-    canDeferredTxPending = false;
-    canDeferredTxSinceMs = 0;
-    canDeferredTxAbortAttempted = false;
-  }
   if (canDiagnosticCaptureFramesRemaining == 0) {
     canDiagnosticCaptureActive = false;
     return;
@@ -1838,7 +1984,7 @@ void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) 
     canDiagnosticScanResponses++;
   }
   canDiagnosticRxFrames++;
-  emitCanDiagnosticLine(canDiagnosticFrameLine("RX", responseId, data, len), true);
+  emitCanDiagnosticFrame("RX", now, responseId, data, len, true);
   if (canDiagnosticCaptureFramesRemaining != UINT16_MAX) {
     canDiagnosticCaptureFramesRemaining--;
     if (canDiagnosticCaptureFramesRemaining == 0) canDiagnosticCaptureActive = false;
@@ -1851,12 +1997,28 @@ bool sendReadOnlyDiagnosticFrame(uint32_t requestId, const byte payload[8]) {
                           String(millis()) + ",unsafe_opcode");
     return false;
   }
-  const int result = canSendFrameResult(requestId, payload, 8, true);
-  const bool sent = result == CAN_OK || result == CAN_SENDMSGTIMEOUT;
+  // Diagnostics pause the automatic poller and own no deferred mailbox. A
+  // timeout is completed/aborted by the CAN I/O task before this call returns.
+  const int result = canSendFrameResult(requestId, payload, 8, false);
+  const bool sent = result == CAN_OK;
   if (canDiagnosticScanActive && !sent) canDiagnosticScanTxFailures++;
   emitCanDiagnosticLine(canDiagnosticFrameLine(sent ? "TX" : "TX_FAIL",
                                                requestId, payload, 8));
   return sent;
+}
+
+bool quiesceMotorNativePolling() {
+  const bool wasEnabled = motorNativePollingEnabled;
+  motorNativePollingEnabled = false;
+  // The CAN I/O task owns timeout/abort cleanup. Waiting here lets an existing
+  // automatic request close without any command task touching MCP2515 SPI.
+  vTaskDelay(pdMS_TO_TICKS(MOTOR_NATIVE_REPLY_TIMEOUT_MS +
+                           CAN_DEFERRED_TX_ABORT_MS + 2));
+  return wasEnabled;
+}
+
+void restoreMotorNativePolling(bool wasEnabled) {
+  if (wasEnabled) motorNativePollingEnabled = true;
 }
 
 String canDiscoveryIdList(uint32_t mask) {
@@ -1906,8 +2068,29 @@ bool processCanDiagnosticCommand(String command) {
     return true;
   }
   if (normalized == "can bus") {
-    sampleCanControllerErrors();
     printCanBusStatus();
+    return true;
+  }
+  if (normalized == "can registers") {
+    printCanRegisterSnapshot();
+    return true;
+  }
+  if (normalized == "can poll status") {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL," +
+                          String(millis()) + "," +
+                          String(motorNativePollingEnabled ? "on" : "off"));
+    return true;
+  }
+  if (normalized == "can poll off") {
+    quiesceMotorNativePolling();
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL," +
+                          String(millis()) + ",off");
+    return true;
+  }
+  if (normalized == "can poll on") {
+    motorNativePollingEnabled = true;
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL," +
+                          String(millis()) + ",on");
     return true;
   }
   if (!runtimeControlReady || !canInitialized || !isLegRole()) {
@@ -1917,6 +2100,7 @@ bool processCanDiagnosticCommand(String command) {
   }
 
   if (normalized == "can scan") {
+    const bool restorePolling = quiesceMotorNativePolling();
     byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0};
     canDiagnosticScanFoundMask = 0;
     canDiagnosticScanSameIdMask = 0;
@@ -1924,10 +2108,6 @@ bool processCanDiagnosticCommand(String command) {
     canDiagnosticScanResponses = 0;
     canDiagnosticScanTxFailures = 0;
     canDiagnosticScanActive = true;
-    // Close the automatic poller's one outstanding transaction before the
-    // first discovery capture window. Without this quiesce, a late 0x92 reply
-    // can be mistaken for the first scan target on same-ID legacy firmware.
-    vTaskDelay(pdMS_TO_TICKS(MOTOR_NATIVE_REPLY_TIMEOUT_MS + 2));
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
                           String(millis()) + ",start,0x141,0x160,opcode=9A");
     for (uint32_t requestId = RMD_DISCOVERY_FIRST_ID;
@@ -1938,6 +2118,7 @@ bool processCanDiagnosticCommand(String command) {
     }
     canDiagnosticCaptureActive = false;
     canDiagnosticScanActive = false;
+    restoreMotorNativePolling(restorePolling);
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
                           String(millis()) + ",complete,0x141,0x160,opcode=9A," +
                           "found=" + canDiscoveryIdList(canDiagnosticScanFoundMask) + "," +
@@ -2012,6 +2193,7 @@ bool processCanDiagnosticCommand(String command) {
                             String(millis()) + ",too_many_arguments");
       return true;
     }
+    const bool restorePolling = quiesceMotorNativePolling();
     static const byte INFO_OPCODES[] = {0x9A, 0x9C, 0x9D, 0x92, 0x90, 0x30, 0x42};
     armCanDiagnosticCapture(requestId, 2000);
     for (byte index = 0; index < sizeof(INFO_OPCODES); ++index) {
@@ -2020,6 +2202,9 @@ bool processCanDiagnosticCommand(String command) {
       sendReadOnlyDiagnosticFrame(requestId, payload);
       vTaskDelay(pdMS_TO_TICKS(8));
     }
+    vTaskDelay(pdMS_TO_TICKS(20));
+    canDiagnosticCaptureActive = false;
+    restoreMotorNativePolling(restorePolling);
     return true;
   }
 
@@ -2073,6 +2258,27 @@ uint8_t mcp2515ReadRegisterDirect(uint8_t address) {
   return value;
 }
 
+void mcp2515WriteRegisterDirect(uint8_t address, uint8_t value) {
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(CAN_CS_PIN, LOW);
+  SPI.transfer(MCP_WRITE);
+  SPI.transfer(address);
+  SPI.transfer(value);
+  digitalWrite(CAN_CS_PIN, HIGH);
+  SPI.endTransaction();
+}
+
+void mcp2515WriteRegistersDirect(uint8_t address, const uint8_t *values,
+                                 uint8_t length) {
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(CAN_CS_PIN, LOW);
+  SPI.transfer(MCP_WRITE);
+  SPI.transfer(address);
+  for (uint8_t index = 0; index < length; ++index) SPI.transfer(values[index]);
+  digitalWrite(CAN_CS_PIN, HIGH);
+  SPI.endTransaction();
+}
+
 void mcp2515BitModifyDirect(uint8_t address, uint8_t mask, uint8_t value) {
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
   digitalWrite(CAN_CS_PIN, LOW);
@@ -2082,6 +2288,86 @@ void mcp2515BitModifyDirect(uint8_t address, uint8_t mask, uint8_t value) {
   SPI.transfer(value);
   digitalWrite(CAN_CS_PIN, HIGH);
   SPI.endTransaction();
+}
+
+int configureCanTimingAndNormalMode() {
+  // MCP_CAN_lib 1.5.1 uses CNF2=0xC0 for 8 MHz / 1 Mbit/s, enabling
+  // triple sampling. Microchip documents that mode as a slow/noisy-bus aid;
+  // at this four-TQ bit time the extra samples occur only 0.5 and 1 TQ before
+  // the nominal 75% sample point. Own the complete register tuple and sample
+  // once at 75% (CNF2=0x80). The 8 MHz PS2=1 TQ limitation remains reported
+  // as out-of-spec; production hardware should still migrate to 16 MHz.
+  if (CAN.setMode(MODE_CONFIG) != CAN_OK) return CAN_FAIL;
+  mcp2515WriteRegisterDirect(MCP_CNF1, CAN_CNF1_8MHZ_1MBPS);
+  mcp2515WriteRegisterDirect(MCP_CNF2, CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE);
+  mcp2515WriteRegisterDirect(MCP_CNF3, CAN_CNF3_8MHZ_1MBPS);
+  const bool verified =
+    mcp2515ReadRegisterDirect(MCP_CNF1) == CAN_CNF1_8MHZ_1MBPS &&
+    mcp2515ReadRegisterDirect(MCP_CNF2) == CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE &&
+    mcp2515ReadRegisterDirect(MCP_CNF3) == CAN_CNF3_8MHZ_1MBPS;
+  if (!verified) return CAN_FAIL;
+  return CAN.setMode(MCP_NORMAL);
+}
+
+// MCP_CAN_lib::sendMsg() considers a cleared TXREQ bit successful without
+// examining ABTF, MLOA, or TXERR. That is incorrect in one-shot mode: TXREQ
+// also clears after an arbitration loss or transmit error. Keep the library
+// for controller setup/RX, but own standard-frame transmission here so every
+// caller receives the actual wire outcome. Caller must hold canMutex.
+int mcp2515SendStandardFrameDirect(uint32_t id, const byte *data, byte length) {
+  if (id > 0x7FFU || data == nullptr || length > 8) return CAN_FAILTX;
+
+  // The firmware intentionally supports only one outstanding CAN transaction.
+  // Own TXB0 exclusively so a stale TXREQ can never spill later frames into
+  // TXB1/TXB2 and silently turn one request into three in-flight mailboxes.
+  const uint8_t controlAddress = MCP_TXB0CTRL;
+  const uint32_t freeStartedUs = micros();
+  uint8_t control = mcp2515ReadRegisterDirect(controlAddress);
+  while ((control & MCP_TXB_TXREQ_M) != 0 &&
+         micros() - freeStartedUs < CAN_TX_COMPLETION_TIMEOUT_US) {
+    delayMicroseconds(10);
+    control = mcp2515ReadRegisterDirect(controlAddress);
+  }
+  if ((control & MCP_TXB_TXREQ_M) != 0) return CAN_GETTXBFTIMEOUT;
+
+  // Clear stale completion/error flags before this mailbox is reused.
+  mcp2515WriteRegisterDirect(controlAddress, 0);
+  mcp2515BitModifyDirect(MCP_CANINTF,
+                         MCP_TX0IF | MCP_ERRIF | MCP_MERRF, 0);
+  uint8_t frame[13] = {0};
+  frame[0] = static_cast<uint8_t>((id >> 3) & 0xFF);  // SIDH
+  frame[1] = static_cast<uint8_t>((id & 0x07) << 5); // SIDL, standard ID
+  frame[4] = length & 0x0F;                          // DLC
+  for (uint8_t index = 0; index < length; ++index) frame[5 + index] = data[index];
+  mcp2515WriteRegistersDirect(controlAddress + 1, frame, sizeof(frame));
+  mcp2515BitModifyDirect(controlAddress, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
+
+  const uint32_t transmitStartedUs = micros();
+  control = MCP_TXB_TXREQ_M;
+  do {
+    control = mcp2515ReadRegisterDirect(controlAddress);
+    if ((control & MCP_TXB_TXREQ_M) == 0) break;
+    delayMicroseconds(10);
+  } while (micros() - transmitStartedUs < CAN_TX_COMPLETION_TIMEOUT_US);
+
+  canTxBufferControl[0] = control;
+  mcp2515BitModifyDirect(MCP_CANINTF,
+                         MCP_TX0IF | MCP_ERRIF | MCP_MERRF, 0);
+  if ((control & MCP_TXB_TXREQ_M) != 0) return CAN_SENDMSGTIMEOUT;
+  bool failed = false;
+  if ((control & MCP_TXB_TXERR_M) != 0) {
+    canTxWireErrors++;
+    failed = true;
+  }
+  if ((control & MCP_TXB_MLOA_M) != 0) {
+    canTxArbitrationLosses++;
+    failed = true;
+  }
+  if ((control & MCP_TXB_ABTF_M) != 0) {
+    canTxControllerAborts++;
+    failed = true;
+  }
+  return failed ? CAN_FAILTX : CAN_OK;
 }
 
 bool abortPendingCanTx(const char *reason) {
@@ -2142,10 +2428,45 @@ bool abortPendingCanTx(const char *reason) {
 void sampleCanControllerErrors() {
   if (!canInitialized || canMutex == nullptr) return;
   if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) != pdTRUE) return;
-  canErrorFlags = CAN.getError();
-  canTxErrorCount = CAN.errorCountTX();
-  canRxErrorCount = CAN.errorCountRX();
+  canControllerMode = mcp2515ReadRegisterDirect(MCP_CANSTAT) & MODE_MASK;
+  canControlRegister = mcp2515ReadRegisterDirect(MCP_CANCTRL);
+  canBitTimingRegisters[0] = mcp2515ReadRegisterDirect(MCP_CNF1);
+  canBitTimingRegisters[1] = mcp2515ReadRegisterDirect(MCP_CNF2);
+  canBitTimingRegisters[2] = mcp2515ReadRegisterDirect(MCP_CNF3);
+  canInterruptEnable = mcp2515ReadRegisterDirect(MCP_CANINTE);
+  canInterruptFlags = mcp2515ReadRegisterDirect(MCP_CANINTF);
+  canErrorFlags = mcp2515ReadRegisterDirect(MCP_EFLG);
+  canTxErrorCount = mcp2515ReadRegisterDirect(MCP_TEC);
+  canRxErrorCount = mcp2515ReadRegisterDirect(MCP_REC);
+  canTxBufferControl[0] = mcp2515ReadRegisterDirect(MCP_TXB0CTRL);
+  canTxBufferControl[1] = mcp2515ReadRegisterDirect(MCP_TXB1CTRL);
+  canTxBufferControl[2] = mcp2515ReadRegisterDirect(MCP_TXB2CTRL);
+  canRxBufferControl[0] = mcp2515ReadRegisterDirect(MCP_RXB0CTRL);
+  canRxBufferControl[1] = mcp2515ReadRegisterDirect(MCP_RXB1CTRL);
   xSemaphoreGive(canMutex);
+}
+
+bool clearCanRxOverflowFlags() {
+  if (!canInitialized || canMutex == nullptr) return false;
+  const uint8_t overflowMask = MCP_EFLG_RX0OVR | MCP_EFLG_RX1OVR;
+  bool cleared = false;
+  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    const uint8_t before = mcp2515ReadRegisterDirect(MCP_EFLG);
+    if ((before & overflowMask) != 0) {
+      canRxOverflowEvents++;
+      // RXnOVR is sticky and the datasheet requires the MCU to clear it. The
+      // receive task has already drained both mailboxes; a full controller
+      // reset here only destroys good state and creates a five-second storm.
+      mcp2515BitModifyDirect(MCP_EFLG, overflowMask, 0);
+      mcp2515BitModifyDirect(MCP_CANINTF, MCP_ERRIF, 0);
+      const uint8_t after = mcp2515ReadRegisterDirect(MCP_EFLG);
+      canErrorFlags = after;
+      cleared = (after & overflowMask) == 0;
+      if (cleared) canRxOverflowClears++;
+    }
+    xSemaphoreGive(canMutex);
+  }
+  return cleared;
 }
 
 const char *canResultName(int result) {
@@ -2179,23 +2500,75 @@ String canErrorFlagNames(uint8_t flags) {
 }
 
 void printCanBusStatus() {
-  emitCanDiagnosticLine(
-    "DBC1," + currentCommandAddress() + ",BUS," + String(millis()) + "," +
-    String(canInitialized ? 1 : 0) + "," + String(canErrorFlags) + "," +
-    String(canTxErrorCount) + "," + String(canRxErrorCount) + "," +
-    String(canConsecutiveFailures) + "," + String(canRecoveryAttempts) + "," +
-    String(canRecoverySuccesses) + "," + String(lastCanResult) + "," +
-    "eflg=" + canErrorFlagNames(canErrorFlags) + "," +
-    "result=" + String(canResultName(lastCanResult)) + ",oneshot=" +
-    String(canOneShotEnabled ? 1 : 0) + ",deferred=" +
-    String(canDeferredTxPending ? 1 : 0) + ",tx_abort=" +
-    String(canTxAbortSuccesses) + "/" + String(canTxAbortAttempts) +
-    ",rx_irq=" + String(canRxInterrupts) + ",rx_wake=" +
-    String(canRxWakeups) + ",rx_max_burst=" + String(canRxMaxBurst) +
-    ",clock_hz=" + String(CAN_CONTROLLER_CLOCK_HZ) + ",bitrate=" +
-    String(CAN_BUS_BITRATE_BPS) + ",timing=" +
-    String(CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "compliant" : "out_of_spec_8mhz_1mbps")
-  );
+  // HardwareObservationManager admits at most 256 bytes per serial record.
+  // Keep state, error counts, and timing in separate bounded records rather
+  // than producing one oversized line that cannot be delivered intact.
+  char line[256];
+  const char *address = commandTargetCString(currentCommandTarget());
+  const unsigned long now = static_cast<unsigned long>(millis());
+  snprintf(line, sizeof(line),
+           "DBC1,%s,BUS,%lu,ready=%u,eflg=%02X,tec=%u,rec=%u,fail=%lu,recovery=%lu/%lu,last=%d,result=%s,oneshot=%u,deferred=%u,poll=%s,mode=%02X,timing=%s",
+           address, now, canInitialized ? 1U : 0U, canErrorFlags,
+           canTxErrorCount, canRxErrorCount,
+           static_cast<unsigned long>(canConsecutiveFailures),
+           static_cast<unsigned long>(canRecoverySuccesses),
+           static_cast<unsigned long>(canRecoveryAttempts), lastCanResult,
+           canResultName(lastCanResult), canOneShotEnabled ? 1U : 0U,
+           canDeferredTxPending ? 1U : 0U,
+           motorNativePollingEnabled ? "on" : "off", canControllerMode,
+           CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "compliant" : "out_of_spec_8mhz_1mbps");
+  emitCanDiagnosticCString(line);
+
+  const String flagNames = canErrorFlagNames(canErrorFlags);
+  snprintf(line, sizeof(line),
+           "DBC1,%s,ERRORS,%lu,flags=%s,tx_abort=%lu/%lu,wire=%lu,arb=%lu,abort=%lu,overflow=%lu/%lu,rx_irq=%lu,rx_wake=%lu,rx_burst=%u",
+           address, now, flagNames.c_str(),
+           static_cast<unsigned long>(canTxAbortSuccesses),
+           static_cast<unsigned long>(canTxAbortAttempts),
+           static_cast<unsigned long>(canTxWireErrors),
+           static_cast<unsigned long>(canTxArbitrationLosses),
+           static_cast<unsigned long>(canTxControllerAborts),
+           static_cast<unsigned long>(canRxOverflowClears),
+           static_cast<unsigned long>(canRxOverflowEvents),
+           static_cast<unsigned long>(canRxInterrupts),
+           static_cast<unsigned long>(canRxWakeups), canRxMaxBurst);
+  emitCanDiagnosticCString(line);
+
+  snprintf(line, sizeof(line),
+           "DBC1,%s,TIMING,%lu,queue_us=%lu/%lu,tx_us=%lu/%lu,batch_us=%lu/%lu,batch_miss=%lu,io_us=%lu/%lu,io_miss=%lu,rx_us=%lu/%lu,diag_depth=%u,diag_drop=%lu",
+           address, now,
+           static_cast<unsigned long>(canTxQueueLatencyLastUs),
+           static_cast<unsigned long>(canTxQueueLatencyMaxUs),
+           static_cast<unsigned long>(canTxExecutionLastUs),
+           static_cast<unsigned long>(canTxExecutionMaxUs),
+           static_cast<unsigned long>(canOutputBatchLastUs),
+           static_cast<unsigned long>(canOutputBatchMaxUs),
+           static_cast<unsigned long>(canOutputDeadlineMisses),
+           static_cast<unsigned long>(canIoLoopLastUs),
+           static_cast<unsigned long>(canIoLoopMaxUs),
+           static_cast<unsigned long>(canIoLoopBudgetMisses),
+           static_cast<unsigned long>(canRxDrainLastUs),
+           static_cast<unsigned long>(canRxDrainMaxUs),
+           static_cast<unsigned int>(canDiagnosticLineQueue ?
+             uxQueueMessagesWaiting(canDiagnosticLineQueue) : 0),
+           static_cast<unsigned long>(canDiagnosticLineDrops));
+  emitCanDiagnosticCString(line);
+}
+
+void printCanRegisterSnapshot() {
+  if (!canInitialized) return;
+  // The CAN I/O task refreshes this cache. Command/portal tasks never touch
+  // MCP2515 SPI, preserving single-owner timing and avoiding diagnostic jitter.
+  char line[320];
+  snprintf(line, sizeof(line),
+           "DBC1,%s,REGISTERS,%lu,CANSTAT=%02X,CANCTRL=%02X,CNF1=%02X,CNF2=%02X,CNF3=%02X,CANINTE=%02X,CANINTF=%02X,EFLG=%02X,TEC=%u,REC=%u,RXB0CTRL=%02X,RXB1CTRL=%02X,TXB0CTRL=%02X,TXB1CTRL=%02X,TXB2CTRL=%02X",
+           currentCommandAddress().c_str(), static_cast<unsigned long>(millis()),
+           canControllerMode, canControlRegister, canBitTimingRegisters[0],
+           canBitTimingRegisters[1], canBitTimingRegisters[2], canInterruptEnable,
+           canInterruptFlags, canErrorFlags, canTxErrorCount, canRxErrorCount,
+           canRxBufferControl[0], canRxBufferControl[1], canTxBufferControl[0],
+           canTxBufferControl[1], canTxBufferControl[2]);
+  emitCanDiagnosticLine(String(line));
 }
 
 bool recoverCanController() {
@@ -2216,7 +2589,7 @@ bool recoverCanController() {
   if (serialHeld && xSemaphoreTake(canMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
     beginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
     if (beginResult == CAN_OK) {
-      modeResult = CAN.setMode(MCP_NORMAL);
+      modeResult = configureCanTimingAndNormalMode();
       if (modeResult == CAN_OK) oneShotResult = CAN.enOneShotTX();
       recovered = modeResult == CAN_OK && oneShotResult == CAN_OK;
     }
@@ -2257,29 +2630,141 @@ bool recoverCanController() {
   return recovered;
 }
 
+uint8_t encodeCanResultForNotification(int result) {
+  return result < 0 ? 0xFF : static_cast<uint8_t>(result);
+}
+
+int decodeCanResultFromNotification(uint8_t encoded) {
+  return encoded == 0xFF ? -2 : static_cast<int>(encoded);
+}
+
+uint32_t nextCanTxToken() {
+  portENTER_CRITICAL(&canStateMux);
+  canTxQueueToken = (canTxQueueToken + 1) & 0x00FFFFFFUL;
+  if (canTxQueueToken == 0) canTxQueueToken = 1;
+  const uint32_t token = canTxQueueToken;
+  portEXIT_CRITICAL(&canStateMux);
+  return token;
+}
+
+int performCanTransmit(uint32_t id, const byte *data, byte length) {
+  const uint32_t startedUs = micros();
+  if (canMutex == nullptr ||
+      xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) != pdTRUE) {
+    canMutexTimeouts++;
+    const uint32_t executionUs = micros() - startedUs;
+    canTxExecutionLastUs = executionUs;
+    if (executionUs > canTxExecutionMaxUs) canTxExecutionMaxUs = executionUs;
+    return -2;
+  }
+  const int result = mcp2515SendStandardFrameDirect(id, data, length);
+  xSemaphoreGive(canMutex);
+  const uint32_t executionUs = micros() - startedUs;
+  canTxExecutionLastUs = executionUs;
+  if (executionUs > canTxExecutionMaxUs) canTxExecutionMaxUs = executionUs;
+  return result;
+}
+
+bool serviceCanTxQueueOne() {
+  if (canTxQueue == nullptr) return false;
+  CanTxRequest request;
+  if (xQueueReceive(canTxQueue, &request, 0) != pdTRUE) return false;
+
+  const uint32_t serviceStartedUs = micros();
+  const uint32_t queueLatencyUs = serviceStartedUs - request.enqueuedUs;
+  canTxQueueLatencyLastUs = queueLatencyUs;
+  if (queueLatencyUs > canTxQueueLatencyMaxUs) {
+    canTxQueueLatencyMaxUs = queueLatencyUs;
+  }
+  int result = -2;
+  if (static_cast<int32_t>(serviceStartedUs - request.deadlineUs) > 0) {
+    canTxQueueExpired++;
+  } else {
+    if (request.highPriority && canDeferredTxPending) {
+      const int8_t interruptedRead = motorNativePendingIndex;
+      if (abortPendingCanTx("priority_preempts_deferred_read") &&
+          interruptedRead >= 0) {
+        motorNativePendingIndex = -1;
+        motorNativePendingSinceMs = 0;
+        recordMotorNativeMiss(static_cast<uint8_t>(interruptedRead), millis(), true);
+      }
+    }
+    result = performCanTransmit(request.id, request.data, request.length);
+    if ((result == CAN_SENDMSGTIMEOUT || result == CAN_GETTXBFTIMEOUT) &&
+        !request.allowDeferredRead) {
+      abortPendingCanTx(request.highPriority ? "queued_priority_tx_timeout"
+                                             : "queued_tx_timeout");
+    }
+  }
+  canTxQueueCompleted++;
+  const uint32_t response = (request.token << 8) |
+    encodeCanResultForNotification(result);
+  if (request.requester != nullptr) {
+    xTaskNotify(request.requester, response, eSetValueWithOverwrite);
+  }
+  return true;
+}
+
 int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
                        bool allowDeferredRead) {
-  if (isCenter || isHead || !canInitialized || canMutex == nullptr) return -2;
+  if (isCenter || isHead || !canInitialized || canMutex == nullptr ||
+      data == nullptr || dataLen > 8) return -2;
 
   const int actuatorIndex = actuatorIndexFromCanId(actuatorID);
+  const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
+  const bool motionFrame = profile != nullptr && dataLen > 0 &&
+    (data[0] == profile->torqueOpcode || data[0] == profile->stopOpcode);
   int result = -2;
 
-  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-    result = CAN.sendMsgBuf(actuatorID, 0, dataLen, const_cast<byte *>(data));
-    xSemaphoreGive(canMutex);
-  } else {
-    portENTER_CRITICAL(&canStateMux);
-    canMutexTimeouts++;
-    portEXIT_CRITICAL(&canStateMux);
+  if (xTaskGetCurrentTaskHandle() == canRxTaskHandle) {
+    // Automatic request/response scheduling already runs in the sole CAN I/O
+    // task, so it can execute directly without queueing back to itself.
+    result = performCanTransmit(actuatorID, data, dataLen);
+  } else if (canTxQueue != nullptr && canRxTaskHandle != nullptr) {
+    CanTxRequest request = {};
+    request.id = actuatorID;
+    request.length = dataLen;
+    memcpy(request.data, data, dataLen);
+    request.allowDeferredRead = allowDeferredRead;
+    request.highPriority = motionFrame;
+    request.token = nextCanTxToken();
+    request.enqueuedUs = micros();
+    request.deadlineUs = request.enqueuedUs + CAN_TX_QUEUE_DEADLINE_US;
+    request.requester = xTaskGetCurrentTaskHandle();
+
+    uint32_t discarded = 0;
+    xTaskNotifyWait(0, UINT32_MAX, &discarded, 0);
+    const BaseType_t queued = motionFrame
+      ? xQueueSendToFront(canTxQueue, &request, pdMS_TO_TICKS(1))
+      : xQueueSendToBack(canTxQueue, &request, pdMS_TO_TICKS(1));
+    if (queued == pdTRUE) {
+      canTxQueueAccepted++;
+      xTaskNotifyGive(canRxTaskHandle);
+      const uint32_t waitStartedMs = millis();
+      bool responseReceived = false;
+      while (true) {
+        const uint32_t elapsedMs = millis() - waitStartedMs;
+        if (elapsedMs > CAN_TX_CALLER_TIMEOUT_MS) break;
+        uint32_t response = 0;
+        const TickType_t remaining = pdMS_TO_TICKS(
+          CAN_TX_CALLER_TIMEOUT_MS - elapsedMs + 1);
+        if (xTaskNotifyWait(0, UINT32_MAX, &response, remaining) == pdTRUE &&
+            (response >> 8) == request.token) {
+          result = decodeCanResultFromNotification(response & 0xFF);
+          responseReceived = true;
+          break;
+        }
+      }
+      if (!responseReceived) canTxCallerTimeouts++;
+    } else {
+      canTxQueueFull++;
+    }
   }
 
   const uint32_t now = millis();
   const bool ok = result == CAN_OK;
   const bool deferredRead = allowDeferredRead && data != nullptr && dataLen > 0 &&
                             result == CAN_SENDMSGTIMEOUT;
-  const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
-  const bool motionFrame = profile != nullptr && data != nullptr && dataLen > 0 &&
-    (data[0] == profile->torqueOpcode || data[0] == profile->stopOpcode);
   portENTER_CRITICAL(&canStateMux);
   lastCanResult = result;
   if (ok) {
@@ -2338,9 +2823,7 @@ bool sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
   if (profile == nullptr) return false;
   byte buf[8];
   dropbear::encodeTorqueCommand(*profile, torqueValue, buf);
-  const bool sent = canSend(actuatorID, buf);
-  if (!sent) abortPendingCanTx("motion_tx_failure");
-  return sent;
+  return canSend(actuatorID, buf);
 }
 
 bool sendStopCommand(unsigned long actuatorID) {
@@ -2349,17 +2832,16 @@ bool sendStopCommand(unsigned long actuatorID) {
   if (profile == nullptr) return false;
   byte buf[8];
   dropbear::encodeStopCommand(*profile, buf);
-  const bool sent = canSend(actuatorID, buf);
-  if (!sent) abortPendingCanTx("stop_tx_failure");
-  return sent;
+  return canSend(actuatorID, buf);
 }
 
 void paceCanCommandBurst() {
-  // A1/0x81 commands can produce immediate motor replies. The MCP2515 has only
-  // two hardware RX buffers, so six back-to-back writes from the higher-
-  // priority output task can overflow RX before canReceiveTask runs. Yield one
-  // tick after every motor command to let the sole RX consumer drain replies.
-  vTaskDelay(CAN_COMMAND_INTERFRAME_TICKS);
+  // Each synchronous submission is completed by the higher-priority CAN I/O
+  // task. That task returns to RX draining before it accepts the next queued
+  // frame. A one-tick delay here would add at least 6 ms to every six-motor
+  // batch and can make a nominal 10 ms output cycle miss its own deadline.
+  // Yield without sleeping; the transport owner's priority provides pacing.
+  taskYIELD();
 }
 
 void neckStopAll();
@@ -2801,10 +3283,12 @@ void sendHyperspawnFault(uint8_t code) {
 void canReceiveTask(void *parameter) {
   while (!runtimeInitializationComplete) vTaskDelay(pdMS_TO_TICKS(10));
   while (true) {
+    const uint32_t loopStartedUs = micros();
     canRxTaskLoops++;
     lastCanRxTaskMs = millis();
 
     uint8_t drained = 0;
+    const uint32_t drainStartedUs = micros();
     // A busy or electrically degraded bus must not monopolize core 1 and
     // starve sensor/DB3 publication. Drain a bounded batch, then yield at the
     // RTOS tick below so equal-priority control tasks get CPU time.
@@ -2837,7 +3321,14 @@ void canReceiveTask(void *parameter) {
       if (!available) break;
       drained++;
     }
+    const uint32_t drainDurationUs = micros() - drainStartedUs;
+    canRxDrainLastUs = drainDurationUs;
+    if (drainDurationUs > canRxDrainMaxUs) canRxDrainMaxUs = drainDurationUs;
     if (drained > canRxMaxBurst) canRxMaxBurst = drained;
+    // All non-I/O tasks submit complete frames through this queue. Service one
+    // request per pass, then return to RX draining so a command's immediate
+    // motor reply cannot sit behind a long transmit batch.
+    const bool servicedQueuedTx = serviceCanTxQueueOne();
     static uint32_t lastMotorQueryMs = 0;
     static uint32_t lastCanErrorSampleMs = 0;
     static uint8_t motorQuerySlot = 0;
@@ -2848,11 +3339,16 @@ void canReceiveTask(void *parameter) {
     }
     const bool canRxQuiet = lastCanRxMs == 0 ||
       now - lastCanRxMs >= CAN_RECOVERY_RX_QUIET_MS;
-    const uint8_t severeErrorMask = MCP_EFLG_TXBO | MCP_EFLG_TXEP |
-                                    MCP_EFLG_RXEP | MCP_EFLG_RX0OVR |
-                                    MCP_EFLG_RX1OVR;
+    if ((canErrorFlags & (MCP_EFLG_RX0OVR | MCP_EFLG_RX1OVR)) != 0) {
+      clearCanRxOverflowFlags();
+    }
+    const bool controllerModeFault = canControllerMode != MCP_NORMAL;
+    // TXEP/RXEP are degraded operating states, not reset requests. Repeatedly
+    // resetting on those sticky thresholds was discarding good RX state every
+    // five seconds. Reinitialize only after bus-off, an invalid mode, or a
+    // proven run of transport failures while RX is quiet.
     if (!canDiagnosticScanActive &&
-        ((canErrorFlags & severeErrorMask) != 0 ||
+        (((canErrorFlags & MCP_EFLG_TXBO) != 0 || controllerModeFault) ||
          (canConsecutiveFailures >= CAN_RECOVERY_FAILURE_THRESHOLD && canRxQuiet))) {
       recoverCanController();
     }
@@ -2880,8 +3376,10 @@ void canReceiveTask(void *parameter) {
     const uint32_t queryInterval = controllerDegraded || canConsecutiveFailures >= 3
       ? MOTOR_NATIVE_QUERY_BACKOFF_MS
       : MOTOR_NATIVE_QUERY_SLOT_MS;
-    if (MOTOR_NATIVE_FEEDBACK_ENABLED && runtimeControlReady &&
+    if (MOTOR_NATIVE_FEEDBACK_ENABLED && motorNativePollingEnabled &&
+        runtimeControlReady &&
         !canDiagnosticScanActive &&
+        !servicedQueuedTx &&
         motorNativePendingIndex < 0 &&
         now - lastMotorQueryMs >= queryInterval) {
       const uint8_t *order = selectedMotorTelemetryOrder();
@@ -2902,6 +3400,10 @@ void canReceiveTask(void *parameter) {
       }
       lastMotorQueryMs = now;
     }
+    const uint32_t loopDurationUs = micros() - loopStartedUs;
+    canIoLoopLastUs = loopDurationUs;
+    if (loopDurationUs > canIoLoopMaxUs) canIoLoopMaxUs = loopDurationUs;
+    if (loopDurationUs > CAN_IO_LOOP_BUDGET_US) canIoLoopBudgetMisses++;
     // CANINT stays low until every enabled receive flag is cleared. If the
     // bounded batch ended while it is still low, yield once and immediately
     // continue draining; otherwise sleep until the falling edge or the 1 ms
@@ -3393,9 +3895,11 @@ void canOutputTask(void *parameter) {
     canTaskLoops++;
     lastCanTaskMs = millis();
     if (runtimeControlReady && !isCenter && !isHead) {
+      const uint32_t batchStartedUs = micros();
       const int start = firstSelectedActuatorIndex();
       bool motionBatchAttempted = false;
       bool motionBatchOk = true;
+      bool stopBatchAttempted = false;
 
       if (portalTorqueTestActive) {
         motionBatchAttempted = true;
@@ -3476,18 +3980,32 @@ void canOutputTask(void *parameter) {
           paceCanCommandBurst();
         }
       } else if (stopBurstRemaining > 0) {
+        stopBatchAttempted = true;
         bool stopBatchOk = true;
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
           if (!sendStopCommand(ACTUATOR_IDS[i])) {
             stopBatchOk = false;
-            break;
           }
           paceCanCommandBurst();
         }
-        if (stopBatchOk) --stopBurstRemaining;
+        // A missing actuator must not prevent STOP delivery to every other
+        // motor or create an unbounded retry storm. Complete the configured
+        // three full-leg attempts and expose any unconfirmed batch.
+        if (!stopBatchOk) canStopBatchFailures++;
+        --stopBurstRemaining;
       }
       if (motionBatchAttempted && !motionBatchOk) {
         failClosedCanMotion("unconfirmed MCP2515 transmit");
+      }
+      if (motionBatchAttempted || stopBatchAttempted) {
+        const uint32_t batchDurationUs = micros() - batchStartedUs;
+        canOutputBatchLastUs = batchDurationUs;
+        if (batchDurationUs > canOutputBatchMaxUs) {
+          canOutputBatchMaxUs = batchDurationUs;
+        }
+        if (batchDurationUs > CAN_OUTPUT_PERIOD_US) {
+          canOutputDeadlineMisses++;
+        }
       }
     }
 
@@ -3525,6 +4043,9 @@ void checkChiralityTask(void *parameter) {
   while (true) {
     commandTaskLoops++;
     lastCommandTaskMs = millis();
+    // Bounded core-0 drain for records produced by the real-time CAN task.
+    // Never print or take the web-log mutex from the CAN transport owner.
+    flushDeferredCanDiagnosticLines(4);
     // USB Serial and web commands intentionally converge here.
     if (Serial.available() > 0) {
       String command = Serial.readStringUntil('\n');
@@ -5458,6 +5979,10 @@ void printHelp() {
   dbPrintln("      and summarize same-ID versus ID+0x100 replies and TX failures.");
   dbPrintln("  can bus");
   dbPrintln("      Emit MCP2515 EFLG/TEC/REC, decoded fault names, and recovery counters.");
+  dbPrintln("  can registers");
+  dbPrintln("      Emit the CAN I/O task's cached MCP2515 mode/timing/mailbox registers.");
+  dbPrintln("  can poll on | can poll off | can poll status");
+  dbPrintln("      Start/stop only automatic 0x92 reads; actuator output remains disarmed.");
   dbPrintln("  role | role left | role right | role center | role head");
   dbPrintln("      Select boot-time hardware personality. HEAD_NECK uses an entirely separate STEP/DIR pin graph.");
   dbPrintln("  mode");
@@ -5920,7 +6445,7 @@ String buildDiagnosticsJson() {
   out += "\"oscillator_hz\":" + String(CAN_CONTROLLER_CLOCK_HZ) + ",";
   out += "\"bit_timing_datasheet_compliant\":" +
          String(CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "true" : "false") + ",";
-  out += "\"bit_timing_profile\":\"MCP_CAN_lib_8MHz_1Mbps_CNF_00_C0_80\",";
+  out += "\"bit_timing_profile\":\"dropbear_8MHz_1Mbps_CNF_00_80_80_single_sample\",";
   out += "\"cs_gpio\":" + String(CAN_CS_PIN) + ",\"int_gpio\":" + String((int)CAN0_INT) + ",";
   out += "\"int_level\":" + String(canInitialized ? digitalRead(CAN0_INT) : -1) + ",";
   out += "\"rx_interrupts\":" + String(canRxInterrupts) + ",";
@@ -5936,6 +6461,36 @@ String buildDiagnosticsJson() {
   out += "\"tx_abort_attempts\":" + String(canTxAbortAttempts) + ",";
   out += "\"tx_abort_successes\":" + String(canTxAbortSuccesses) + ",";
   out += "\"tx_abort_failures\":" + String(canTxAbortFailures) + ",";
+  out += "\"wire_errors\":" + String(canTxWireErrors) + ",";
+  out += "\"arbitration_losses\":" + String(canTxArbitrationLosses) + ",";
+  out += "\"controller_aborts\":" + String(canTxControllerAborts) + ",";
+  out += "\"rx_overflow_events\":" + String(canRxOverflowEvents) + ",";
+  out += "\"rx_overflow_clears\":" + String(canRxOverflowClears) + ",";
+  out += "\"polling_enabled\":" + String(motorNativePollingEnabled ? "true" : "false") + ",";
+  out += "\"controller_mode\":" + String(canControllerMode) + ",";
+  out += "\"tx_queue_depth\":" + String(canTxQueue ? uxQueueMessagesWaiting(canTxQueue) : 0) + ",";
+  out += "\"tx_queue_accepted\":" + String(canTxQueueAccepted) + ",";
+  out += "\"tx_queue_completed\":" + String(canTxQueueCompleted) + ",";
+  out += "\"tx_queue_full\":" + String(canTxQueueFull) + ",";
+  out += "\"tx_queue_expired\":" + String(canTxQueueExpired) + ",";
+  out += "\"tx_caller_timeouts\":" + String(canTxCallerTimeouts) + ",";
+  out += "\"tx_queue_latency_last_us\":" + String(canTxQueueLatencyLastUs) + ",";
+  out += "\"tx_queue_latency_max_us\":" + String(canTxQueueLatencyMaxUs) + ",";
+  out += "\"tx_execution_last_us\":" + String(canTxExecutionLastUs) + ",";
+  out += "\"tx_execution_max_us\":" + String(canTxExecutionMaxUs) + ",";
+  out += "\"output_batch_last_us\":" + String(canOutputBatchLastUs) + ",";
+  out += "\"output_batch_max_us\":" + String(canOutputBatchMaxUs) + ",";
+  out += "\"output_deadline_misses\":" + String(canOutputDeadlineMisses) + ",";
+  out += "\"stop_batch_failures\":" + String(canStopBatchFailures) + ",";
+  out += "\"io_loop_last_us\":" + String(canIoLoopLastUs) + ",";
+  out += "\"io_loop_max_us\":" + String(canIoLoopMaxUs) + ",";
+  out += "\"io_loop_budget_misses\":" + String(canIoLoopBudgetMisses) + ",";
+  out += "\"rx_drain_last_us\":" + String(canRxDrainLastUs) + ",";
+  out += "\"rx_drain_max_us\":" + String(canRxDrainMaxUs) + ",";
+  out += "\"diagnostic_queue_depth\":" + String(canDiagnosticLineQueue ? uxQueueMessagesWaiting(canDiagnosticLineQueue) : 0) + ",";
+  out += "\"diagnostic_lines_queued\":" + String(canDiagnosticLinesQueued) + ",";
+  out += "\"diagnostic_lines_drained\":" + String(canDiagnosticLinesDrained) + ",";
+  out += "\"diagnostic_line_drops\":" + String(canDiagnosticLineDrops) + ",";
   out += "\"motion_fail_closed\":" + String(canMotionFailClosed) + ",";
   out += "\"consecutive_failures\":" + String(canConsecutiveFailures) + ",";
   out += "\"error_flags\":" + String(canErrorFlags) + ",";
@@ -7199,6 +7754,9 @@ void setup() {
   webLogMutex = xSemaphoreCreateMutex();
   spiffsMutex = xSemaphoreCreateMutex();
   webCommandQueue = xQueueCreate(12, sizeof(WebCommand));
+  canTxQueue = xQueueCreate(CAN_TX_QUEUE_DEPTH, sizeof(CanTxRequest));
+  canDiagnosticLineQueue = xQueueCreate(CAN_DIAGNOSTIC_LINE_QUEUE_DEPTH,
+                                        sizeof(CanDiagnosticLineRecord));
 
   if (!SPIFFS.begin(true)) {
     spiffsMounted = false;
@@ -7256,7 +7814,7 @@ void setup() {
 
     const int canBeginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
     const int canModeResult = canBeginResult == CAN_OK
-      ? CAN.setMode(MCP_NORMAL) : CAN_FAIL;
+      ? configureCanTimingAndNormalMode() : CAN_FAIL;
     const int canOneShotResult = canModeResult == CAN_OK
       ? CAN.enOneShotTX() : CAN_FAIL;
     if (canBeginResult != CAN_OK || canModeResult != CAN_OK ||
@@ -7269,7 +7827,7 @@ void setup() {
     } else {
       canInitialized = true;
       canOneShotEnabled = true;
-      dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, one-shot TX, CS GPIO5.");
+      dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, single-sample RX, one-shot TX, CS GPIO5.");
       if (!CAN_BIT_TIMING_DATASHEET_COMPLIANT) {
         dbPrintln("WARNING: MCP2515 8 MHz / 1 Mbps uses out-of-spec PS2=1 TQ; use a 16 MHz MCP2515 clock for compliant 1 Mbps timing.");
       }
@@ -7281,15 +7839,17 @@ void setup() {
       xTaskCreatePinnedToCore(readAndComputeTask, "sensors", 4096, nullptr, 3, &sensorTaskHandle, 1);
       xTaskCreatePinnedToCore(impedanceControlTask, "impedance", 4096, nullptr, 3, &impedanceTaskHandle, 1);
       xTaskCreatePinnedToCore(canOutputTask, "can-output", 4096, nullptr, 4, &canTaskHandle, 1);
-      // CAN RX shares priority with sensing/impedance so a saturated bus cannot
-      // starve DB3 telemetry. The bounded RX burst above keeps latency finite.
-      xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 3, &canRxTaskHandle, 1);
+      // The CAN I/O task is the sole runtime MCP2515 transport owner. It must
+      // preempt sensing/output long enough to drain the two hardware RX
+      // mailboxes and complete one deadline-bound TX, then yields explicitly.
+      xTaskCreatePinnedToCore(canReceiveTask, "can-io", 5120, nullptr, 5, &canRxTaskHandle, 1);
       if (canRxTaskHandle != nullptr) {
         attachInterrupt(digitalPinToInterrupt(CAN0_INT), onCanInterrupt, FALLING);
       }
       xTaskCreatePinnedToCore(hyperspawnRouteTask, "hyperspawn", 4096, nullptr, 2, &hyperspawnTaskHandle, 1);
       runtimeControlReady = sensorTaskHandle && impedanceTaskHandle &&
-        canTaskHandle && canRxTaskHandle && hyperspawnTaskHandle;
+        canTaskHandle && canRxTaskHandle && hyperspawnTaskHandle && canTxQueue &&
+        canDiagnosticLineQueue;
       runtimeImuReady = false;
       runtimeNeckReady = false;
       if (!runtimeControlReady) {

@@ -51,17 +51,25 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.33", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.34", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
         self.assertIn("can-read-passthrough-v1", SOURCE)
+        self.assertIn("can-discovered-read-v1", SOURCE)
         self.assertIn("can-discovery-v1", SOURCE)
         self.assertIn("can-bus-recovery-v1", SOURCE)
 
     def test_can_debug_bridge_is_targeted_read_only_and_raw(self):
         self.assertIn("isReadOnlyCanDiagnosticOpcode(payload[0])", SOURCE)
         self.assertIn("selectedDiagnosticMotorId(requestId)", SOURCE)
+        diagnostic_selector = SOURCE[
+            SOURCE.index("bool selectedDiagnosticMotorId"):
+            SOURCE.index("void emitCanDiagnosticLine")
+        ]
+        self.assertIn("requestId >= RMD_DISCOVERY_FIRST_ID", diagnostic_selector)
+        self.assertIn("requestId <= RMD_DISCOVERY_LAST_ID", diagnostic_selector)
+        self.assertNotIn("actuatorBelongsToSelectedLeg(index)", diagnostic_selector)
         self.assertIn("can tx-read <motor_id> <byte0> ... <byte7>", SOURCE)
         self.assertIn("can info <motor_id>", SOURCE)
         self.assertIn("can monitor <motor_id>", SOURCE)

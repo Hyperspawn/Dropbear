@@ -49,7 +49,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.33";
+  "behemoth-observation-protocol-2026.09.34";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -58,6 +58,7 @@ static const char *DROPBEAR_CAPABILITIES =
   "motor-profile-v1;motor-angle-rmd-v17-v42-0x92;"
   "motor-control-aligned-v1;as5600-crosscheck-v1;"
   "boot-observability-v1;portal-safety-v1;can-read-passthrough-v1;"
+  "can-discovered-read-v1;"
   "can-discovery-v1;can-bus-recovery-v1;config-records-v1;calibration-result-v1";
 
 // -----------------------------------------------------------------------------
@@ -1655,8 +1656,12 @@ bool parseCanDurationToken(String token, uint32_t &value) {
 }
 
 bool selectedDiagnosticMotorId(uint32_t requestId) {
-  const int index = actuatorIndexFromCanId(requestId);
-  return index >= 0 && actuatorBelongsToSelectedLeg(index);
+  // Passive discovery is specifically used to find motors whose stored CAN ID
+  // no longer matches this controller's configured leg map.  Permit read-only
+  // diagnostic opcodes across the bounded discovery range on the local bus.
+  // Motion still routes exclusively through actuatorBelongsToSelectedLeg().
+  return isLegRole() && requestId >= RMD_DISCOVERY_FIRST_ID &&
+         requestId <= RMD_DISCOVERY_LAST_ID;
 }
 
 void emitCanDiagnosticLine(const String &line, bool countDrop = false) {
@@ -1865,7 +1870,7 @@ bool processCanDiagnosticCommand(String command) {
       !parseCanHexToken(token, 0x7FF, requestId) ||
       !selectedDiagnosticMotorId(requestId)) {
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
-                          String(millis()) + ",id_not_owned_by_leg");
+                          String(millis()) + ",id_outside_diagnostic_range");
     return true;
   }
 

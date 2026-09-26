@@ -51,7 +51,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.34", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.38", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
@@ -59,6 +59,11 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("can-discovered-read-v1", SOURCE)
         self.assertIn("can-discovery-v1", SOURCE)
         self.assertIn("can-bus-recovery-v1", SOURCE)
+        self.assertIn("can-transaction-scheduler-v1", SOURCE)
+        self.assertIn("can-oneshot-tx-v1", SOURCE)
+        self.assertIn("can-deferred-tx-abort-v1", SOURCE)
+        self.assertIn("can-interrupt-rx-v1", SOURCE)
+        self.assertIn("can-timing-observability-v1", SOURCE)
 
     def test_can_debug_bridge_is_targeted_read_only_and_raw(self):
         self.assertIn("isReadOnlyCanDiagnosticOpcode(payload[0])", SOURCE)
@@ -163,6 +168,82 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         )
         self.assertIn("if (index < 0) return false;", SOURCE)
         self.assertIn("data[0] != profile->readMultiTurnOpcode", SOURCE)
+
+    def test_can_reads_use_one_outstanding_transaction_and_offline_backoff(self):
+        self.assertIn("motorNativePendingIndex", SOURCE)
+        self.assertIn("MOTOR_NATIVE_REPLY_TIMEOUT_MS", SOURCE)
+        self.assertIn("MOTOR_NATIVE_OFFLINE_AFTER_MISSES", SOURCE)
+        self.assertIn("MOTOR_NATIVE_OFFLINE_RETRY_MS", SOURCE)
+        self.assertIn("recordMotorNativeMiss", SOURCE)
+        scheduler = SOURCE[
+            SOURCE.index("void canReceiveTask(void *parameter) {"):
+            SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
+        ]
+        self.assertIn("motorNativePendingIndex < 0", scheduler)
+        self.assertIn("motorNativePendingSinceMs", scheduler)
+        self.assertIn("motorNativeNextEligibleMs", scheduler)
+        request = SOURCE[
+            SOURCE.index("bool requestMotorNativeFeedback"):
+            SOURCE.index("void updateSensorDiagnosticSample")
+        ]
+        self.assertIn("result != CAN_SENDMSGTIMEOUT", request)
+        sender = SOURCE[
+            SOURCE.index("int canSendFrameResult"):
+            SOURCE.index("bool canSend(uint32_t")
+        ]
+        self.assertIn("deferredRead", sender)
+        self.assertIn("canDeferredReadSubmissions++", sender)
+        self.assertIn("if (actuatorIndex >= 0 && motionFrame)", sender)
+
+    def test_error_passive_overflow_and_command_bursts_are_recovered(self):
+        scheduler = SOURCE[
+            SOURCE.index("void canReceiveTask(void *parameter) {"):
+            SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
+        ]
+        for flag in (
+            "MCP_EFLG_TXBO",
+            "MCP_EFLG_TXEP",
+            "MCP_EFLG_RXEP",
+            "MCP_EFLG_RX0OVR",
+            "MCP_EFLG_RX1OVR",
+        ):
+            self.assertIn(flag, scheduler)
+        output = SOURCE[
+            SOURCE.index("void canOutputTask(void *parameter) {"):
+            SOURCE.index("void executeQueuedWebCommand(const WebCommand &item) {")
+        ]
+        self.assertGreaterEqual(output.count("paceCanCommandBurst();"), 5)
+        self.assertIn("CAN_COMMAND_INTERFRAME_TICKS", SOURCE)
+        self.assertGreaterEqual(SOURCE.count("CAN.enOneShotTX()"), 2)
+        self.assertIn("abortPendingCanTx(\"deferred_read_timeout\")", scheduler)
+        self.assertIn("MCP_TXB0CTRL", SOURCE)
+        self.assertIn("MCP_TXB1CTRL", SOURCE)
+        self.assertIn("MCP_TXB2CTRL", SOURCE)
+        self.assertIn("mcp2515BitModifyDirect(MCP_CANCTRL, ABORT_TX, 0)", SOURCE)
+        self.assertIn("ulTaskNotifyTake", scheduler)
+        self.assertIn("digitalRead(CAN0_INT) == LOW", scheduler)
+        self.assertIn("attachInterrupt(digitalPinToInterrupt(CAN0_INT)", SOURCE)
+        self.assertIn("bit_timing_datasheet_compliant", SOURCE)
+        self.assertIn("out_of_spec_8mhz_1mbps", SOURCE)
+        recovery = SOURCE[
+            SOURCE.index("bool recoverCanController() {"):
+            SOURCE.index("int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,\n"
+                         "                       bool allowDeferredRead) {")
+        ]
+        self.assertIn("xSemaphoreTake(serialMutex", recovery)
+        self.assertIn("canOneShotEnabled = true", recovery)
+
+    def test_stale_observation_retains_last_value_but_control_remains_fail_closed(self):
+        readings = SOURCE[
+            SOURCE.index("void printReadings() {"):
+            SOURCE.index("void printVersionRecord() {")
+        ]
+        self.assertIn("if (motorNativeValid[index])", readings)
+        self.assertIn("const bool fresh = motorNativeValid[index]", readings)
+        self.assertIn(
+            "millis() - motorNativeReceivedMs[actuatorIndex] > MOTOR_NATIVE_STALE_MS",
+            SOURCE,
+        )
 
 
 if __name__ == "__main__":

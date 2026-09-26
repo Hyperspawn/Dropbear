@@ -49,7 +49,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.34";
+  "behemoth-observation-protocol-2026.09.38";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -59,7 +59,11 @@ static const char *DROPBEAR_CAPABILITIES =
   "motor-control-aligned-v1;as5600-crosscheck-v1;"
   "boot-observability-v1;portal-safety-v1;can-read-passthrough-v1;"
   "can-discovered-read-v1;"
-  "can-discovery-v1;can-bus-recovery-v1;config-records-v1;calibration-result-v1";
+  "can-discovery-v1;can-bus-recovery-v1;can-transaction-scheduler-v1;"
+  "can-oneshot-tx-v1;"
+  "can-deferred-tx-abort-v1;can-interrupt-rx-v1;"
+  "can-timing-observability-v1;"
+  "config-records-v1;calibration-result-v1";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -315,10 +319,24 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 // external AS5600 angles in the versioned DB3 serial record. This request
 // cannot command motion, but it does add bounded CAN traffic.
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
-static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 10;
+// The installed MCP2515 modules are documented as 8 MHz while the actuator bus
+// is fixed at 1 Mbit/s. Microchip requires PS2 >= 2 TQ; the MCP_CAN_lib preset
+// uses CNF1/CNF2/CNF3 = 00/C0/80 (PS2 = 1 TQ). Keep the deployed bitrate for
+// compatibility with the motors, but report this hardware timing limitation
+// explicitly. A 16 MHz MCP2515 clock is the compliant 1 Mbit/s hardware fix.
+static const uint32_t CAN_CONTROLLER_CLOCK_HZ = 8000000;
+static const uint32_t CAN_BUS_BITRATE_BPS = 1000000;
+static const bool CAN_BIT_TIMING_DATASHEET_COMPLIANT = false;
+static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 12;
 static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 50;
-static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
-static const uint8_t CAN_RX_BURST_LIMIT = 4;
+static const uint32_t MOTOR_NATIVE_REPLY_TIMEOUT_MS = 10;
+static const uint8_t MOTOR_NATIVE_OFFLINE_AFTER_MISSES = 3;
+static const uint32_t MOTOR_NATIVE_OFFLINE_RETRY_MS = 500;
+static const uint32_t MOTOR_NATIVE_STALE_MS = 750;
+static const uint8_t CAN_RX_BURST_LIMIT = 12;
+static const TickType_t CAN_COMMAND_INTERFRAME_TICKS = 1;
+static const uint32_t CAN_DEFERRED_TX_ABORT_MS = 12;
+static const uint32_t CAN_TX_ABORT_TIMEOUT_US = 2000;
 static const uint32_t CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS = 1000;
 static const uint32_t CAN_DIAGNOSTIC_MAX_CAPTURE_MS = 10000;
 static const uint32_t CAN_DIAGNOSTIC_SNIFF_MAX_MS = 2000;
@@ -366,6 +384,23 @@ volatile uint32_t motorNativeQueries = 0;
 volatile uint32_t motorNativeQueryFailures = 0;
 volatile uint32_t motorNativeResponses = 0;
 volatile uint32_t motorNativeMalformedResponses = 0;
+// Exactly one automatic 0x92 transaction may be outstanding. This prevents a
+// delayed reply or a congested MCP2515 TX mailbox from being compounded by the
+// next polling slot. Diagnostic reads pause this scheduler independently.
+volatile int8_t motorNativePendingIndex = -1;
+volatile uint32_t motorNativePendingSinceMs = 0;
+volatile uint32_t motorNativeReplyTimeouts = 0;
+volatile uint32_t motorNativeOutOfOrderResponses = 0;
+volatile uint32_t motorNativeOfflineSkips = 0;
+volatile uint8_t motorNativeMissStreak[ACTUATOR_COUNT] = {0};
+volatile uint32_t motorNativeNextEligibleMs[ACTUATOR_COUNT] = {0};
+// MCP_CAN_lib returns CAN_SENDMSGTIMEOUT after 2.5 ms while TXREQ can remain
+// loaded. One-shot mode prevents retries only after a first transmit attempt;
+// it does not cancel a frame that is still waiting for an idle bus. Track that
+// ownership explicitly so timeout cleanup occurs before another read is sent.
+volatile bool canDeferredTxPending = false;
+volatile uint32_t canDeferredTxSinceMs = 0;
+volatile bool canDeferredTxAbortAttempted = false;
 
 // -----------------------------------------------------------------------------
 // Shared state
@@ -436,6 +471,10 @@ volatile int16_t calibrationTorqueValue = 0;
 SemaphoreHandle_t serialMutex = nullptr;
 SemaphoreHandle_t canMutex = nullptr;
 SemaphoreHandle_t stateMutex = nullptr;
+// The SPI mutex serializes MCP2515 register access. This short critical lock
+// separately makes counters/state transitions atomic across the RX, output,
+// diagnostic, and HyperSpawn tasks after SPI ownership has been released.
+portMUX_TYPE canStateMux = portMUX_INITIALIZER_UNLOCKED;
 
 SemaphoreHandle_t webLogMutex = nullptr;
 SemaphoreHandle_t spiffsMutex = nullptr;
@@ -600,6 +639,17 @@ volatile uint32_t lastCanRxTaskMs = 0;
 volatile uint32_t canRxFrames = 0;
 volatile uint32_t canRxErrors = 0;
 volatile uint32_t lastCanRxMs = 0;
+volatile uint32_t canRxInterrupts = 0;
+volatile uint32_t canRxWakeups = 0;
+volatile uint8_t canRxMaxBurst = 0;
+
+void IRAM_ATTR onCanInterrupt() {
+  canRxInterrupts++;
+  if (canRxTaskHandle == nullptr) return;
+  BaseType_t higherPriorityTaskWoken = pdFALSE;
+  vTaskNotifyGiveFromISR(canRxTaskHandle, &higherPriorityTaskWoken);
+  if (higherPriorityTaskWoken == pdTRUE) portYIELD_FROM_ISR();
+}
 
 // TCA9548A is reserved for the IMU bank; AS5600s never use this bus.
 static const uint8_t IMU_MUX_ADDRESS = 0x70;
@@ -781,6 +831,7 @@ volatile bool spiffsMounted = false;
 volatile bool i2cInitialized = false;
 volatile bool spiInitialized = false;
 volatile bool canInitialized = false;
+volatile bool canOneShotEnabled = false;
 volatile bool portalOnline = false;
 
 volatile uint32_t spiffsReadOps = 0;
@@ -791,6 +842,7 @@ volatile uint32_t lastSpiffsWriteMs = 0;
 
 volatile uint32_t canTxSuccess = 0;
 volatile uint32_t canTxFailure = 0;
+volatile uint32_t canDeferredReadSubmissions = 0;
 volatile uint32_t canConsecutiveFailures = 0;
 volatile uint32_t canMutexTimeouts = 0;
 volatile uint32_t canTorqueFrames = 0;
@@ -804,6 +856,11 @@ volatile uint8_t canRxErrorCount = 0;
 volatile uint32_t canRecoveryAttempts = 0;
 volatile uint32_t canRecoverySuccesses = 0;
 volatile uint32_t lastCanRecoveryMs = 0;
+volatile uint32_t canTxAbortAttempts = 0;
+volatile uint32_t canTxAbortSuccesses = 0;
+volatile uint32_t canTxAbortFailures = 0;
+volatile uint32_t lastCanTxAbortReportMs = 0;
+volatile uint32_t canMotionFailClosed = 0;
 
 volatile uint32_t sensorTaskLoops = 0;
 volatile uint32_t impedanceTaskLoops = 0;
@@ -853,8 +910,12 @@ void dbPrintln(const String &line);
 void dbPrintf(const char *format, ...);
 void setupPortal();
 bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen);
+int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
+                       bool allowDeferredRead);
 void sampleCanControllerErrors();
 bool recoverCanController();
+bool abortPendingCanTx(const char *reason);
+void IRAM_ATTR onCanInterrupt();
 void printCanBusStatus();
 bool processCanDiagnosticCommand(String command);
 void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len);
@@ -1401,23 +1462,66 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
   motorNativeDegrees[index] = decodedDegrees;
   motorNativeReceivedMs[index] = millis();
   motorNativeValid[index] = true;
+  if (motorNativePendingIndex == index) {
+    motorNativePendingIndex = -1;
+    motorNativePendingSinceMs = 0;
+    canDeferredTxPending = false;
+    canDeferredTxSinceMs = 0;
+    canDeferredTxAbortAttempted = false;
+    motorNativeMissStreak[index] = 0;
+    motorNativeNextEligibleMs[index] = 0;
+  } else if (motorNativePendingIndex >= 0) {
+    // Keep valid late feedback, but never let it complete a different motor's
+    // transaction. The outstanding request must receive its own reply or time
+    // out before the scheduler advances.
+    motorNativeOutOfOrderResponses++;
+  }
   updateMotorControlReference(index, motorNativeDegrees[index]);
   motorNativeResponses++;
   return true;
 }
 
-void requestMotorNativeFeedback(uint8_t actuatorIndex) {
+void recordMotorNativeMiss(uint8_t actuatorIndex, uint32_t now,
+                           bool replyTimeout) {
+  if (actuatorIndex >= ACTUATOR_COUNT) return;
+  if (motorNativeMissStreak[actuatorIndex] < UINT8_MAX) {
+    motorNativeMissStreak[actuatorIndex]++;
+  }
+  if (replyTimeout) {
+    motorNativeReplyTimeouts++;
+    motorNativeQueryFailures++;
+  }
+  const uint32_t retryDelay =
+    motorNativeMissStreak[actuatorIndex] >= MOTOR_NATIVE_OFFLINE_AFTER_MISSES
+      ? MOTOR_NATIVE_OFFLINE_RETRY_MS
+      : MOTOR_NATIVE_QUERY_BACKOFF_MS;
+  motorNativeNextEligibleMs[actuatorIndex] = now + retryDelay;
+}
+
+bool requestMotorNativeFeedback(uint8_t actuatorIndex) {
   if (!MOTOR_NATIVE_FEEDBACK_ENABLED || !runtimeControlReady ||
-      !canInitialized || !actuatorBelongsToSelectedLeg(actuatorIndex)) return;
+      !canInitialized || !actuatorBelongsToSelectedLeg(actuatorIndex) ||
+      motorNativePendingIndex >= 0 || canDeferredTxPending) return false;
   const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
   if (profile == nullptr) {
     motorNativeQueryFailures++;
-    return;
+    return false;
   }
   byte request[8];
   dropbear::encodeReadMultiTurnAngle(*profile, request);
-  if (canSendFrame(ACTUATOR_IDS[actuatorIndex], request, 8)) motorNativeQueries++;
-  else motorNativeQueryFailures++;
+  const int result = canSendFrameResult(ACTUATOR_IDS[actuatorIndex], request, 8, true);
+  // MCP_CAN_lib can return SEND_MSG_TIMEOUT after loading TXREQ even though
+  // the frame later wins arbitration and receives a valid motor reply. Keep
+  // that transaction pending; only GET_TX_BUFFER_TIMEOUT proves no new frame
+  // was queued.
+  if (result != CAN_OK && result != CAN_SENDMSGTIMEOUT) {
+    motorNativeQueryFailures++;
+    return false;
+  }
+  motorNativePendingIndex = static_cast<int8_t>(actuatorIndex);
+  motorNativePendingSinceMs = millis();
+  motorNativeQueries++;
+  return true;
 }
 
 void updateSensorDiagnosticSample(int index, int raw) {
@@ -1713,6 +1817,11 @@ void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) 
   }
   if (!canDiagnosticCaptureAll &&
       !isExpectedCanDiagnosticReplyId(canDiagnosticRequestId, responseId)) return;
+  if (!canDiagnosticCaptureAll) {
+    canDeferredTxPending = false;
+    canDeferredTxSinceMs = 0;
+    canDeferredTxAbortAttempted = false;
+  }
   if (canDiagnosticCaptureFramesRemaining == 0) {
     canDiagnosticCaptureActive = false;
     return;
@@ -1742,7 +1851,8 @@ bool sendReadOnlyDiagnosticFrame(uint32_t requestId, const byte payload[8]) {
                           String(millis()) + ",unsafe_opcode");
     return false;
   }
-  const bool sent = canSendFrame(requestId, payload, 8);
+  const int result = canSendFrameResult(requestId, payload, 8, true);
+  const bool sent = result == CAN_OK || result == CAN_SENDMSGTIMEOUT;
   if (canDiagnosticScanActive && !sent) canDiagnosticScanTxFailures++;
   emitCanDiagnosticLine(canDiagnosticFrameLine(sent ? "TX" : "TX_FAIL",
                                                requestId, payload, 8));
@@ -1814,6 +1924,10 @@ bool processCanDiagnosticCommand(String command) {
     canDiagnosticScanResponses = 0;
     canDiagnosticScanTxFailures = 0;
     canDiagnosticScanActive = true;
+    // Close the automatic poller's one outstanding transaction before the
+    // first discovery capture window. Without this quiesce, a late 0x92 reply
+    // can be mistaken for the first scan target on same-ID legacy firmware.
+    vTaskDelay(pdMS_TO_TICKS(MOTOR_NATIVE_REPLY_TIMEOUT_MS + 2));
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
                           String(millis()) + ",start,0x141,0x160,opcode=9A");
     for (uint32_t requestId = RMD_DISCOVERY_FIRST_ID;
@@ -1948,6 +2062,83 @@ bool processCanDiagnosticCommand(String command) {
   return true;
 }
 
+uint8_t mcp2515ReadRegisterDirect(uint8_t address) {
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(CAN_CS_PIN, LOW);
+  SPI.transfer(MCP_READ);
+  SPI.transfer(address);
+  const uint8_t value = SPI.transfer(0x00);
+  digitalWrite(CAN_CS_PIN, HIGH);
+  SPI.endTransaction();
+  return value;
+}
+
+void mcp2515BitModifyDirect(uint8_t address, uint8_t mask, uint8_t value) {
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(CAN_CS_PIN, LOW);
+  SPI.transfer(MCP_BITMOD);
+  SPI.transfer(address);
+  SPI.transfer(mask);
+  SPI.transfer(value);
+  digitalWrite(CAN_CS_PIN, HIGH);
+  SPI.endTransaction();
+}
+
+bool abortPendingCanTx(const char *reason) {
+  if (!canInitialized || canMutex == nullptr) return false;
+  canTxAbortAttempts++;
+  bool cleared = false;
+  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    // ABAT aborts every pending mailbox. It must be cleared again before the
+    // controller is allowed to transmit. The installed MCP_CAN_lib::abortTX()
+    // sets ABAT but never clears it, so perform the complete datasheet sequence
+    // here while holding the same SPI mutex used by every library operation.
+    mcp2515BitModifyDirect(MCP_CANCTRL, ABORT_TX, ABORT_TX);
+    const uint32_t startedUs = micros();
+    uint8_t pending = MCP_TXB_TXREQ_M;
+    while (pending != 0 && micros() - startedUs < CAN_TX_ABORT_TIMEOUT_US) {
+      pending = (mcp2515ReadRegisterDirect(MCP_TXB0CTRL) |
+                 mcp2515ReadRegisterDirect(MCP_TXB1CTRL) |
+                 mcp2515ReadRegisterDirect(MCP_TXB2CTRL)) & MCP_TXB_TXREQ_M;
+      if (pending != 0) delayMicroseconds(10);
+    }
+    mcp2515BitModifyDirect(MCP_CANCTRL, ABORT_TX, 0);
+    const uint8_t remaining =
+      (mcp2515ReadRegisterDirect(MCP_TXB0CTRL) |
+       mcp2515ReadRegisterDirect(MCP_TXB1CTRL) |
+       mcp2515ReadRegisterDirect(MCP_TXB2CTRL)) & MCP_TXB_TXREQ_M;
+    const uint8_t control = mcp2515ReadRegisterDirect(MCP_CANCTRL);
+    cleared = remaining == 0 && (control & ABORT_TX) == 0;
+    xSemaphoreGive(canMutex);
+  } else {
+    canMutexTimeouts++;
+  }
+
+  if (cleared) {
+    canTxAbortSuccesses++;
+    canDeferredTxPending = false;
+    canDeferredTxSinceMs = 0;
+    canDeferredTxAbortAttempted = false;
+  } else {
+    canTxAbortFailures++;
+    portENTER_CRITICAL(&canStateMux);
+    if (canConsecutiveFailures < CAN_RECOVERY_FAILURE_THRESHOLD) {
+      canConsecutiveFailures = CAN_RECOVERY_FAILURE_THRESHOLD;
+    }
+    portEXIT_CRITICAL(&canStateMux);
+  }
+  const uint32_t reportNow = millis();
+  if (!cleared || lastCanTxAbortReportMs == 0 ||
+      reportNow - lastCanTxAbortReportMs >= 1000) {
+    lastCanTxAbortReportMs = reportNow;
+    emitCanDiagnosticLine(
+      "DBC1," + currentCommandAddress() + ",TX_ABORT," + String(reportNow) + "," +
+      (cleared ? "ok" : "failed") + ",reason=" + String(reason ? reason : "unknown")
+    );
+  }
+  return cleared;
+}
+
 void sampleCanControllerErrors() {
   if (!canInitialized || canMutex == nullptr) return;
   if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) != pdTRUE) return;
@@ -1995,7 +2186,15 @@ void printCanBusStatus() {
     String(canConsecutiveFailures) + "," + String(canRecoveryAttempts) + "," +
     String(canRecoverySuccesses) + "," + String(lastCanResult) + "," +
     "eflg=" + canErrorFlagNames(canErrorFlags) + "," +
-    "result=" + String(canResultName(lastCanResult))
+    "result=" + String(canResultName(lastCanResult)) + ",oneshot=" +
+    String(canOneShotEnabled ? 1 : 0) + ",deferred=" +
+    String(canDeferredTxPending ? 1 : 0) + ",tx_abort=" +
+    String(canTxAbortSuccesses) + "/" + String(canTxAbortAttempts) +
+    ",rx_irq=" + String(canRxInterrupts) + ",rx_wake=" +
+    String(canRxWakeups) + ",rx_max_burst=" + String(canRxMaxBurst) +
+    ",clock_hz=" + String(CAN_CONTROLLER_CLOCK_HZ) + ",bitrate=" +
+    String(CAN_BUS_BITRATE_BPS) + ",timing=" +
+    String(CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "compliant" : "out_of_spec_8mhz_1mbps")
   );
 }
 
@@ -2009,67 +2208,106 @@ bool recoverCanController() {
   bool recovered = false;
   int beginResult = -1;
   int modeResult = -1;
-  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+  int oneShotResult = -1;
+  // MCP_CAN_lib prints during begin()/setMode(). Hold the serial mutex so a
+  // recovery cannot splice those messages into a DB3/DBH1 record.
+  const bool serialHeld = serialMutex == nullptr ||
+    xSemaphoreTake(serialMutex, pdMS_TO_TICKS(50)) == pdTRUE;
+  if (serialHeld && xSemaphoreTake(canMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
     beginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
     if (beginResult == CAN_OK) {
       modeResult = CAN.setMode(MCP_NORMAL);
-      recovered = modeResult == CAN_OK;
+      if (modeResult == CAN_OK) oneShotResult = CAN.enOneShotTX();
+      recovered = modeResult == CAN_OK && oneShotResult == CAN_OK;
     }
     canErrorFlags = CAN.getError();
     canTxErrorCount = CAN.errorCountTX();
     canRxErrorCount = CAN.errorCountRX();
     xSemaphoreGive(canMutex);
   }
+  if (serialHeld && serialMutex != nullptr) xSemaphoreGive(serialMutex);
 
   if (recovered) {
     canInitialized = true;
+    canOneShotEnabled = true;
+    portENTER_CRITICAL(&canStateMux);
     canConsecutiveFailures = 0;
+    portEXIT_CRITICAL(&canStateMux);
+    canErrorFlags = 0;
+    canTxErrorCount = 0;
+    canRxErrorCount = 0;
+    motorNativePendingIndex = -1;
+    motorNativePendingSinceMs = 0;
+    canDeferredTxPending = false;
+    canDeferredTxSinceMs = 0;
+    canDeferredTxAbortAttempted = false;
     canRecoverySuccesses++;
+  } else if (beginResult != -1) {
+    canOneShotEnabled = false;
   }
   emitCanDiagnosticLine(
     "DBC1," + currentCommandAddress() + ",RECOVERY," + String(now) + "," +
     (recovered ? "ok" : "failed") + "," + String(beginResult) + "," +
     String(modeResult) + "," + String(canErrorFlags) + "," +
     String(canTxErrorCount) + "," + String(canRxErrorCount) + "," +
-    "eflg=" + canErrorFlagNames(canErrorFlags)
+    "eflg=" + canErrorFlagNames(canErrorFlags) + ",oneshot_result=" +
+    String(canResultName(oneShotResult)) + ",oneshot_enabled=" +
+    String(canOneShotEnabled ? 1 : 0)
   );
   return recovered;
 }
 
-bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
-  if (isCenter || isHead || !canInitialized) return false;
-  if (canMutex == nullptr) return false;
+int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
+                       bool allowDeferredRead) {
+  if (isCenter || isHead || !canInitialized || canMutex == nullptr) return -2;
 
   const int actuatorIndex = actuatorIndexFromCanId(actuatorID);
-  bool ok = false;
   int result = -2;
 
   if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
     result = CAN.sendMsgBuf(actuatorID, 0, dataLen, const_cast<byte *>(data));
-    ok = (result == CAN_OK);
     xSemaphoreGive(canMutex);
   } else {
+    portENTER_CRITICAL(&canStateMux);
     canMutexTimeouts++;
+    portEXIT_CRITICAL(&canStateMux);
   }
 
   const uint32_t now = millis();
+  const bool ok = result == CAN_OK;
+  const bool deferredRead = allowDeferredRead && data != nullptr && dataLen > 0 &&
+                            result == CAN_SENDMSGTIMEOUT;
+  const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
+  const bool motionFrame = profile != nullptr && data != nullptr && dataLen > 0 &&
+    (data[0] == profile->torqueOpcode || data[0] == profile->stopOpcode);
+  portENTER_CRITICAL(&canStateMux);
   lastCanResult = result;
   if (ok) {
     canTxSuccess++;
     canConsecutiveFailures = 0;
     lastCanTxMs = now;
-    const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
     if (profile != nullptr && data[0] == profile->torqueOpcode) canTorqueFrames++;
     if (profile != nullptr && data[0] == profile->stopOpcode) canStopFrames++;
+  } else if (deferredRead) {
+    // TXREQ is already loaded. Completion is resolved by the matching reply or
+    // the transaction timeout instead of queuing another request behind it.
+    // One-shot does not clear TXREQ until a first bus attempt occurs, so the
+    // timeout path must explicitly abort this mailbox if the bus never idles.
+    canDeferredReadSubmissions++;
+    canDeferredTxPending = true;
+    canDeferredTxSinceMs = now;
+    canDeferredTxAbortAttempted = false;
+    lastCanTxMs = now;
   } else {
     canTxFailure++;
     canConsecutiveFailures++;
     lastCanFailureMs = now;
   }
 
-  if (actuatorIndex >= 0) {
+  // Read diagnostics must not overwrite the last motion-command result used by
+  // actuator safety/status reporting.
+  if (actuatorIndex >= 0 && motionFrame) {
     ActuatorDiagnostic &d = actuatorDiagnostics[actuatorIndex];
-    const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
     d.lastOpcode = data[0];
     d.lastResult = result;
     d.lastTxMs = now;
@@ -2079,33 +2317,49 @@ bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
     } else if (profile != nullptr && data[0] == profile->stopOpcode) {
       d.lastCommand = 0;
     }
-    if (ok) d.txOk++;
-    else d.txFail++;
+    if (ok) d.txOk++; else d.txFail++;
   }
+  portEXIT_CRITICAL(&canStateMux);
 
-  return ok;
+  return result;
+}
+
+bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
+  return canSendFrameResult(actuatorID, data, dataLen, false) == CAN_OK;
 }
 
 bool canSend(uint32_t actuatorID, const byte data[8]) {
   return canSendFrame(actuatorID, data, 8);
 }
 
-void sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
+bool sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
   const dropbear::MotorProfile *profile =
     motorProfileForActuator(actuatorIndexFromCanId(actuatorID));
-  if (profile == nullptr) return;
+  if (profile == nullptr) return false;
   byte buf[8];
   dropbear::encodeTorqueCommand(*profile, torqueValue, buf);
-  canSend(actuatorID, buf);
+  const bool sent = canSend(actuatorID, buf);
+  if (!sent) abortPendingCanTx("motion_tx_failure");
+  return sent;
 }
 
-void sendStopCommand(unsigned long actuatorID) {
+bool sendStopCommand(unsigned long actuatorID) {
   const dropbear::MotorProfile *profile =
     motorProfileForActuator(actuatorIndexFromCanId(actuatorID));
-  if (profile == nullptr) return;
+  if (profile == nullptr) return false;
   byte buf[8];
   dropbear::encodeStopCommand(*profile, buf);
-  canSend(actuatorID, buf);
+  const bool sent = canSend(actuatorID, buf);
+  if (!sent) abortPendingCanTx("stop_tx_failure");
+  return sent;
+}
+
+void paceCanCommandBurst() {
+  // A1/0x81 commands can produce immediate motor replies. The MCP2515 has only
+  // two hardware RX buffers, so six back-to-back writes from the higher-
+  // priority output task can overflow RX before canReceiveTask runs. Yield one
+  // tick after every motor command to let the sole RX consumer drain replies.
+  vTaskDelay(CAN_COMMAND_INTERFRAME_TICKS);
 }
 
 void neckStopAll();
@@ -2150,6 +2404,21 @@ void clearAllTorqueSetpoints() {
     hyperspawnPositionBasePending = hyperspawnPositionExtPending = false;
     hyperspawnTorqueBasePending = hyperspawnTorqueExtPending = false;
   }
+}
+
+void failClosedCanMotion(const char *reason) {
+  canMotionFailClosed++;
+  portalTorqueTestActive = false;
+  portalTorqueTestActuatorIndex = -1;
+  portalTorqueTestValue = 0;
+  portalTorqueTestUntilMs = 0;
+  calibrationOverrideActive = false;
+  calibrationActuatorIndex = -1;
+  calibrationTorqueValue = 0;
+  clearAllTorqueSetpoints();
+  requestStop(3);
+  appendWebLog("CAN MOTION FAIL-CLOSED: " + String(reason ? reason : "tx failure") +
+               "; torque cleared and stop burst retained until delivered");
 }
 
 bool portalMotionAuthorized() {
@@ -2568,6 +2837,7 @@ void canReceiveTask(void *parameter) {
       if (!available) break;
       drained++;
     }
+    if (drained > canRxMaxBurst) canRxMaxBurst = drained;
     static uint32_t lastMotorQueryMs = 0;
     static uint32_t lastCanErrorSampleMs = 0;
     static uint8_t motorQuerySlot = 0;
@@ -2578,22 +2848,70 @@ void canReceiveTask(void *parameter) {
     }
     const bool canRxQuiet = lastCanRxMs == 0 ||
       now - lastCanRxMs >= CAN_RECOVERY_RX_QUIET_MS;
+    const uint8_t severeErrorMask = MCP_EFLG_TXBO | MCP_EFLG_TXEP |
+                                    MCP_EFLG_RXEP | MCP_EFLG_RX0OVR |
+                                    MCP_EFLG_RX1OVR;
     if (!canDiagnosticScanActive &&
-        ((canErrorFlags & MCP_EFLG_TXBO) != 0 ||
+        ((canErrorFlags & severeErrorMask) != 0 ||
          (canConsecutiveFailures >= CAN_RECOVERY_FAILURE_THRESHOLD && canRxQuiet))) {
       recoverCanController();
     }
-    const uint32_t queryInterval = canConsecutiveFailures >= 3
+
+    if (canDeferredTxPending && !canDeferredTxAbortAttempted &&
+        now - canDeferredTxSinceMs >= CAN_DEFERRED_TX_ABORT_MS) {
+      canDeferredTxAbortAttempted = true;
+      abortPendingCanTx("deferred_read_timeout");
+    }
+
+    // A reply timeout closes the transaction before another request may use a
+    // TX mailbox. This is intentionally independent of telemetry freshness:
+    // control still fails closed at MOTOR_NATIVE_STALE_MS.
+    if (motorNativePendingIndex >= 0 &&
+        now - motorNativePendingSinceMs >= MOTOR_NATIVE_REPLY_TIMEOUT_MS) {
+      const uint8_t timedOutIndex = static_cast<uint8_t>(motorNativePendingIndex);
+      motorNativePendingIndex = -1;
+      motorNativePendingSinceMs = 0;
+      recordMotorNativeMiss(timedOutIndex, now, true);
+    }
+
+    const bool controllerDegraded =
+      (canErrorFlags & (MCP_EFLG_EWARN | MCP_EFLG_TXWAR | MCP_EFLG_RXWAR |
+                        MCP_EFLG_TXEP | MCP_EFLG_RXEP)) != 0;
+    const uint32_t queryInterval = controllerDegraded || canConsecutiveFailures >= 3
       ? MOTOR_NATIVE_QUERY_BACKOFF_MS
       : MOTOR_NATIVE_QUERY_SLOT_MS;
     if (MOTOR_NATIVE_FEEDBACK_ENABLED && runtimeControlReady &&
         !canDiagnosticScanActive &&
+        motorNativePendingIndex < 0 &&
         now - lastMotorQueryMs >= queryInterval) {
-      requestMotorNativeFeedback(selectedMotorTelemetryOrder()[motorQuerySlot]);
-      motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
+      const uint8_t *order = selectedMotorTelemetryOrder();
+      int selectedIndex = -1;
+      for (uint8_t attempt = 0; attempt < 6; ++attempt) {
+        const uint8_t candidate = order[motorQuerySlot];
+        motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
+        const uint32_t eligibleAt = motorNativeNextEligibleMs[candidate];
+        if (eligibleAt == 0 || static_cast<int32_t>(now - eligibleAt) >= 0) {
+          selectedIndex = candidate;
+          break;
+        }
+        motorNativeOfflineSkips++;
+      }
+      if (selectedIndex >= 0 &&
+          !requestMotorNativeFeedback(static_cast<uint8_t>(selectedIndex))) {
+        recordMotorNativeMiss(static_cast<uint8_t>(selectedIndex), now, false);
+      }
       lastMotorQueryMs = now;
     }
-    vTaskDelay(pdMS_TO_TICKS(1));
+    // CANINT stays low until every enabled receive flag is cleared. If the
+    // bounded batch ended while it is still low, yield once and immediately
+    // continue draining; otherwise sleep until the falling edge or the 1 ms
+    // scheduler/health deadline. This sharply reduces two-buffer overflow risk
+    // without allowing a noisy bus to monopolize the core.
+    if (drained >= CAN_RX_BURST_LIMIT && digitalRead(CAN0_INT) == LOW) {
+      taskYIELD();
+    } else if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1)) > 0) {
+      canRxWakeups++;
+    }
   }
 }
 void hyperspawnRouteTask(void *parameter) {
@@ -2776,8 +3094,10 @@ void printReadings() {
       for (uint8_t slot = 0; slot < 6; ++slot) {
         const uint8_t index = order[slot];
         Serial.print(',');
-        if (motorNativeValid[index] &&
-            now - motorNativeReceivedMs[index] <= MOTOR_NATIVE_STALE_MS) {
+        // Preserve the last successfully decoded position for observability.
+        // The freshMask below remains the authority for freshness, and the
+        // control path independently rejects stale feedback.
+        if (motorNativeValid[index]) {
           Serial.print(motorNativeDegrees[index], 2);
         } else {
           Serial.print("NA");
@@ -3074,35 +3394,54 @@ void canOutputTask(void *parameter) {
     lastCanTaskMs = millis();
     if (runtimeControlReady && !isCenter && !isHead) {
       const int start = firstSelectedActuatorIndex();
+      bool motionBatchAttempted = false;
+      bool motionBatchOk = true;
 
       if (portalTorqueTestActive) {
+        motionBatchAttempted = true;
         if ((int32_t)(portalTorqueTestUntilMs - millis()) <= 0) {
           portalTorqueTestActive = false;
           portalTorqueTestActuatorIndex = -1;
           portalTorqueTestValue = 0;
           portalTorqueTestUntilMs = 0;
           for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-            sendTorqueCommand(ACTUATOR_IDS[i], 0);
+            if (!sendTorqueCommand(ACTUATOR_IDS[i], 0)) {
+              motionBatchOk = false;
+              break;
+            }
+            paceCanCommandBurst();
           }
           requestStop(3);
-          appendWebLog("TORQUE PULSE COMPLETE: zero command + stop burst queued");
+          if (motionBatchOk) {
+            appendWebLog("TORQUE PULSE COMPLETE: zero command + stop burst queued");
+          }
         } else {
           // Bounded commissioning pulse: one selected motor receives the small
           // test command; every other motor owned by this leg receives zero.
           for (int i = start; i < ACTUATOR_COUNT; i += 2) {
             const int16_t value = (i == portalTorqueTestActuatorIndex)
               ? portalTorqueTestValue : 0;
-            sendTorqueCommand(ACTUATOR_IDS[i], value);
+            if (!sendTorqueCommand(ACTUATOR_IDS[i], value)) {
+              motionBatchOk = false;
+              break;
+            }
+            paceCanCommandBurst();
           }
         }
       } else if (calibrationOverrideActive) {
+        motionBatchAttempted = true;
         // During direction calibration, command only the selected test joint and
         // explicitly zero every other motor on this leg.
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
           const int16_t value = (i == calibrationActuatorIndex) ? calibrationTorqueValue : 0;
-          sendTorqueCommand(ACTUATOR_IDS[i], value);
+          if (!sendTorqueCommand(ACTUATOR_IDS[i], value)) {
+            motionBatchOk = false;
+            break;
+          }
+          paceCanCommandBurst();
         }
       } else if (playMode) {
+        motionBatchAttempted = true;
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
           int16_t value = 0;
 
@@ -3130,13 +3469,25 @@ void canOutputTask(void *parameter) {
           }
 
           value = clampTorqueCommand(value);
-          sendTorqueCommand(ACTUATOR_IDS[i], value);
+          if (!sendTorqueCommand(ACTUATOR_IDS[i], value)) {
+            motionBatchOk = false;
+            break;
+          }
+          paceCanCommandBurst();
         }
       } else if (stopBurstRemaining > 0) {
+        bool stopBatchOk = true;
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-          sendStopCommand(ACTUATOR_IDS[i]);
+          if (!sendStopCommand(ACTUATOR_IDS[i])) {
+            stopBatchOk = false;
+            break;
+          }
+          paceCanCommandBurst();
         }
-        --stopBurstRemaining;
+        if (stopBatchOk) --stopBurstRemaining;
+      }
+      if (motionBatchAttempted && !motionBatchOk) {
+        failClosedCanMotion("unconfirmed MCP2515 transmit");
       }
     }
 
@@ -5427,10 +5778,14 @@ const JointConstraints &selectedConstraintForSensor(int index) {
 
 const char *canHealthStatus() {
   if (!configProvisioned || isCenter || isHead) return "inactive";
-  if (!canInitialized || !runtimeControlReady) return "fault";
+  if (!canInitialized || !canOneShotEnabled || !runtimeControlReady) return "fault";
   if (strcmp(taskHealthStatus(true, lastCanTaskMs, 40, 150), "fault") == 0) return "fault";
+  if ((canErrorFlags & (MCP_EFLG_TXBO | MCP_EFLG_TXEP | MCP_EFLG_RXEP)) != 0) return "fault";
   if (canConsecutiveFailures >= 3) return "fault";
-  if (canConsecutiveFailures > 0 || diagnosticAgeMs(lastCanFailureMs) < 5000) return "warn";
+  if ((canErrorFlags & (MCP_EFLG_EWARN | MCP_EFLG_TXWAR | MCP_EFLG_RXWAR |
+                        MCP_EFLG_RX0OVR | MCP_EFLG_RX1OVR)) != 0 ||
+      canConsecutiveFailures > 0 || diagnosticAgeMs(lastCanFailureMs) < 5000) return "warn";
+  if (!CAN_BIT_TIMING_DATASHEET_COMPLIANT) return "warn";
   return "ok";
 }
 
@@ -5560,14 +5915,28 @@ String buildDiagnosticsJson() {
   out += "\"can\":{";
   out += "\"status\":\"" + String(canHealthStatus()) + "\",";
   out += "\"initialized\":" + String(canInitialized ? "true" : "false") + ",";
-  out += "\"bitrate\":1000000,\"oscillator_mhz\":8,";
+  out += "\"one_shot_tx\":" + String(canOneShotEnabled ? "true" : "false") + ",";
+  out += "\"bitrate\":" + String(CAN_BUS_BITRATE_BPS) + ",";
+  out += "\"oscillator_hz\":" + String(CAN_CONTROLLER_CLOCK_HZ) + ",";
+  out += "\"bit_timing_datasheet_compliant\":" +
+         String(CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "true" : "false") + ",";
+  out += "\"bit_timing_profile\":\"MCP_CAN_lib_8MHz_1Mbps_CNF_00_C0_80\",";
   out += "\"cs_gpio\":" + String(CAN_CS_PIN) + ",\"int_gpio\":" + String((int)CAN0_INT) + ",";
   out += "\"int_level\":" + String(canInitialized ? digitalRead(CAN0_INT) : -1) + ",";
+  out += "\"rx_interrupts\":" + String(canRxInterrupts) + ",";
+  out += "\"rx_wakeups\":" + String(canRxWakeups) + ",";
+  out += "\"rx_max_burst\":" + String(canRxMaxBurst) + ",";
   out += "\"tx_success\":" + String(canTxSuccess) + ",";
   out += "\"rx_frames\":" + String(canRxFrames) + ",";
   out += "\"rx_errors\":" + String(canRxErrors) + ",";
   out += "\"last_rx_age_ms\":" + ageJsonValue(lastCanRxMs) + ",";
   out += "\"tx_failure\":" + String(canTxFailure) + ",";
+  out += "\"deferred_read_submissions\":" + String(canDeferredReadSubmissions) + ",";
+  out += "\"deferred_tx_pending\":" + String(canDeferredTxPending ? "true" : "false") + ",";
+  out += "\"tx_abort_attempts\":" + String(canTxAbortAttempts) + ",";
+  out += "\"tx_abort_successes\":" + String(canTxAbortSuccesses) + ",";
+  out += "\"tx_abort_failures\":" + String(canTxAbortFailures) + ",";
+  out += "\"motion_fail_closed\":" + String(canMotionFailClosed) + ",";
   out += "\"consecutive_failures\":" + String(canConsecutiveFailures) + ",";
   out += "\"error_flags\":" + String(canErrorFlags) + ",";
   out += "\"tx_error_count\":" + String(canTxErrorCount) + ",";
@@ -5586,7 +5955,11 @@ String buildDiagnosticsJson() {
   out += "\"motor_angle_queries\":" + String(motorNativeQueries) + ",";
   out += "\"motor_angle_query_failures\":" + String(motorNativeQueryFailures) + ",";
   out += "\"motor_angle_responses\":" + String(motorNativeResponses) + ",";
-  out += "\"motor_angle_malformed\":" + String(motorNativeMalformedResponses);
+  out += "\"motor_angle_malformed\":" + String(motorNativeMalformedResponses) + ",";
+  out += "\"motor_angle_reply_timeouts\":" + String(motorNativeReplyTimeouts) + ",";
+  out += "\"motor_angle_out_of_order\":" + String(motorNativeOutOfOrderResponses) + ",";
+  out += "\"motor_angle_offline_skips\":" + String(motorNativeOfflineSkips) + ",";
+  out += "\"motor_angle_pending_index\":" + String(motorNativePendingIndex);
   out += "},";
 
   out += "\"i2c\":{";
@@ -5757,9 +6130,11 @@ String buildDiagnosticsJson() {
     out += "\"feedback\":\"" + String(motorFeedbackFresh ? "measured" :
       (motorNativeValid[i] ? "stale" : "unavailable")) + "\",";
     out += "\"motor_position_deg\":";
-    out += motorFeedbackFresh ? String(motorNativeDegrees[i], 2) : String("null");
+    out += motorNativeValid[i] ? String(motorNativeDegrees[i], 2) : String("null");
     out += ",";
     out += "\"feedback_age_ms\":" + ageJsonValue(motorNativeReceivedMs[i]) + ",";
+    out += "\"query_miss_streak\":" + String(motorNativeMissStreak[i]) + ",";
+    out += "\"query_pending\":" + String(motorNativePendingIndex == i ? "true" : "false") + ",";
     out += "\"control_feedback\":\"" + String(
       motorControlAlignmentFault[i] ? "alignment_fault" :
       (controlFeedbackReady ? "motor_native_zeroed" :
@@ -6879,14 +7254,25 @@ void setup() {
     SPI.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, CAN_CS_PIN);
     spiInitialized = true;
 
-    if (CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) != CAN_OK) {
+    const int canBeginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
+    const int canModeResult = canBeginResult == CAN_OK
+      ? CAN.setMode(MCP_NORMAL) : CAN_FAIL;
+    const int canOneShotResult = canModeResult == CAN_OK
+      ? CAN.enOneShotTX() : CAN_FAIL;
+    if (canBeginResult != CAN_OK || canModeResult != CAN_OK ||
+        canOneShotResult != CAN_OK) {
       canInitialized = false;
-      dbPrintln("ERROR: MCP2515 CAN initialization failed at 1 Mbps / 8 MHz.");
+      canOneShotEnabled = false;
+      dbPrintf("ERROR: MCP2515 CAN initialization failed: begin=%d mode=%d oneshot=%d.\n",
+               canBeginResult, canModeResult, canOneShotResult);
       playMode = false;
     } else {
-      CAN.setMode(MCP_NORMAL);
       canInitialized = true;
-      dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, CS GPIO5.");
+      canOneShotEnabled = true;
+      dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, one-shot TX, CS GPIO5.");
+      if (!CAN_BIT_TIMING_DATASHEET_COMPLIANT) {
+        dbPrintln("WARNING: MCP2515 8 MHz / 1 Mbps uses out-of-spec PS2=1 TQ; use a 16 MHz MCP2515 clock for compliant 1 Mbps timing.");
+      }
 
       dbPrintln("BOOT|phase=as5600-prime|status=deferred");
 
@@ -6898,6 +7284,9 @@ void setup() {
       // CAN RX shares priority with sensing/impedance so a saturated bus cannot
       // starve DB3 telemetry. The bounded RX burst above keeps latency finite.
       xTaskCreatePinnedToCore(canReceiveTask, "can-rx", 4096, nullptr, 3, &canRxTaskHandle, 1);
+      if (canRxTaskHandle != nullptr) {
+        attachInterrupt(digitalPinToInterrupt(CAN0_INT), onCanInterrupt, FALLING);
+      }
       xTaskCreatePinnedToCore(hyperspawnRouteTask, "hyperspawn", 4096, nullptr, 2, &hyperspawnTaskHandle, 1);
       runtimeControlReady = sensorTaskHandle && impedanceTaskHandle &&
         canTaskHandle && canRxTaskHandle && hyperspawnTaskHandle;

@@ -51,10 +51,45 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.28", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.33", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
+        self.assertIn("can-read-passthrough-v1", SOURCE)
+        self.assertIn("can-discovery-v1", SOURCE)
+        self.assertIn("can-bus-recovery-v1", SOURCE)
+
+    def test_can_debug_bridge_is_targeted_read_only_and_raw(self):
+        self.assertIn("isReadOnlyCanDiagnosticOpcode(payload[0])", SOURCE)
+        self.assertIn("selectedDiagnosticMotorId(requestId)", SOURCE)
+        self.assertIn("can tx-read <motor_id> <byte0> ... <byte7>", SOURCE)
+        self.assertIn("can info <motor_id>", SOURCE)
+        self.assertIn("can monitor <motor_id>", SOURCE)
+        self.assertIn("captureCanDiagnosticFrame(static_cast<uint32_t>(rxId), data, len)", SOURCE)
+        self.assertIn("isExpectedCanDiagnosticReplyId", SOURCE)
+        self.assertIn("responseId == requestId + 0x100U", SOURCE)
+        for unsafe_opcode in ("case 0x81", "case 0xA1", "case 0xA4", "case 0xC4"):
+            opcode_filter = SOURCE[
+                SOURCE.index("bool isReadOnlyCanDiagnosticOpcode"):
+                SOURCE.index("bool isExpectedCanDiagnosticReplyId")
+            ]
+            self.assertNotIn(unsafe_opcode, opcode_filter)
+        self.assertIn('normalized == "can scan"', SOURCE)
+        self.assertIn('normalized == "can sniff"', SOURCE)
+        self.assertIn("RMD_DISCOVERY_FIRST_ID = 0x141", SOURCE)
+        self.assertIn("RMD_DISCOVERY_LAST_ID = 0x160", SOURCE)
+        self.assertIn("byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0}", SOURCE)
+        self.assertIn("!canDiagnosticScanActive", SOURCE)
+        self.assertIn("motorProfileForActuator(directIndex) == &MOTOR_PROFILE_X8_V17", SOURCE)
+        self.assertIn("CAN.getError()", SOURCE)
+        self.assertIn("CAN.errorCountTX()", SOURCE)
+        self.assertIn("recoverCanController()", SOURCE)
+        self.assertIn("MCP_EFLG_TXBO", SOURCE)
+        self.assertIn("CAN_RECOVERY_RX_QUIET_MS", SOURCE)
+        self.assertIn("GET_TX_BUFFER_TIMEOUT", SOURCE)
+        self.assertIn("canDiagnosticScanFoundMask", SOURCE)
+        self.assertIn("same_id=", SOURCE)
+        self.assertIn("tx_failures=", SOURCE)
 
     def test_diagnostic_task_precedes_deferred_sensor_priming(self):
         setup = SOURCE[SOURCE.index("void setup()") : SOURCE.index("void loop()")]

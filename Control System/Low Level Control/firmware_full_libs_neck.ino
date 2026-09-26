@@ -49,7 +49,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.28";
+  "behemoth-observation-protocol-2026.09.33";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -57,7 +57,8 @@ static const char *DROPBEAR_CAPABILITIES =
   "version-v1;health-v1;observe-stream-v1;db1-required;"
   "motor-profile-v1;motor-angle-rmd-v17-v42-0x92;"
   "motor-control-aligned-v1;as5600-crosscheck-v1;"
-  "boot-observability-v1;portal-safety-v1";
+  "boot-observability-v1;portal-safety-v1;can-read-passthrough-v1;"
+  "can-discovery-v1;can-bus-recovery-v1;config-records-v1;calibration-result-v1";
 
 // -----------------------------------------------------------------------------
 // Hardware
@@ -317,6 +318,19 @@ static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 10;
 static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 50;
 static const uint32_t MOTOR_NATIVE_STALE_MS = 500;
 static const uint8_t CAN_RX_BURST_LIMIT = 4;
+static const uint32_t CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS = 1000;
+static const uint32_t CAN_DIAGNOSTIC_MAX_CAPTURE_MS = 10000;
+static const uint32_t CAN_DIAGNOSTIC_SNIFF_MAX_MS = 2000;
+static const uint16_t CAN_DIAGNOSTIC_SNIFF_FRAME_LIMIT = 128;
+static const uint32_t RMD_DISCOVERY_FIRST_ID = 0x141;
+static const uint32_t RMD_DISCOVERY_LAST_ID = 0x160;
+static const uint32_t RMD_DISCOVERY_REPLY_WAIT_MS = 40;
+static const uint32_t CAN_ERROR_SAMPLE_MS = 250;
+// A persistent wiring/bitrate fault must not turn recovery into a one-second
+// reset/log storm. Five seconds still recovers promptly after a cable repair.
+static const uint32_t CAN_RECOVERY_INTERVAL_MS = 5000;
+static const uint32_t CAN_RECOVERY_FAILURE_THRESHOLD = 8;
+static const uint32_t CAN_RECOVERY_RX_QUIET_MS = 500;
 static const uint8_t MOTOR_BOOT_ZERO_SAMPLE_COUNT = 8;
 static const float MOTOR_BOOT_ZERO_MAX_SPREAD_DEG = 2.0f;
 static const float MOTOR_AS5600_DIVERGENCE_LIMIT_DEG = 12.0f;
@@ -378,6 +392,23 @@ JointConstraints hipRollConstraintsRight;
 // the existing A1 implementation. maxTorqueLimit=3.0 => +/-300 command units.
 volatile int16_t torqueValues[ACTUATOR_COUNT] = {0};
 volatile int16_t impedanceTorqueValues[ACTUATOR_COUNT] = {0};
+
+// The debug bridge is deliberately read-only.  It captures one configured
+// motor at a time and recognizes both legacy same-ID and newer ID+0x100 reply
+// conventions without changing the stricter closed-loop feedback decoder.
+volatile bool canDiagnosticCaptureActive = false;
+volatile bool canDiagnosticCaptureAll = false;
+volatile bool canDiagnosticScanActive = false;
+volatile uint32_t canDiagnosticRequestId = 0;
+volatile uint32_t canDiagnosticCaptureUntilMs = 0;
+volatile uint16_t canDiagnosticCaptureFramesRemaining = 0;
+volatile uint32_t canDiagnosticRxFrames = 0;
+volatile uint32_t canDiagnosticSerialDrops = 0;
+volatile uint32_t canDiagnosticScanFoundMask = 0;
+volatile uint32_t canDiagnosticScanSameIdMask = 0;
+volatile uint32_t canDiagnosticScanOffsetIdMask = 0;
+volatile uint16_t canDiagnosticScanResponses = 0;
+volatile uint16_t canDiagnosticScanTxFailures = 0;
 
 float maxTorqueLimit = 3.0f;
 
@@ -766,6 +797,12 @@ volatile uint32_t canStopFrames = 0;
 volatile uint32_t lastCanTxMs = 0;
 volatile uint32_t lastCanFailureMs = 0;
 volatile int lastCanResult = 0;
+volatile uint8_t canErrorFlags = 0;
+volatile uint8_t canTxErrorCount = 0;
+volatile uint8_t canRxErrorCount = 0;
+volatile uint32_t canRecoveryAttempts = 0;
+volatile uint32_t canRecoverySuccesses = 0;
+volatile uint32_t lastCanRecoveryMs = 0;
 
 volatile uint32_t sensorTaskLoops = 0;
 volatile uint32_t impedanceTaskLoops = 0;
@@ -815,6 +852,11 @@ void dbPrintln(const String &line);
 void dbPrintf(const char *format, ...);
 void setupPortal();
 bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen);
+void sampleCanControllerErrors();
+bool recoverCanController();
+void printCanBusStatus();
+bool processCanDiagnosticCommand(String command);
+void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len);
 void portalTask(void *parameter);
 const char *sensorHealthStatus(const SensorDiagnostic &d);
 void markHyperspawnCommand(HyperspawnControlMode mode);
@@ -834,6 +876,8 @@ void saveConfig();
 void printHelp();
 void printVersionRecord();
 void printHealthRecord();
+void printConfigurationRecords();
+bool processConfigurationSetCommand(const String &command);
 void hyperspawnRouteTask(void *parameter);
 void canReceiveTask(void *parameter);
 void processHyperspawnSerialCommand(const String &command);
@@ -1156,11 +1200,18 @@ const uint8_t *selectedMotorTelemetryOrder() {
 }
 
 int actuatorIndexFromMotorFeedbackId(uint32_t responseID) {
-  // RMD V4.4 responses use the motor request ID plus 0x100. Reject request-ID
-  // frames so a local CAN echo can never be admitted as measured feedback.
+  // Installed V1.7 X8 calves answer on the request ID itself, while the newer
+  // X10 firmware answers on request+0x100. The MCP2515 in normal mode does not
+  // enqueue its own transmitted request, and the profile check prevents a
+  // direct-ID X10 frame from being admitted as feedback.
+  const int directIndex = actuatorIndexFromCanId(responseID);
+  if (actuatorBelongsToSelectedLeg(directIndex) &&
+      motorProfileForActuator(directIndex) == &MOTOR_PROFILE_X8_V17) {
+    return directIndex;
+  }
   if (responseID < 0x100) return -1;
-  const int index = actuatorIndexFromCanId(responseID - 0x100);
-  return actuatorBelongsToSelectedLeg(index) ? index : -1;
+  const int offsetIndex = actuatorIndexFromCanId(responseID - 0x100);
+  return actuatorBelongsToSelectedLeg(offsetIndex) ? offsetIndex : -1;
 }
 
 int as5600SensorIndexForActuator(int actuatorIndex) {
@@ -1534,6 +1585,451 @@ ImpedanceControl hipRollControlLeft(3.5f, 80.0f, 9.05f);
 // -----------------------------------------------------------------------------
 // CAN primitives
 // -----------------------------------------------------------------------------
+
+bool isReadOnlyCanDiagnosticOpcode(uint8_t opcode) {
+  switch (opcode) {
+    case 0x30:  // read PID parameters
+    case 0x42:  // read acceleration
+    case 0x90:  // read encoder position
+    case 0x92:  // read multi-turn angle
+    case 0x94:  // read single-turn angle
+    case 0x9A:  // read status 1 / fault state
+    case 0x9C:  // read status 2 / live state
+    case 0x9D:  // read status 3 / phase currents
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool isExpectedCanDiagnosticReplyId(uint32_t requestId, uint32_t responseId) {
+  if (requestId > 0x7FFU || responseId > 0x7FFU) return false;
+  return responseId == requestId ||
+         (requestId <= 0x6FFU && responseId == requestId + 0x100U);
+}
+
+bool nextCanCommandToken(const String &input, int &cursor, String &token) {
+  while (cursor < static_cast<int>(input.length()) &&
+         (input.charAt(cursor) == ' ' || input.charAt(cursor) == '\t')) cursor++;
+  if (cursor >= static_cast<int>(input.length())) {
+    token = "";
+    return false;
+  }
+  const int start = cursor;
+  while (cursor < static_cast<int>(input.length()) &&
+         input.charAt(cursor) != ' ' && input.charAt(cursor) != '\t') cursor++;
+  token = input.substring(start, cursor);
+  return true;
+}
+
+bool parseCanHexToken(String token, uint32_t maximum, uint32_t &value) {
+  token.trim();
+  if (token.startsWith("0x") || token.startsWith("0X")) token = token.substring(2);
+  if (token.length() == 0 || token.length() > 8) return false;
+  for (uint16_t i = 0; i < token.length(); ++i) {
+    const char c = token.charAt(i);
+    const bool hex = (c >= '0' && c <= '9') ||
+                     (c >= 'a' && c <= 'f') ||
+                     (c >= 'A' && c <= 'F');
+    if (!hex) return false;
+  }
+  char *end = nullptr;
+  const unsigned long parsed = strtoul(token.c_str(), &end, 16);
+  if (end == token.c_str() || *end != '\0' || parsed > maximum) return false;
+  value = static_cast<uint32_t>(parsed);
+  return true;
+}
+
+bool parseCanDurationToken(String token, uint32_t &value) {
+  token.trim();
+  if (token.length() == 0 || token.length() > 5) return false;
+  for (uint16_t i = 0; i < token.length(); ++i) {
+    if (token.charAt(i) < '0' || token.charAt(i) > '9') return false;
+  }
+  char *end = nullptr;
+  const unsigned long parsed = strtoul(token.c_str(), &end, 10);
+  if (end == token.c_str() || *end != '\0' || parsed < 100 ||
+      parsed > CAN_DIAGNOSTIC_MAX_CAPTURE_MS) return false;
+  value = static_cast<uint32_t>(parsed);
+  return true;
+}
+
+bool selectedDiagnosticMotorId(uint32_t requestId) {
+  const int index = actuatorIndexFromCanId(requestId);
+  return index >= 0 && actuatorBelongsToSelectedLeg(index);
+}
+
+void emitCanDiagnosticLine(const String &line, bool countDrop = false) {
+  if (serialMutex && xSemaphoreTake(serialMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+    Serial.println(line);
+    xSemaphoreGive(serialMutex);
+    appendWebLog(line);
+    return;
+  }
+  if (countDrop) canDiagnosticSerialDrops++;
+}
+
+String canDiagnosticFrameLine(const char *direction, uint32_t id,
+                              const byte *data, byte len) {
+  char idText[8];
+  snprintf(idText, sizeof(idText), "0x%03lX", static_cast<unsigned long>(id));
+  String line = "DBC1," + currentCommandAddress() + "," + String(direction) + "," +
+                String(millis()) + "," + String(idText) + "," + String(len);
+  for (byte index = 0; index < len && index < 8; ++index) {
+    char byteText[4];
+    snprintf(byteText, sizeof(byteText), "%02X", data[index]);
+    line += "," + String(byteText);
+  }
+  return line;
+}
+
+void armCanDiagnosticCapture(uint32_t requestId, uint32_t durationMs) {
+  canDiagnosticCaptureAll = false;
+  canDiagnosticRequestId = requestId;
+  canDiagnosticCaptureUntilMs = millis() + durationMs;
+  canDiagnosticCaptureFramesRemaining = UINT16_MAX;
+  canDiagnosticCaptureActive = true;
+}
+
+void armCanDiagnosticSniff(uint32_t durationMs) {
+  canDiagnosticCaptureAll = true;
+  canDiagnosticRequestId = 0;
+  canDiagnosticCaptureUntilMs = millis() + durationMs;
+  canDiagnosticCaptureFramesRemaining = CAN_DIAGNOSTIC_SNIFF_FRAME_LIMIT;
+  canDiagnosticCaptureActive = true;
+}
+
+void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) {
+  if (!canDiagnosticCaptureActive || data == nullptr || len > 8) return;
+  const uint32_t now = millis();
+  if (static_cast<int32_t>(canDiagnosticCaptureUntilMs - now) <= 0) {
+    canDiagnosticCaptureActive = false;
+    return;
+  }
+  if (!canDiagnosticCaptureAll &&
+      !isExpectedCanDiagnosticReplyId(canDiagnosticRequestId, responseId)) return;
+  if (canDiagnosticCaptureFramesRemaining == 0) {
+    canDiagnosticCaptureActive = false;
+    return;
+  }
+  if (canDiagnosticScanActive &&
+      canDiagnosticRequestId >= RMD_DISCOVERY_FIRST_ID &&
+      canDiagnosticRequestId <= RMD_DISCOVERY_LAST_ID) {
+    const uint8_t bit = static_cast<uint8_t>(canDiagnosticRequestId -
+                                              RMD_DISCOVERY_FIRST_ID);
+    const uint32_t mask = 1UL << bit;
+    canDiagnosticScanFoundMask |= mask;
+    if (responseId == canDiagnosticRequestId) canDiagnosticScanSameIdMask |= mask;
+    else canDiagnosticScanOffsetIdMask |= mask;
+    canDiagnosticScanResponses++;
+  }
+  canDiagnosticRxFrames++;
+  emitCanDiagnosticLine(canDiagnosticFrameLine("RX", responseId, data, len), true);
+  if (canDiagnosticCaptureFramesRemaining != UINT16_MAX) {
+    canDiagnosticCaptureFramesRemaining--;
+    if (canDiagnosticCaptureFramesRemaining == 0) canDiagnosticCaptureActive = false;
+  }
+}
+
+bool sendReadOnlyDiagnosticFrame(uint32_t requestId, const byte payload[8]) {
+  if (!isReadOnlyCanDiagnosticOpcode(payload[0])) {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                          String(millis()) + ",unsafe_opcode");
+    return false;
+  }
+  const bool sent = canSendFrame(requestId, payload, 8);
+  if (canDiagnosticScanActive && !sent) canDiagnosticScanTxFailures++;
+  emitCanDiagnosticLine(canDiagnosticFrameLine(sent ? "TX" : "TX_FAIL",
+                                               requestId, payload, 8));
+  return sent;
+}
+
+String canDiscoveryIdList(uint32_t mask) {
+  if (mask == 0) return "none";
+  String ids;
+  for (uint8_t bit = 0; bit <= RMD_DISCOVERY_LAST_ID - RMD_DISCOVERY_FIRST_ID; ++bit) {
+    if ((mask & (1UL << bit)) == 0) continue;
+    char idText[8];
+    snprintf(idText, sizeof(idText), "0x%03lX",
+             static_cast<unsigned long>(RMD_DISCOVERY_FIRST_ID + bit));
+    if (ids.length() > 0) ids += "|";
+    ids += idText;
+  }
+  return ids;
+}
+
+void printCanDiagnosticStatus() {
+  const uint32_t now = millis();
+  const bool active = canDiagnosticCaptureActive &&
+    static_cast<int32_t>(canDiagnosticCaptureUntilMs - now) > 0;
+  if (!active) canDiagnosticCaptureActive = false;
+  char idText[8];
+  snprintf(idText, sizeof(idText), "0x%03lX",
+           static_cast<unsigned long>(canDiagnosticRequestId));
+  const uint32_t remaining = active ? canDiagnosticCaptureUntilMs - now : 0;
+  const String captureTarget = canDiagnosticCaptureAll ? String("all") : String(idText);
+  emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",STATUS," +
+                        String(now) + "," + (active ? "on" : "off") + "," +
+                        captureTarget + "," +
+                        String(remaining) + "," +
+                        String(canDiagnosticRxFrames) + "," +
+                        String(canDiagnosticSerialDrops));
+}
+
+bool processCanDiagnosticCommand(String command) {
+  command.trim();
+  String normalized = command;
+  normalized.toLowerCase();
+  if (normalized == "can monitor off") {
+    canDiagnosticCaptureActive = false;
+    canDiagnosticCaptureAll = false;
+    printCanDiagnosticStatus();
+    return true;
+  }
+  if (normalized == "can monitor status") {
+    printCanDiagnosticStatus();
+    return true;
+  }
+  if (normalized == "can bus") {
+    sampleCanControllerErrors();
+    printCanBusStatus();
+    return true;
+  }
+  if (!runtimeControlReady || !canInitialized || !isLegRole()) {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                          String(millis()) + ",can_runtime_not_ready");
+    return true;
+  }
+
+  if (normalized == "can scan") {
+    byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0};
+    canDiagnosticScanFoundMask = 0;
+    canDiagnosticScanSameIdMask = 0;
+    canDiagnosticScanOffsetIdMask = 0;
+    canDiagnosticScanResponses = 0;
+    canDiagnosticScanTxFailures = 0;
+    canDiagnosticScanActive = true;
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
+                          String(millis()) + ",start,0x141,0x160,opcode=9A");
+    for (uint32_t requestId = RMD_DISCOVERY_FIRST_ID;
+         requestId <= RMD_DISCOVERY_LAST_ID; ++requestId) {
+      armCanDiagnosticCapture(requestId, RMD_DISCOVERY_REPLY_WAIT_MS);
+      sendReadOnlyDiagnosticFrame(requestId, payload);
+      vTaskDelay(pdMS_TO_TICKS(RMD_DISCOVERY_REPLY_WAIT_MS));
+    }
+    canDiagnosticCaptureActive = false;
+    canDiagnosticScanActive = false;
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
+                          String(millis()) + ",complete,0x141,0x160,opcode=9A," +
+                          "found=" + canDiscoveryIdList(canDiagnosticScanFoundMask) + "," +
+                          "same_id=" + canDiscoveryIdList(canDiagnosticScanSameIdMask) + "," +
+                          "offset_id=" + canDiscoveryIdList(canDiagnosticScanOffsetIdMask) + "," +
+                          "responses=" + String(canDiagnosticScanResponses) + "," +
+                          "tx_failures=" + String(canDiagnosticScanTxFailures));
+    return true;
+  }
+
+  if (normalized == "can sniff" || normalized.startsWith("can sniff ")) {
+    uint32_t duration = CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS;
+    if (normalized.startsWith("can sniff ")) {
+      String durationToken = command.substring(String("can sniff ").length());
+      durationToken.trim();
+      if (!parseCanDurationToken(durationToken, duration) ||
+          duration > CAN_DIAGNOSTIC_SNIFF_MAX_MS) {
+        emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                              String(millis()) + ",sniff_duration_must_be_100_to_2000_ms");
+        return true;
+      }
+    }
+    armCanDiagnosticSniff(duration);
+    printCanDiagnosticStatus();
+    return true;
+  }
+
+  String prefix;
+  if (normalized.startsWith("can probe ")) prefix = "can probe ";
+  else if (normalized.startsWith("can info ")) prefix = "can info ";
+  else if (normalized.startsWith("can monitor ")) prefix = "can monitor ";
+  else if (normalized.startsWith("can tx-read ")) prefix = "can tx-read ";
+  else {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                          String(millis()) + ",usage");
+    return true;
+  }
+
+  const String arguments = command.substring(prefix.length());
+  int cursor = 0;
+  String token;
+  uint32_t requestId = 0;
+  if (!nextCanCommandToken(arguments, cursor, token) ||
+      !parseCanHexToken(token, 0x7FF, requestId) ||
+      !selectedDiagnosticMotorId(requestId)) {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                          String(millis()) + ",id_not_owned_by_leg");
+    return true;
+  }
+
+  if (prefix == "can monitor ") {
+    uint32_t duration = CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS;
+    if (nextCanCommandToken(arguments, cursor, token) &&
+        !parseCanDurationToken(token, duration)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",duration_must_be_100_to_10000_ms");
+      return true;
+    }
+    if (nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",too_many_arguments");
+      return true;
+    }
+    armCanDiagnosticCapture(requestId, duration);
+    printCanDiagnosticStatus();
+    return true;
+  }
+
+  if (prefix == "can info ") {
+    if (nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",too_many_arguments");
+      return true;
+    }
+    static const byte INFO_OPCODES[] = {0x9A, 0x9C, 0x9D, 0x92, 0x90, 0x30, 0x42};
+    armCanDiagnosticCapture(requestId, 2000);
+    for (byte index = 0; index < sizeof(INFO_OPCODES); ++index) {
+      byte payload[8] = {0};
+      payload[0] = INFO_OPCODES[index];
+      sendReadOnlyDiagnosticFrame(requestId, payload);
+      vTaskDelay(pdMS_TO_TICKS(8));
+    }
+    return true;
+  }
+
+  byte payload[8] = {0};
+  if (prefix == "can probe ") {
+    uint32_t opcode = 0;
+    if (!nextCanCommandToken(arguments, cursor, token) ||
+        !parseCanHexToken(token, 0xFF, opcode) ||
+        nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",probe_requires_id_and_opcode");
+      return true;
+    }
+    payload[0] = static_cast<byte>(opcode);
+  } else {
+    for (byte index = 0; index < 8; ++index) {
+      uint32_t value = 0;
+      if (!nextCanCommandToken(arguments, cursor, token) ||
+          !parseCanHexToken(token, 0xFF, value)) {
+        emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                              String(millis()) + ",tx_read_requires_exactly_8_bytes");
+        return true;
+      }
+      payload[index] = static_cast<byte>(value);
+    }
+    if (nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",tx_read_requires_exactly_8_bytes");
+      return true;
+    }
+  }
+
+  if (!isReadOnlyCanDiagnosticOpcode(payload[0])) {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                          String(millis()) + ",unsafe_opcode");
+    return true;
+  }
+  armCanDiagnosticCapture(requestId, CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS);
+  sendReadOnlyDiagnosticFrame(requestId, payload);
+  return true;
+}
+
+void sampleCanControllerErrors() {
+  if (!canInitialized || canMutex == nullptr) return;
+  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(5)) != pdTRUE) return;
+  canErrorFlags = CAN.getError();
+  canTxErrorCount = CAN.errorCountTX();
+  canRxErrorCount = CAN.errorCountRX();
+  xSemaphoreGive(canMutex);
+}
+
+const char *canResultName(int result) {
+  switch (result) {
+    case CAN_OK: return "OK";
+    case CAN_FAILINIT: return "FAIL_INIT";
+    case CAN_FAILTX: return "FAIL_TX";
+    case CAN_MSGAVAIL: return "MSG_AVAILABLE";
+    case CAN_NOMSG: return "NO_MSG";
+    case CAN_CTRLERROR: return "CONTROLLER_ERROR";
+    case CAN_GETTXBFTIMEOUT: return "GET_TX_BUFFER_TIMEOUT";
+    case CAN_SENDMSGTIMEOUT: return "SEND_MSG_TIMEOUT";
+    case CAN_FAIL: return "FAIL";
+    case -2: return "MUTEX_TIMEOUT";
+    default: return "UNKNOWN";
+  }
+}
+
+String canErrorFlagNames(uint8_t flags) {
+  if (flags == 0) return "none";
+  String names;
+  if (flags & MCP_EFLG_EWARN) names += "EWARN";
+  if (flags & MCP_EFLG_RXWAR) names += names.length() ? "|RXWAR" : "RXWAR";
+  if (flags & MCP_EFLG_TXWAR) names += names.length() ? "|TXWAR" : "TXWAR";
+  if (flags & MCP_EFLG_RXEP) names += names.length() ? "|RXEP" : "RXEP";
+  if (flags & MCP_EFLG_TXEP) names += names.length() ? "|TXEP" : "TXEP";
+  if (flags & MCP_EFLG_TXBO) names += names.length() ? "|TXBO" : "TXBO";
+  if (flags & MCP_EFLG_RX0OVR) names += names.length() ? "|RX0OVR" : "RX0OVR";
+  if (flags & MCP_EFLG_RX1OVR) names += names.length() ? "|RX1OVR" : "RX1OVR";
+  return names;
+}
+
+void printCanBusStatus() {
+  emitCanDiagnosticLine(
+    "DBC1," + currentCommandAddress() + ",BUS," + String(millis()) + "," +
+    String(canInitialized ? 1 : 0) + "," + String(canErrorFlags) + "," +
+    String(canTxErrorCount) + "," + String(canRxErrorCount) + "," +
+    String(canConsecutiveFailures) + "," + String(canRecoveryAttempts) + "," +
+    String(canRecoverySuccesses) + "," + String(lastCanResult) + "," +
+    "eflg=" + canErrorFlagNames(canErrorFlags) + "," +
+    "result=" + String(canResultName(lastCanResult))
+  );
+}
+
+bool recoverCanController() {
+  if (!isLegRole() || canMutex == nullptr || !spiInitialized) return false;
+  const uint32_t now = millis();
+  if (now - lastCanRecoveryMs < CAN_RECOVERY_INTERVAL_MS) return false;
+  lastCanRecoveryMs = now;
+  canRecoveryAttempts++;
+
+  bool recovered = false;
+  int beginResult = -1;
+  int modeResult = -1;
+  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+    beginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
+    if (beginResult == CAN_OK) {
+      modeResult = CAN.setMode(MCP_NORMAL);
+      recovered = modeResult == CAN_OK;
+    }
+    canErrorFlags = CAN.getError();
+    canTxErrorCount = CAN.errorCountTX();
+    canRxErrorCount = CAN.errorCountRX();
+    xSemaphoreGive(canMutex);
+  }
+
+  if (recovered) {
+    canInitialized = true;
+    canConsecutiveFailures = 0;
+    canRecoverySuccesses++;
+  }
+  emitCanDiagnosticLine(
+    "DBC1," + currentCommandAddress() + ",RECOVERY," + String(now) + "," +
+    (recovered ? "ok" : "failed") + "," + String(beginResult) + "," +
+    String(modeResult) + "," + String(canErrorFlags) + "," +
+    String(canTxErrorCount) + "," + String(canRxErrorCount) + "," +
+    "eflg=" + canErrorFlagNames(canErrorFlags)
+  );
+  return recovered;
+}
 
 bool canSendFrame(uint32_t actuatorID, const byte *data, byte dataLen) {
   if (isCenter || isHead || !canInitialized) return false;
@@ -2052,6 +2548,7 @@ void canReceiveTask(void *parameter) {
           if (result == CAN_OK) {
             canRxFrames++;
             lastCanRxMs = millis();
+            captureCanDiagnosticFrame(static_cast<uint32_t>(rxId), data, len);
             if (!ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)) {
               handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len);
             }
@@ -2067,12 +2564,25 @@ void canReceiveTask(void *parameter) {
       drained++;
     }
     static uint32_t lastMotorQueryMs = 0;
+    static uint32_t lastCanErrorSampleMs = 0;
     static uint8_t motorQuerySlot = 0;
     const uint32_t now = millis();
+    if (now - lastCanErrorSampleMs >= CAN_ERROR_SAMPLE_MS) {
+      sampleCanControllerErrors();
+      lastCanErrorSampleMs = now;
+    }
+    const bool canRxQuiet = lastCanRxMs == 0 ||
+      now - lastCanRxMs >= CAN_RECOVERY_RX_QUIET_MS;
+    if (!canDiagnosticScanActive &&
+        ((canErrorFlags & MCP_EFLG_TXBO) != 0 ||
+         (canConsecutiveFailures >= CAN_RECOVERY_FAILURE_THRESHOLD && canRxQuiet))) {
+      recoverCanController();
+    }
     const uint32_t queryInterval = canConsecutiveFailures >= 3
       ? MOTOR_NATIVE_QUERY_BACKOFF_MS
       : MOTOR_NATIVE_QUERY_SLOT_MS;
     if (MOTOR_NATIVE_FEEDBACK_ENABLED && runtimeControlReady &&
+        !canDiagnosticScanActive &&
         now - lastMotorQueryMs >= queryInterval) {
       requestMotorNativeFeedback(selectedMotorTelemetryOrder()[motorQuerySlot]);
       motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
@@ -3367,8 +3877,9 @@ void saveConfig() {
   saveJointConstraintsToFile(file, hipRollConstraintsRight, "hip_roll_right_Constraints");
 
   // Extended fields are appended after the legacy block.
-  file.println("ConfigVersion:6");
+  file.println("ConfigVersion:7");
   file.printf("MaxTorqueLimit:%.3f\n", maxTorqueLimit);
+  file.printf("RawMode:%d\n", rawMode ? 1 : 0);
   file.printf("OperatingMode:%s\n", operatingModeName().c_str());
   file.printf("CommandProtocol:DB1\n");
   file.printf("LegacyUnaddressedCommands:%d\n", legacyUnaddressedCommands ? 1 : 0);
@@ -3440,6 +3951,8 @@ bool loadConfig() {
     } else if (line.startsWith("MaxTorqueLimit:")) {
       const float value = line.substring(15).toFloat();
       if (value > 0.0f && value <= 100.0f) maxTorqueLimit = value;
+    } else if (line.startsWith("RawMode:")) {
+      rawMode = line.substring(8).toInt() != 0;
     } else if (line.startsWith("OperatingMode:")) {
       String mode = line.substring(14);
       mode.trim();
@@ -3656,6 +4169,9 @@ void calibrateSensors(bool forceSave = false) {
     if (validCounts[sensor] < NUM_READINGS) {
       dbPrintf("Calibration aborted: AS5600 sensor %u supplied only %d/%d valid PWM samples.\n",
                sensor, validCounts[sensor], NUM_READINGS);
+      dbPrintf("DBCAL1,%s,error,valid_counts,%d,%d,%d,%d,%d\n",
+               currentCommandAddress().c_str(), validCounts[0], validCounts[1],
+               validCounts[2], validCounts[3], validCounts[4]);
       return;
     }
   }
@@ -3686,6 +4202,9 @@ void calibrateSensors(bool forceSave = false) {
   if (forceSave) {
     saveConfig();
     dbPrintln("Offsets saved.");
+    dbPrintf("DBCAL1,%s,ok,offsets,%d,%d,%d,%d,%d\n",
+             currentCommandAddress().c_str(), offsetOuter, offsetInner,
+             offsetHip, offsetKnee, offsetButt);
     return;
   }
 
@@ -3710,6 +4229,103 @@ void printSavedOffsets() {
   dbPrintf("%s offsets - Outer:%d Inner:%d HipPitch:%d Knee:%d HipRoll:%d\n",
                 isLeft ? "Left" : "Right",
                 offsets[0], offsets[1], offsets[2], offsets[3], offsets[4]);
+}
+
+void printConfigurationRecords() {
+  if (!isLegRole()) {
+    dbPrintln("DBCFG1 configuration inspection is currently available for leg controllers only.");
+    return;
+  }
+  const String role = currentCommandAddress();
+  const int *offsets = isLeft ? leftLegOffsets : rightLegOffsets;
+  const float directions[5] = {
+    isLeft ? directionMultiplierLeftOuterCalf : directionMultiplierRightOuterCalf,
+    isLeft ? directionMultiplierLeftInnerCalf : directionMultiplierRightInnerCalf,
+    isLeft ? directionMultiplierLeftKnee : directionMultiplierRightKnee,
+    isLeft ? directionMultiplierLeftHipPitch : directionMultiplierRightHipPitch,
+    isLeft ? directionMultiplierLeftHipRoll : directionMultiplierRightHipRoll
+  };
+  dbPrintf("DBCFG1,%s,meta,%d,%s,%.3f,%d,%d,%d,%s\n",
+           role.c_str(), configProvisioned ? 1 : 0, operatingModeName().c_str(),
+           maxTorqueLimit, legacyUnaddressedCommands ? 1 : 0, rawMode ? 1 : 0,
+           rebootRequired ? 1 : 0, DROPBEAR_FIRMWARE_VERSION);
+  dbPrintf("DBCFG1,%s,hyperspawn,%lu,%d,%d,%.6f\n",
+           role.c_str(), (unsigned long)hyperspawnCommandTimeoutMs,
+           hyperspawnLegacyBroadcast ? 1 : 0, hyperspawnAutoArm ? 1 : 0,
+           hyperspawnPositionUnitsPerDegree);
+  dbPrintf("DBCFG1,%s,offsets,%d,%d,%d,%d,%d\n", role.c_str(),
+           offsets[0], offsets[1], offsets[2], offsets[3], offsets[4]);
+  dbPrintf("DBCFG1,%s,directions,%.1f,%.1f,%.1f,%.1f,%.1f\n", role.c_str(),
+           directions[0], directions[1], directions[2], directions[3], directions[4]);
+
+  const JointConstraints *constraints[6] = {
+    isLeft ? &outerCalfConstraintsLeft : &outerCalfConstraintsRight,
+    isLeft ? &innerCalfConstraintsLeft : &innerCalfConstraintsRight,
+    isLeft ? &kneeConstraintsLeft : &kneeConstraintsRight,
+    isLeft ? &hipPitchConstraintsLeft : &hipPitchConstraintsRight,
+    isLeft ? &hipYawConstraintsLeft : &hipYawConstraintsRight,
+    isLeft ? &hipRollConstraintsLeft : &hipRollConstraintsRight
+  };
+  const char *names[6] = {
+    "outer_calf", "inner_calf", "knee", "hip_pitch", "hip_yaw", "hip_roll"
+  };
+  for (uint8_t i = 0; i < 6; ++i) {
+    dbPrintf("DBCFG1,%s,constraint,%s,%d,%d\n", role.c_str(), names[i],
+             constraints[i]->minAngle, constraints[i]->maxAngle);
+  }
+  dbPrintf("DBCFG1,%s,end\n", role.c_str());
+}
+
+bool processConfigurationSetCommand(const String &command) {
+  if (!isLegRole()) {
+    dbPrintln("Configuration mutation is currently available for leg controllers only.");
+    return true;
+  }
+  if (command.startsWith("config set max_torque ")) {
+    const float value = command.substring(22).toFloat();
+    if (value <= 0.0f || value > 100.0f) {
+      dbPrintln("Max torque must be >0 and <=100.");
+      return true;
+    }
+    maxTorqueLimit = value;
+    saveConfig();
+    dbPrintf("DBCFG1,%s,updated,max_torque,%.3f\n",
+             currentCommandAddress().c_str(), maxTorqueLimit);
+    return true;
+  }
+  if (command.startsWith("config set offset ")) {
+    String params = command.substring(18);
+    params.trim();
+    const int split = params.indexOf(' ');
+    if (split <= 0) {
+      dbPrintln("Usage: config set offset <outer_calf|inner_calf|hip_pitch|knee|hip_roll> <-720..720>");
+      return true;
+    }
+    const String joint = params.substring(0, split);
+    const String valueText = params.substring(split + 1);
+    const int value = valueText.toInt();
+    if ((value == 0 && valueText != "0") || value < -720 || value > 720) {
+      dbPrintln("Offset must be an integer from -720 through 720.");
+      return true;
+    }
+    int index = -1;
+    if (joint == "outer_calf") index = 0;
+    else if (joint == "inner_calf") index = 1;
+    else if (joint == "hip_pitch") index = 2;
+    else if (joint == "knee") index = 3;
+    else if (joint == "hip_roll") index = 4;
+    if (index < 0) {
+      dbPrintln("Offset joint must be outer_calf, inner_calf, hip_pitch, knee, or hip_roll.");
+      return true;
+    }
+    int *offsets = isLeft ? leftLegOffsets : rightLegOffsets;
+    offsets[index] = value;
+    saveConfig();
+    dbPrintf("DBCFG1,%s,updated,offset,%s,%d\n",
+             currentCommandAddress().c_str(), joint.c_str(), value);
+    return true;
+  }
+  return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -3962,6 +4578,8 @@ void processHyperspawnSerialCommand(const String &command) {
 void handleConfigurationCommand(String command) {
   command.trim();
   if (command == "exit") exitConfigurationMode();
+  else if (command == "config show") printConfigurationRecords();
+  else if (command.startsWith("config set ") && processConfigurationSetCommand(command)) {}
   else if (command == "left" || command == "right" || command == "center" || command == "head" || command == "neck") changeDeviceRole(command);
   else if (command.startsWith("role ")) { String r=command.substring(5); r.trim(); changeDeviceRole(r); }
   else if (command == "role") dbPrintln("Device role: " + selectedRoleName());
@@ -4253,6 +4871,13 @@ void processRoutedCommand(String command, const char *source) {
     return;
   }
 
+  String payloadKind = payload;
+  payloadKind.toLowerCase();
+  if (payloadKind.startsWith("can ")) {
+    processPayloadCommand(payload, source);
+    return;
+  }
+
   if (configMode) handleConfigurationCommand(payload);
   else processPayloadCommand(payload, source);
 }
@@ -4290,6 +4915,13 @@ void processPayloadCommand(String command, const char *source) {
     xSemaphoreGive(serialMutex);
     return;
   }
+  String commandKind = command;
+  commandKind.toLowerCase();
+  if (commandKind.startsWith("can ")) {
+    xSemaphoreGive(serialMutex);
+    processCanDiagnosticCommand(command);
+    return;
+  }
 
   // Preserve Dropbear-Neck-Assembly command compatibility while keeping shared
   // role/config/safety commands in the universal parser.
@@ -4324,6 +4956,10 @@ void processPayloadCommand(String command, const char *source) {
     return;
   } else if (command.startsWith("hyperspawn")) {
     processHyperspawnSerialCommand(command);
+  } else if (command == "config show") {
+    printConfigurationRecords();
+  } else if (command.startsWith("config set ") && processConfigurationSetCommand(command)) {
+    // Strict configuration setters persist one validated field at a time.
   } else if (command == "config") {
     xSemaphoreGive(serialMutex);
     enterConfigurationMode();
@@ -4337,9 +4973,11 @@ void processPayloadCommand(String command, const char *source) {
     resetOffsets();
   } else if (command == "raw on") {
     rawMode = true;
+    saveConfig();
     dbPrintln("Raw mode enabled. Offsets bypassed.");
   } else if (command == "raw off") {
     rawMode = false;
+    saveConfig();
     dbPrintln("Raw mode disabled. Offsets enabled.");
   } else if (command.startsWith("direction ")) {
     String params = command.substring(10);
@@ -4450,6 +5088,20 @@ void printHelp() {
   dbPrintln("      Machine-readable DBV1/DBH1 identity and live subsystem health.");
   dbPrintln("  observe on | observe off");
   dbPrintln("      Start/stop DB3 state telemetry without enabling actuator output.");
+  dbPrintln("  can info <motor_id>");
+  dbPrintln("      Send the safe status/angle/encoder/PID/acceleration read suite.");
+  dbPrintln("  can probe <motor_id> <read_opcode>");
+  dbPrintln("  can tx-read <motor_id> <byte0> ... <byte7>");
+  dbPrintln("      Send one allowlisted read frame; hex tokens may include 0x.");
+  dbPrintln("  can monitor <motor_id> [100..10000_ms] | can monitor status | can monitor off");
+  dbPrintln("      Emit matching same-ID or ID+0x100 RX frames as DBC1 records.");
+  dbPrintln("  can sniff [100..2000_ms]");
+  dbPrintln("      Passively emit up to 128 RX frames from every observed CAN ID.");
+  dbPrintln("  can scan");
+  dbPrintln("      Pause normal polling, read status 0x9A from RMD IDs 0x141..0x160,");
+  dbPrintln("      and summarize same-ID versus ID+0x100 replies and TX failures.");
+  dbPrintln("  can bus");
+  dbPrintln("      Emit MCP2515 EFLG/TEC/REC, decoded fault names, and recovery counters.");
   dbPrintln("  role | role left | role right | role center | role head");
   dbPrintln("      Select boot-time hardware personality. HEAD_NECK uses an entirely separate STEP/DIR pin graph.");
   dbPrintln("  mode");
@@ -4463,6 +5115,11 @@ void printHelp() {
   dbPrintln("  hyperspawn scale <wire_units_per_degree>");
   dbPrintln("  config");
   dbPrintln("      Enter configuration mode and stop this leg.");
+  dbPrintln("  config show");
+  dbPrintln("      Emit complete leg configuration as bounded DBCFG1 records.");
+  dbPrintln("  config set max_torque <0..100>");
+  dbPrintln("  config set offset <outer_calf|inner_calf|hip_pitch|knee|hip_roll> <-720..720>");
+  dbPrintln("      Persist one validated setting; intended for guarded dashboard use.");
   dbPrintln("  resetOffsets");
   dbPrintln("      Reset left and right stored offsets to zero.");
   dbPrintln("  raw on | raw off");
@@ -4700,6 +5357,7 @@ String buildConfigJson() {
   out += "\"hyperspawn_position_units_per_degree\":" + String(hyperspawnPositionUnitsPerDegree, 6) + ",";
   out += "\"configured\":" + String(configProvisioned ? "true" : "false") + ",";
   out += "\"max_torque\":" + String(maxTorqueLimit, 3) + ",";
+  out += "\"raw_mode\":" + String(rawMode ? "true" : "false") + ",";
 
   out += "\"left_offsets\":[";
   for (int i = 0; i < 5; ++i) { if (i) out += ","; out += String(leftLegOffsets[i]); }
@@ -4906,6 +5564,12 @@ String buildDiagnosticsJson() {
   out += "\"last_rx_age_ms\":" + ageJsonValue(lastCanRxMs) + ",";
   out += "\"tx_failure\":" + String(canTxFailure) + ",";
   out += "\"consecutive_failures\":" + String(canConsecutiveFailures) + ",";
+  out += "\"error_flags\":" + String(canErrorFlags) + ",";
+  out += "\"tx_error_count\":" + String(canTxErrorCount) + ",";
+  out += "\"rx_error_count\":" + String(canRxErrorCount) + ",";
+  out += "\"recovery_attempts\":" + String(canRecoveryAttempts) + ",";
+  out += "\"recovery_successes\":" + String(canRecoverySuccesses) + ",";
+  out += "\"last_recovery_age_ms\":" + ageJsonValue(lastCanRecoveryMs) + ",";
   out += "\"mutex_timeouts\":" + String(canMutexTimeouts) + ",";
   out += "\"torque_frames\":" + String(canTorqueFrames) + ",";
   out += "\"stop_frames\":" + String(canStopFrames) + ",";

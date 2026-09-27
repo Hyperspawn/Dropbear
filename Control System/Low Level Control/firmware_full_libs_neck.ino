@@ -50,7 +50,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.41";
+  "behemoth-observation-protocol-2026.09.42";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -69,6 +69,8 @@ static const char *DROPBEAR_CAPABILITIES =
   "can-nonblocking-diagnostic-queue-v1;can-single-mailbox-v1;"
   "can-offline-backoff-v1;can-bounded-records-v1;"
   "can-single-sample-1mbps-v1;"
+  "motor-identity-discovery-v1;motor-runtime-codec-detection-v1;"
+  "motor-hold-shutdown-split-v1;motor-active-reply-normalization-v1;"
   "config-records-v1;calibration-result-v1";
 
 // -----------------------------------------------------------------------------
@@ -283,13 +285,13 @@ static const dropbear::MotorProfile MOTOR_PROFILE_X8_V17 = {
   "MyActuator RMD-X8 Pro 1:9", "V1.7", 9.0f,
   dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7,
   dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
-  0.01f, 0x92, 0xA1, 0x81
+  0.01f, 0x92, 0xA1, 0x80, 0x81
 };
 static const dropbear::MotorProfile MOTOR_PROFILE_X10_V42 = {
   "MyActuator RMD-X10 1:7", "V4.2+", 7.0f,
   dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7,
   dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
-  0.01f, 0x92, 0xA1, 0x81
+  0.01f, 0x92, 0xA1, 0x80, 0x81
 };
 
 static const dropbear::MotorProfile *const ACTUATOR_MOTOR_PROFILES[ACTUATOR_COUNT] = {
@@ -387,6 +389,13 @@ static const uint8_t LEFT_MOTOR_TELEMETRY_ORDER[6] = {
 volatile float motorNativeDegrees[ACTUATOR_COUNT] = {0.0f};
 volatile uint32_t motorNativeReceivedMs[ACTUATOR_COUNT] = {0};
 volatile bool motorNativeValid[ACTUATOR_COUNT] = {false};
+// The configured profile is only the initial expectation. Every valid 0x92
+// response records the layout and reply-ID convention actually observed so a
+// replacement motor or different RMD firmware generation decodes correctly.
+volatile uint8_t motorDetectedAngleLayout[ACTUATOR_COUNT] = {0xFF, 0xFF, 0xFF, 0xFF,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+volatile uint8_t motorDetectedReplyConvention[ACTUATOR_COUNT] = {0xFF, 0xFF, 0xFF, 0xFF,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 // Five AS5600-equipped axes are aligned once after boot. The resulting offset
 // maps the RMD multi-turn angle into the calibrated joint coordinate. AS5600
 // remains an independent diagnostic after that point and never replaces stale
@@ -503,6 +512,24 @@ volatile uint32_t canDiagnosticScanOffsetIdMask = 0;
 volatile uint16_t canDiagnosticScanResponses = 0;
 volatile uint16_t canDiagnosticScanTxFailures = 0;
 
+struct CanMotorIdentityCapture {
+  bool active;
+  uint32_t requestId;
+  uint16_t responses;
+  bool sameId;
+  bool offsetId;
+  bool versionSeen;
+  uint32_t versionDate;
+  bool legacyModelSeen;
+  char legacyModel[8];
+  uint8_t indexedModelMask;
+  char indexedModel[16];
+  bool angleSigned56Seen;
+  bool angleSigned32Seen;
+};
+
+CanMotorIdentityCapture canMotorIdentity = {};
+
 float maxTorqueLimit = 3.0f;
 
 bool isLeft = true;
@@ -515,8 +542,8 @@ bool playMode = false;
 volatile bool telemetryStreamingEnabled = false;
 bool configMode = false;
 
-// Stop burst is handled by the CAN output task. Three repeated 0x81 frames are
-// used to retain the intent of the previous enterConfigurationMode() behavior.
+// Hold burst is handled by the CAN output task. 0x81 intentionally retains
+// closed-loop position; 0x80 shutdown/output-release is never sent implicitly.
 volatile uint8_t stopBurstRemaining = 0;
 
 // Calibration output override. This keeps calibration from racing against the
@@ -1348,15 +1375,11 @@ const uint8_t *selectedMotorTelemetryOrder() {
 }
 
 int actuatorIndexFromMotorFeedbackId(uint32_t responseID) {
-  // Installed V1.7 X8 calves answer on the request ID itself, while the newer
-  // X10 firmware answers on request+0x100. The MCP2515 in normal mode does not
-  // enqueue its own transmitted request, and the profile check prevents a
-  // direct-ID X10 frame from being admitted as feedback.
+  // RMD firmware generations have shipped with both same-ID and request+0x100
+  // reply conventions. MCP2515 normal mode does not enqueue our own request,
+  // so either convention is safe to admit for every configured motor.
   const int directIndex = actuatorIndexFromCanId(responseID);
-  if (actuatorBelongsToSelectedLeg(directIndex) &&
-      motorProfileForActuator(directIndex) == &MOTOR_PROFILE_X8_V17) {
-    return directIndex;
-  }
+  if (actuatorBelongsToSelectedLeg(directIndex)) return directIndex;
   if (responseID < 0x100) return -1;
   const int offsetIndex = actuatorIndexFromCanId(responseID - 0x100);
   return actuatorBelongsToSelectedLeg(offsetIndex) ? offsetIndex : -1;
@@ -1533,9 +1556,32 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
   const dropbear::MotorProfile *profile = motorProfileForActuator(index);
   if (profile == nullptr || data == nullptr || len == 0 ||
       data[0] != profile->readMultiTurnOpcode) return false;
+  // Prefer a payload signature over a configured model label. Modern RMD
+  // replies reserve bytes 1..3 and put signed32 in bytes 4..7; legacy replies
+  // use a signed56 value across bytes 1..7. An offset reply ID is an additional
+  // modern-firmware signal, while a non-zero legacy prefix is decisive.
+  const bool reservedBytesZero = len == 8 && data[1] == 0 && data[2] == 0 && data[3] == 0;
+  const bool modernValuePresent = len == 8 &&
+    (data[4] != 0 || data[5] != 0 || data[6] != 0 || data[7] != 0);
+  const bool offsetReply = responseID == ACTUATOR_IDS[index] + 0x100U;
+  dropbear::AnglePayloadLayout detectedLayout = profile->angleLayout;
+  if (reservedBytesZero && (offsetReply || modernValuePresent)) {
+    detectedLayout = dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7;
+  } else if (!reservedBytesZero) {
+    detectedLayout = dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7;
+  }
   double outputShaftDegrees = 0.0;
-  const dropbear::DecodeStatus decodeStatus =
-    dropbear::decodeMultiTurnAngle(*profile, data, len, &outputShaftDegrees);
+  dropbear::DecodeStatus decodeStatus = dropbear::decodeMultiTurnAngleWithLayout(
+    *profile, detectedLayout, data, len, &outputShaftDegrees);
+  if (decodeStatus != dropbear::DECODE_OK) {
+    const dropbear::AnglePayloadLayout alternate =
+      detectedLayout == dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7
+        ? dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7
+        : dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7;
+    decodeStatus = dropbear::decodeMultiTurnAngleWithLayout(
+      *profile, alternate, data, len, &outputShaftDegrees);
+    if (decodeStatus == dropbear::DECODE_OK) detectedLayout = alternate;
+  }
   if (decodeStatus != dropbear::DECODE_OK) {
     motorNativeMalformedResponses++;
     return false;
@@ -1546,6 +1592,8 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
     return false;
   }
   motorNativeDegrees[index] = decodedDegrees;
+  motorDetectedAngleLayout[index] = static_cast<uint8_t>(detectedLayout);
+  motorDetectedReplyConvention[index] = offsetReply ? 1 : 0;
   motorNativeReceivedMs[index] = millis();
   motorNativeValid[index] = true;
   if (motorNativePendingIndex == index) {
@@ -1790,6 +1838,8 @@ bool isReadOnlyCanDiagnosticOpcode(uint8_t opcode) {
     case 0x9A:  // read status 1 / fault state
     case 0x9C:  // read status 2 / live state
     case 0x9D:  // read status 3 / phase currents
+    case 0xB2:  // read system software version date
+    case 0xB5:  // read motor model (legacy or indexed V4.4 shape)
       return true;
     default:
       return false;
@@ -1959,6 +2009,61 @@ void armCanDiagnosticSniff(uint32_t durationMs) {
   canDiagnosticCaptureActive = true;
 }
 
+bool canIdentityModelCharacter(byte value) {
+  return value >= 0x20 && value <= 0x7E && value != ',' && value != '=' && value != '|';
+}
+
+void resetCanMotorIdentityCapture(uint32_t requestId) {
+  portENTER_CRITICAL(&canStateMux);
+  memset(&canMotorIdentity, 0, sizeof(canMotorIdentity));
+  canMotorIdentity.active = true;
+  canMotorIdentity.requestId = requestId;
+  portEXIT_CRITICAL(&canStateMux);
+}
+
+void captureCanMotorIdentityFrame(uint32_t responseId, const byte *data, byte len) {
+  if (!canMotorIdentity.active || data == nullptr || len != 8 ||
+      !isExpectedCanDiagnosticReplyId(canMotorIdentity.requestId, responseId)) return;
+  portENTER_CRITICAL(&canStateMux);
+  canMotorIdentity.responses++;
+  if (responseId == canMotorIdentity.requestId) canMotorIdentity.sameId = true;
+  else canMotorIdentity.offsetId = true;
+  if (data[0] == 0xB2) {
+    canMotorIdentity.versionDate = static_cast<uint32_t>(data[4]) |
+      (static_cast<uint32_t>(data[5]) << 8) |
+      (static_cast<uint32_t>(data[6]) << 16) |
+      (static_cast<uint32_t>(data[7]) << 24);
+    canMotorIdentity.versionSeen = true;
+  } else if (data[0] == 0xB5 && data[1] == 0x01 &&
+             data[2] >= 1 && data[2] <= 3) {
+    const uint8_t part = data[2] - 1;
+    for (uint8_t index = 0; index < 5; ++index) {
+      const byte value = data[3 + index];
+      canMotorIdentity.indexedModel[part * 5 + index] =
+        canIdentityModelCharacter(value) ? static_cast<char>(value) : ' ';
+    }
+    canMotorIdentity.indexedModel[15] = '\0';
+    canMotorIdentity.indexedModelMask |= static_cast<uint8_t>(1U << part);
+  } else if (data[0] == 0xB5) {
+    for (uint8_t index = 0; index < 7; ++index) {
+      const byte value = data[1 + index];
+      canMotorIdentity.legacyModel[index] =
+        canIdentityModelCharacter(value) ? static_cast<char>(value) : ' ';
+    }
+    canMotorIdentity.legacyModel[7] = '\0';
+    canMotorIdentity.legacyModelSeen = true;
+  } else if (data[0] == 0x92) {
+    const bool reservedBytesZero = data[1] == 0 && data[2] == 0 && data[3] == 0;
+    if (responseId == canMotorIdentity.requestId + 0x100U || reservedBytesZero) {
+      canMotorIdentity.angleSigned32Seen = true;
+    }
+    if (responseId == canMotorIdentity.requestId || !reservedBytesZero) {
+      canMotorIdentity.angleSigned56Seen = true;
+    }
+  }
+  portEXIT_CRITICAL(&canStateMux);
+}
+
 void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) {
   if (!canDiagnosticCaptureActive || data == nullptr || len > 8) return;
   const uint32_t now = millis();
@@ -1968,6 +2073,7 @@ void captureCanDiagnosticFrame(uint32_t responseId, const byte *data, byte len) 
   }
   if (!canDiagnosticCaptureAll &&
       !isExpectedCanDiagnosticReplyId(canDiagnosticRequestId, responseId)) return;
+  captureCanMotorIdentityFrame(responseId, data, len);
   if (canDiagnosticCaptureFramesRemaining == 0) {
     canDiagnosticCaptureActive = false;
     return;
@@ -2005,6 +2111,103 @@ bool sendReadOnlyDiagnosticFrame(uint32_t requestId, const byte payload[8]) {
   emitCanDiagnosticLine(canDiagnosticFrameLine(sent ? "TX" : "TX_FAIL",
                                                requestId, payload, 8));
   return sent;
+}
+
+String trimmedMotorModel(const char *value, size_t length) {
+  String model;
+  if (value == nullptr) return "unknown";
+  for (size_t index = 0; index < length && value[index] != '\0'; ++index) {
+    model += value[index];
+  }
+  model.trim();
+  return model.length() > 0 ? model : String("unknown");
+}
+
+void emitCanMotorIdentity(uint32_t requestId) {
+  CanMotorIdentityCapture identity;
+  portENTER_CRITICAL(&canStateMux);
+  canMotorIdentity.active = false;
+  identity = canMotorIdentity;
+  portEXIT_CRITICAL(&canStateMux);
+
+  String reply = identity.sameId && identity.offsetId ? "mixed" :
+    identity.offsetId ? "offset" : identity.sameId ? "direct" : "none";
+  String version = "unknown";
+  if (identity.versionSeen && identity.versionDate >= 20000101UL &&
+      identity.versionDate <= 20991231UL) version = String(identity.versionDate);
+  String model = identity.indexedModelMask != 0
+    ? trimmedMotorModel(identity.indexedModel, 15)
+    : identity.legacyModelSeen
+      ? trimmedMotorModel(identity.legacyModel, 7) : String("unknown");
+  String angle = identity.angleSigned32Seen && identity.angleSigned56Seen ? "mixed" :
+    identity.angleSigned32Seen ? "signed32_4_7" :
+    identity.angleSigned56Seen ? "signed56_1_7" : "unknown";
+  String protocol = identity.indexedModelMask != 0 ? "rmd_v4_4" :
+    identity.versionSeen || identity.legacyModelSeen ? "rmd_v3_v4_2" :
+    identity.responses > 0 ? "rmd_generation_unknown" : "no_reply";
+  char idText[8];
+  snprintf(idText, sizeof(idText), "0x%03lX", static_cast<unsigned long>(requestId));
+  emitCanDiagnosticLine("DBM1," + currentCommandAddress() + "," + String(idText) +
+                        ",responses=" + String(identity.responses) +
+                        ",reply=" + reply + ",version_date=" + version +
+                        ",model=" + model + ",angle_payload=" + angle +
+                        ",protocol=" + protocol);
+}
+
+void probeCanMotorIdentity(uint32_t requestId, bool includeStatusSuite) {
+  resetCanMotorIdentityCapture(requestId);
+  armCanDiagnosticCapture(requestId, 2000);
+  byte payload[8] = {0};
+  payload[0] = 0xB2;
+  sendReadOnlyDiagnosticFrame(requestId, payload);
+  vTaskDelay(pdMS_TO_TICKS(20));
+
+  memset(payload, 0, sizeof(payload));
+  payload[0] = 0xB5;
+  sendReadOnlyDiagnosticFrame(requestId, payload);
+  vTaskDelay(pdMS_TO_TICKS(20));
+  for (byte part = 1; part <= 3; ++part) {
+    memset(payload, 0, sizeof(payload));
+    payload[0] = 0xB5;
+    payload[1] = 0x01;
+    payload[2] = part;
+    sendReadOnlyDiagnosticFrame(requestId, payload);
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+
+  static const byte IDENTITY_OPCODES[] = {0x92, 0x9A, 0x9C, 0x9D, 0x90, 0x30, 0x42};
+  const byte opcodeCount = includeStatusSuite ? sizeof(IDENTITY_OPCODES) : 2;
+  for (byte index = 0; index < opcodeCount; ++index) {
+    memset(payload, 0, sizeof(payload));
+    payload[0] = IDENTITY_OPCODES[index];
+    sendReadOnlyDiagnosticFrame(requestId, payload);
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+  vTaskDelay(pdMS_TO_TICKS(20));
+  canDiagnosticCaptureActive = false;
+  emitCanMotorIdentity(requestId);
+}
+
+bool disableCanMotorActiveReplies(uint32_t requestId) {
+  // B6 is intentionally excluded from the generic read allowlist. This exact,
+  // non-motion form only disables unsolicited replies so solicited diagnostics
+  // work again; it cannot enable a stream or alter torque/position state.
+  static const byte ACTIVE_REPLY_OPCODES[] = {
+    0x60, 0x61, 0x62, 0x92, 0x9A, 0x9C, 0x9D, 0x9E
+  };
+  bool allSent = true;
+  for (byte index = 0; index < sizeof(ACTIVE_REPLY_OPCODES); ++index) {
+    byte payload[8] = {0xB6, ACTIVE_REPLY_OPCODES[index], 0x00, 0, 0, 0, 0, 0};
+    const int result = canSendFrameResult(requestId, payload, 8, false);
+    const bool sent = result == CAN_OK;
+    allSent = allSent && sent;
+    emitCanDiagnosticLine(canDiagnosticFrameLine(sent ? "TX" : "TX_FAIL",
+                                                 requestId, payload, 8));
+    vTaskDelay(pdMS_TO_TICKS(8));
+  }
+  emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REPLIES_NORMAL," +
+                        String(allSent ? "ok" : "tx_failure"));
+  return allSent;
 }
 
 bool quiesceMotorNativePolling() {
@@ -2099,7 +2302,8 @@ bool processCanDiagnosticCommand(String command) {
     return true;
   }
 
-  if (normalized == "can scan") {
+  if (normalized == "can scan" || normalized == "can discover") {
+    const bool identifyFound = normalized == "can discover";
     const bool restorePolling = quiesceMotorNativePolling();
     byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0};
     canDiagnosticScanFoundMask = 0;
@@ -2118,7 +2322,6 @@ bool processCanDiagnosticCommand(String command) {
     }
     canDiagnosticCaptureActive = false;
     canDiagnosticScanActive = false;
-    restoreMotorNativePolling(restorePolling);
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",SCAN," +
                           String(millis()) + ",complete,0x141,0x160,opcode=9A," +
                           "found=" + canDiscoveryIdList(canDiagnosticScanFoundMask) + "," +
@@ -2126,6 +2329,14 @@ bool processCanDiagnosticCommand(String command) {
                           "offset_id=" + canDiscoveryIdList(canDiagnosticScanOffsetIdMask) + "," +
                           "responses=" + String(canDiagnosticScanResponses) + "," +
                           "tx_failures=" + String(canDiagnosticScanTxFailures));
+    if (identifyFound) {
+      const uint32_t foundMask = canDiagnosticScanFoundMask;
+      for (uint8_t bit = 0; bit <= RMD_DISCOVERY_LAST_ID - RMD_DISCOVERY_FIRST_ID; ++bit) {
+        if ((foundMask & (1UL << bit)) == 0) continue;
+        probeCanMotorIdentity(RMD_DISCOVERY_FIRST_ID + bit, false);
+      }
+    }
+    restoreMotorNativePolling(restorePolling);
     return true;
   }
 
@@ -2149,6 +2360,8 @@ bool processCanDiagnosticCommand(String command) {
   String prefix;
   if (normalized.startsWith("can probe ")) prefix = "can probe ";
   else if (normalized.startsWith("can info ")) prefix = "can info ";
+  else if (normalized.startsWith("can identify ")) prefix = "can identify ";
+  else if (normalized.startsWith("can replies normal ")) prefix = "can replies normal ";
   else if (normalized.startsWith("can monitor ")) prefix = "can monitor ";
   else if (normalized.startsWith("can tx-read ")) prefix = "can tx-read ";
   else {
@@ -2187,23 +2400,26 @@ bool processCanDiagnosticCommand(String command) {
     return true;
   }
 
-  if (prefix == "can info ") {
+  if (prefix == "can replies normal ") {
     if (nextCanCommandToken(arguments, cursor, token)) {
       emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
                             String(millis()) + ",too_many_arguments");
       return true;
     }
     const bool restorePolling = quiesceMotorNativePolling();
-    static const byte INFO_OPCODES[] = {0x9A, 0x9C, 0x9D, 0x92, 0x90, 0x30, 0x42};
-    armCanDiagnosticCapture(requestId, 2000);
-    for (byte index = 0; index < sizeof(INFO_OPCODES); ++index) {
-      byte payload[8] = {0};
-      payload[0] = INFO_OPCODES[index];
-      sendReadOnlyDiagnosticFrame(requestId, payload);
-      vTaskDelay(pdMS_TO_TICKS(8));
+    disableCanMotorActiveReplies(requestId);
+    restoreMotorNativePolling(restorePolling);
+    return true;
+  }
+
+  if (prefix == "can info " || prefix == "can identify ") {
+    if (nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",too_many_arguments");
+      return true;
     }
-    vTaskDelay(pdMS_TO_TICKS(20));
-    canDiagnosticCaptureActive = false;
+    const bool restorePolling = quiesceMotorNativePolling();
+    probeCanMotorIdentity(requestId, true);
     restoreMotorNativePolling(restorePolling);
     return true;
   }
@@ -2713,7 +2929,8 @@ int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
   const int actuatorIndex = actuatorIndexFromCanId(actuatorID);
   const dropbear::MotorProfile *profile = motorProfileForActuator(actuatorIndex);
   const bool motionFrame = profile != nullptr && dataLen > 0 &&
-    (data[0] == profile->torqueOpcode || data[0] == profile->stopOpcode);
+    (data[0] == profile->torqueOpcode || data[0] == profile->holdOpcode ||
+     data[0] == profile->shutdownOpcode);
   int result = -2;
 
   if (xTaskGetCurrentTaskHandle() == canRxTaskHandle) {
@@ -2772,7 +2989,10 @@ int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
     canConsecutiveFailures = 0;
     lastCanTxMs = now;
     if (profile != nullptr && data[0] == profile->torqueOpcode) canTorqueFrames++;
-    if (profile != nullptr && data[0] == profile->stopOpcode) canStopFrames++;
+    if (profile != nullptr &&
+        (data[0] == profile->holdOpcode || data[0] == profile->shutdownOpcode)) {
+      canStopFrames++;
+    }
   } else if (deferredRead) {
     // TXREQ is already loaded. Completion is resolved by the matching reply or
     // the transaction timeout instead of queuing another request behind it.
@@ -2799,7 +3019,8 @@ int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
     if (profile != nullptr && data[0] == profile->torqueOpcode) {
       d.lastCommand = static_cast<int16_t>(static_cast<uint16_t>(data[4]) |
                                            (static_cast<uint16_t>(data[5]) << 8));
-    } else if (profile != nullptr && data[0] == profile->stopOpcode) {
+    } else if (profile != nullptr &&
+               (data[0] == profile->holdOpcode || data[0] == profile->shutdownOpcode)) {
       d.lastCommand = 0;
     }
     if (ok) d.txOk++; else d.txFail++;
@@ -2826,12 +3047,12 @@ bool sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
   return canSend(actuatorID, buf);
 }
 
-bool sendStopCommand(unsigned long actuatorID) {
+bool sendHoldCommand(unsigned long actuatorID) {
   const dropbear::MotorProfile *profile =
     motorProfileForActuator(actuatorIndexFromCanId(actuatorID));
   if (profile == nullptr) return false;
   byte buf[8];
-  dropbear::encodeStopCommand(*profile, buf);
+  dropbear::encodeHoldCommand(*profile, buf);
   return canSend(actuatorID, buf);
 }
 
@@ -3983,12 +4204,12 @@ void canOutputTask(void *parameter) {
         stopBatchAttempted = true;
         bool stopBatchOk = true;
         for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-          if (!sendStopCommand(ACTUATOR_IDS[i])) {
+          if (!sendHoldCommand(ACTUATOR_IDS[i])) {
             stopBatchOk = false;
           }
           paceCanCommandBurst();
         }
-        // A missing actuator must not prevent STOP delivery to every other
+        // A missing actuator must not prevent HOLD delivery to every other
         // motor or create an unbounded retry storm. Complete the configured
         // three full-leg attempts and expose any unconfirmed batch.
         if (!stopBatchOk) canStopBatchFailures++;
@@ -5965,8 +6186,8 @@ void printHelp() {
   dbPrintln("      Machine-readable DBV1/DBH1 identity and live subsystem health.");
   dbPrintln("  observe on | observe off");
   dbPrintln("      Start/stop DB3 state telemetry without enabling actuator output.");
-  dbPrintln("  can info <motor_id>");
-  dbPrintln("      Send the safe status/angle/encoder/PID/acceleration read suite.");
+  dbPrintln("  can identify <motor_id> | can info <motor_id>");
+  dbPrintln("      Read software date, legacy/indexed model, angle codec, and status.");
   dbPrintln("  can probe <motor_id> <read_opcode>");
   dbPrintln("  can tx-read <motor_id> <byte0> ... <byte7>");
   dbPrintln("      Send one allowlisted read frame; hex tokens may include 0x.");
@@ -5977,6 +6198,10 @@ void printHelp() {
   dbPrintln("  can scan");
   dbPrintln("      Pause normal polling, read status 0x9A from RMD IDs 0x141..0x160,");
   dbPrintln("      and summarize same-ID versus ID+0x100 replies and TX failures.");
+  dbPrintln("  can discover");
+  dbPrintln("      Scan all RMD IDs, then emit one DBM1 identity record per responder.");
+  dbPrintln("  can replies normal <motor_id>");
+  dbPrintln("      Disable B6 unsolicited reply slots so solicited reads reply normally.");
   dbPrintln("  can bus");
   dbPrintln("      Emit MCP2515 EFLG/TEC/REC, decoded fault names, and recovery counters.");
   dbPrintln("  can registers");
@@ -6680,8 +6905,16 @@ String buildDiagnosticsJson() {
     out += "\"gear_ratio\":" + String(profile ? profile->reductionRatio : 0.0f, 2) + ",";
     out += "\"angle_reference\":\"" + String(profile
       ? dropbear::angleReferenceName(profile->angleReference) : "unknown") + "\",";
-    out += "\"angle_payload\":\"" + String(profile
-      ? dropbear::angleLayoutName(profile->angleLayout) : "unknown") + "\",";
+    const bool detectedLayoutValid = motorDetectedAngleLayout[i] <=
+      static_cast<uint8_t>(dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7);
+    const dropbear::AnglePayloadLayout reportedLayout = detectedLayoutValid
+      ? static_cast<dropbear::AnglePayloadLayout>(motorDetectedAngleLayout[i])
+      : profile ? profile->angleLayout : dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7;
+    out += "\"angle_payload\":\"" + String(profile || detectedLayoutValid
+      ? dropbear::angleLayoutName(reportedLayout) : "unknown") + "\",";
+    out += "\"reply_convention\":\"" + String(
+      motorDetectedReplyConvention[i] == 0 ? "direct" :
+      motorDetectedReplyConvention[i] == 1 ? "offset" : "unobserved") + "\",";
     out += "\"feedback\":\"" + String(motorFeedbackFresh ? "measured" :
       (motorNativeValid[i] ? "stale" : "unavailable")) + "\",";
     out += "\"motor_position_deg\":";

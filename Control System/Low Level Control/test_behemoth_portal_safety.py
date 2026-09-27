@@ -28,7 +28,7 @@ class BehemothPortalSafetyContract(unittest.TestCase):
         self.assertIn("PORTAL_TORQUE_TEST_MAX_MS = 500", SOURCE)
         self.assertIn("PORTAL_TORQUE_TEST_MAX_COMMAND = 25", SOURCE)
         self.assertIn("fresh verified motor-native angle feedback is required", SOURCE)
-        self.assertIn("sendTorqueCommand(ACTUATOR_IDS[i], 0);", SOURCE)
+        self.assertIn("sendTorqueCommand(ACTUATOR_IDS[i], 0)", SOURCE)
         self.assertIn("requestStop(3);", SOURCE)
 
     def test_live_diagnostics_expose_both_angle_sources_and_alignment(self):

@@ -11,7 +11,7 @@ PROTOCOL = (Path(__file__).parent / "dropbear_motor_protocol.h").read_text()
 class BehemothMotorFeedbackContract(unittest.TestCase):
     def test_read_only_rmd_query_and_decoder_are_present(self):
         self.assertIn("dropbear::encodeReadMultiTurnAngle(*profile, request)", SOURCE)
-        self.assertIn("dropbear::decodeMultiTurnAngle(*profile, data, len", SOURCE)
+        self.assertIn("dropbear::decodeMultiTurnAngleWithLayout(", SOURCE)
         self.assertIn("responseID - 0x100", SOURCE)
         self.assertIn("ANGLE_SIGNED_56_LE_BYTES_1_TO_7", PROTOCOL)
         self.assertIn("ANGLE_SIGNED_32_LE_BYTES_4_TO_7", PROTOCOL)
@@ -26,7 +26,10 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
 
     def test_command_encoding_uses_motor_profile_library(self):
         self.assertIn("dropbear::encodeTorqueCommand(*profile, torqueValue, buf)", SOURCE)
-        self.assertIn("dropbear::encodeStopCommand(*profile, buf)", SOURCE)
+        self.assertIn("dropbear::encodeHoldCommand(*profile, buf)", SOURCE)
+        self.assertIn("encodeShutdownCommand", PROTOCOL)
+        self.assertIn("shutdownOpcode", PROTOCOL)
+        self.assertIn("holdOpcode", PROTOCOL)
 
     def test_motor_feedback_is_consumed_before_control_route_frames(self):
         native = SOURCE.index("ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)")
@@ -51,7 +54,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.41", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.42", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
@@ -64,6 +67,9 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("can-deferred-tx-abort-v1", SOURCE)
         self.assertIn("can-interrupt-rx-v1", SOURCE)
         self.assertIn("can-timing-observability-v1", SOURCE)
+        self.assertIn("motor-identity-discovery-v1", SOURCE)
+        self.assertIn("motor-runtime-codec-detection-v1", SOURCE)
+        self.assertIn("motor-active-reply-normalization-v1", SOURCE)
 
     def test_can_debug_bridge_is_targeted_read_only_and_raw(self):
         self.assertIn("isReadOnlyCanDiagnosticOpcode(payload[0])", SOURCE)
@@ -93,7 +99,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("RMD_DISCOVERY_LAST_ID = 0x160", SOURCE)
         self.assertIn("byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0}", SOURCE)
         self.assertIn("!canDiagnosticScanActive", SOURCE)
-        self.assertIn("motorProfileForActuator(directIndex) == &MOTOR_PROFILE_X8_V17", SOURCE)
+        self.assertIn("if (actuatorBelongsToSelectedLeg(directIndex)) return directIndex", SOURCE)
         self.assertIn("CAN.getError()", SOURCE)
         self.assertIn("CAN.errorCountTX()", SOURCE)
         self.assertIn("recoverCanController()", SOURCE)
@@ -103,6 +109,23 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("canDiagnosticScanFoundMask", SOURCE)
         self.assertIn("same_id=", SOURCE)
         self.assertIn("tx_failures=", SOURCE)
+
+    def test_identity_discovery_is_cross_generation_and_motion_safe(self):
+        self.assertIn('normalized == "can discover"', SOURCE)
+        self.assertIn('normalized.startsWith("can identify ")', SOURCE)
+        self.assertIn("payload[0] = 0xB2", SOURCE)
+        self.assertIn("payload[0] = 0xB5", SOURCE)
+        self.assertIn("payload[1] = 0x01", SOURCE)
+        self.assertIn('"DBM1," + currentCommandAddress()', SOURCE)
+        opcode_filter = SOURCE[
+            SOURCE.index("bool isReadOnlyCanDiagnosticOpcode"):
+            SOURCE.index("bool isExpectedCanDiagnosticReplyId")
+        ]
+        self.assertIn("case 0xB2", opcode_filter)
+        self.assertIn("case 0xB5", opcode_filter)
+        self.assertNotIn("case 0xB6", opcode_filter)
+        self.assertIn("disableCanMotorActiveReplies", SOURCE)
+        self.assertIn("{0xB6, ACTIVE_REPLY_OPCODES[index], 0x00", SOURCE)
 
     def test_diagnostic_task_precedes_deferred_sensor_priming(self):
         setup = SOURCE[SOURCE.index("void setup()") : SOURCE.index("void loop()")]

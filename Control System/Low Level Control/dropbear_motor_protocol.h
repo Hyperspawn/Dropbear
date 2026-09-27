@@ -36,7 +36,8 @@ struct MotorProfile {
   float angleLsbDegrees;
   uint8_t readMultiTurnOpcode;
   uint8_t torqueOpcode;
-  uint8_t stopOpcode;
+  uint8_t shutdownOpcode;
+  uint8_t holdOpcode;
 };
 
 inline const char *angleLayoutName(AnglePayloadLayout layout) {
@@ -117,6 +118,17 @@ inline DecodeStatus decodeMultiTurnAngle(const MotorProfile &profile,
   );
 }
 
+inline DecodeStatus decodeMultiTurnAngleWithLayout(
+    const MotorProfile &profile,
+    AnglePayloadLayout layout,
+    const uint8_t *payload,
+    size_t length,
+    double *outputDegrees) {
+  MotorProfile detected = profile;
+  detected.angleLayout = layout;
+  return decodeMultiTurnAngle(detected, payload, length, outputDegrees);
+}
+
 inline void encodeReadMultiTurnAngle(const MotorProfile &profile, uint8_t payload[8]) {
   for (uint8_t index = 0; index < 8; ++index) payload[index] = 0;
   payload[0] = profile.readMultiTurnOpcode;
@@ -132,9 +144,20 @@ inline void encodeTorqueCommand(const MotorProfile &profile,
   payload[5] = static_cast<uint8_t>((wireValue >> 8) & 0xFF);
 }
 
-inline void encodeStopCommand(const MotorProfile &profile, uint8_t payload[8]) {
+inline void encodeShutdownCommand(const MotorProfile &profile, uint8_t payload[8]) {
   for (uint8_t index = 0; index < 8; ++index) payload[index] = 0;
-  payload[0] = profile.stopOpcode;
+  payload[0] = profile.shutdownOpcode;
+}
+
+inline void encodeHoldCommand(const MotorProfile &profile, uint8_t payload[8]) {
+  for (uint8_t index = 0; index < 8; ++index) payload[index] = 0;
+  payload[0] = profile.holdOpcode;
+}
+
+// Source compatibility for callers that historically called the closed-loop
+// 0x81 operation "stop". It is a hold, not an output shutdown.
+inline void encodeStopCommand(const MotorProfile &profile, uint8_t payload[8]) {
+  encodeHoldCommand(profile, payload);
 }
 
 }  // namespace dropbear

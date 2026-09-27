@@ -10,14 +10,14 @@ const dropbear::MotorProfile kX8V17 = {
   "RMD-X8 Pro 1:9", "V1.7", 9.0f,
   dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7,
   dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
-  0.01f, 0x92, 0xA1, 0x81
+  0.01f, 0x92, 0xA1, 0x80, 0x81
 };
 
 const dropbear::MotorProfile kX10V42 = {
   "RMD-X10 1:7", "V4.2+", 7.0f,
   dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7,
   dropbear::ANGLE_REFERENCE_OUTPUT_SHAFT,
-  0.01f, 0x92, 0xA1, 0x81
+  0.01f, 0x92, 0xA1, 0x80, 0x81
 };
 
 void encode56(int64_t value, uint8_t payload[8]) {
@@ -50,7 +50,6 @@ int main() {
   encode56(12345, payload);
   assert(dropbear::decodeMultiTurnAngle(kX8V17, payload, 8, &degrees) == dropbear::DECODE_OK);
   expectNear(degrees, 123.45);
-
   encode56(-12345, payload);
   assert(dropbear::decodeMultiTurnAngle(kX8V17, payload, 8, &degrees) == dropbear::DECODE_OK);
   expectNear(degrees, -123.45);
@@ -63,11 +62,20 @@ int main() {
   encode32(54321, payload);
   assert(dropbear::decodeMultiTurnAngle(kX10V42, payload, 8, &degrees) == dropbear::DECODE_OK);
   expectNear(degrees, 543.21);
+  assert(dropbear::decodeMultiTurnAngleWithLayout(
+           kX8V17, dropbear::ANGLE_SIGNED_32_LE_BYTES_4_TO_7,
+           payload, 8, &degrees) == dropbear::DECODE_OK);
+  expectNear(degrees, 543.21);
+
+  encode56(-54321, payload);
+  assert(dropbear::decodeMultiTurnAngleWithLayout(
+           kX10V42, dropbear::ANGLE_SIGNED_56_LE_BYTES_1_TO_7,
+           payload, 8, &degrees) == dropbear::DECODE_OK);
+  expectNear(degrees, -543.21);
 
   encode32(-54321, payload);
   assert(dropbear::decodeMultiTurnAngle(kX10V42, payload, 8, &degrees) == dropbear::DECODE_OK);
   expectNear(degrees, -543.21);
-
   payload[2] = 1;
   assert(dropbear::decodeMultiTurnAngle(kX10V42, payload, 8, &degrees) ==
          dropbear::DECODE_RESERVED_BYTES_NONZERO);
@@ -86,7 +94,11 @@ int main() {
   assert(payload[0] == 0x92 && payload[1] == 0 && payload[7] == 0);
   dropbear::encodeTorqueCommand(kX8V17, -300, payload);
   assert(payload[0] == 0xA1 && payload[4] == 0xD4 && payload[5] == 0xFE);
-  dropbear::encodeStopCommand(kX8V17, payload);
+  dropbear::encodeShutdownCommand(kX8V17, payload);
+  assert(payload[0] == 0x80 && payload[1] == 0 && payload[7] == 0);
+  dropbear::encodeHoldCommand(kX8V17, payload);
   assert(payload[0] == 0x81 && payload[1] == 0 && payload[7] == 0);
+  dropbear::encodeStopCommand(kX8V17, payload);
+  assert(payload[0] == 0x81);
   return 0;
 }

@@ -50,7 +50,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.42";
+  "behemoth-observation-protocol-2026.09.43";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -2133,8 +2133,16 @@ void emitCanMotorIdentity(uint32_t requestId) {
   String reply = identity.sameId && identity.offsetId ? "mixed" :
     identity.offsetId ? "offset" : identity.sameId ? "direct" : "none";
   String version = "unknown";
-  if (identity.versionSeen && identity.versionDate >= 20000101UL &&
-      identity.versionDate <= 20991231UL) version = String(identity.versionDate);
+  // The manuals document YYYYMMDD, while deployed X10 builds also append a
+  // two-digit firmware revision (YYYYMMDDrr). Preserve either representation
+  // exactly instead of discarding the observed per-motor software identity.
+  const bool eightDigitDate = identity.versionDate >= 20000101UL &&
+    identity.versionDate <= 20991231UL;
+  const bool tenDigitDateRevision = identity.versionDate >= 2000010100UL &&
+    identity.versionDate <= 2099123199UL;
+  if (identity.versionSeen && (eightDigitDate || tenDigitDateRevision)) {
+    version = String(identity.versionDate);
+  }
   String model = identity.indexedModelMask != 0
     ? trimmedMotorModel(identity.indexedModel, 15)
     : identity.legacyModelSeen

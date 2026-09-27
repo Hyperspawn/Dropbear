@@ -50,7 +50,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.44";
+  "behemoth-observation-protocol-2026.09.54";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -63,12 +63,18 @@ static const char *DROPBEAR_CAPABILITIES =
   "can-discovery-v1;can-bus-recovery-v1;can-transaction-scheduler-v1;"
   "can-oneshot-tx-v1;"
   "can-deferred-tx-abort-v1;can-interrupt-rx-v1;"
+  "can-atomic-rx-buffer-v1;can-angle-stream-quiesce-v1;"
   "can-timing-observability-v1;can-wire-tx-status-v1;"
   "can-overflow-recovery-v1;can-poll-control-v1;"
   "can-register-snapshot-v1;can-rtos-deadline-v1;"
   "can-nonblocking-diagnostic-queue-v1;can-single-mailbox-v1;"
-  "can-offline-backoff-v1;can-bounded-records-v1;"
+  "can-offline-backoff-v1;can-offline-periodic-retry-v1;can-bounded-records-v1;"
   "can-single-sample-1mbps-v1;"
+  "can-unfiltered-read-trace-v1;"
+  "can-runtime-bitrate-diagnostic-v1;can-v4-read-broadcast-v1;"
+  "can-guarded-mit-zero-probe-v1;"
+  "can-explicit-observation-poll-v1;"
+  "can-offline-latch-v1;can-poll-circuit-breaker-v1;"
   "motor-identity-discovery-v1;motor-runtime-codec-detection-v1;"
   "motor-hold-shutdown-split-v1;motor-active-reply-normalization-v1;"
   "config-records-v1;calibration-result-v1";
@@ -329,26 +335,30 @@ const unsigned long ACTUATOR_ID_LEFT_HIP_ROLL = ACTUATOR_IDS[LEFT_HIP_ROLL];
 // cannot command motion, but it does add bounded CAN traffic.
 static const bool MOTOR_NATIVE_FEEDBACK_ENABLED = true;
 // The installed MCP2515 modules are documented as 8 MHz while the actuator bus
-// is fixed at 1 Mbit/s. Microchip requires PS2 >= 2 TQ; even the single-sample
-// CNF1/CNF2/CNF3 = 00/80/80 override below has PS2 = 1 TQ. Keep the deployed
-// bitrate for compatibility with the motors, but report this hardware timing
-// limitation explicitly. A 16 MHz MCP2515 clock is the compliant hardware fix.
+// is fixed at 1 Mbit/s. Microchip requires PS2 >= 2 TQ; the deployed
+// selected CNF1/CNF2/CNF3 = 00/80/80 still has PS2 = 1 TQ. Retest the
+// single-sample profile after the leg termination fault was repaired. Triple
+// sampling caused the controller to miss ACK bits even when motors received a
+// request and replied, producing duplicate replies and +8 TEC per request.
+// Report the hardware timing limitation explicitly; a 16 MHz MCP2515 clock
+// remains the compliant hardware fix.
 static const uint32_t CAN_CONTROLLER_CLOCK_HZ = 8000000;
 static const uint32_t CAN_BUS_BITRATE_BPS = 1000000;
 static const bool CAN_BIT_TIMING_DATASHEET_COMPLIANT = false;
 static const uint8_t CAN_CNF1_8MHZ_1MBPS = 0x00;
-static const uint8_t CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE = 0x80;
+static const uint8_t CAN_CNF2_8MHZ_1MBPS_SINGLE = 0x80;
 static const uint8_t CAN_CNF3_8MHZ_1MBPS = 0x80;
-static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 12;
-static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 50;
+static const uint32_t MOTOR_NATIVE_QUERY_SLOT_MS = 100;
+static const uint32_t MOTOR_NATIVE_QUERY_BACKOFF_MS = 250;
 static const uint32_t MOTOR_NATIVE_REPLY_TIMEOUT_MS = 10;
 static const uint8_t MOTOR_NATIVE_OFFLINE_AFTER_MISSES = 3;
-// A missing node costs eight TEC counts per no-ACK attempt. Re-probing every
-// 500 ms can keep an otherwise healthy multi-node controller error-passive,
-// especially when two configured addresses are absent. Five seconds still
-// discovers a repaired connection promptly without poisoning healthy reads.
 static const uint32_t MOTOR_NATIVE_OFFLINE_RETRY_MS = 5000;
-static const uint32_t MOTOR_NATIVE_STALE_MS = 750;
+// The installed 8 MHz controller is out of spec at 1 Mbit/s. Repeatedly
+// probing a node after consecutive timeouts can drive TEC into error-passive
+// even while other nodes still answer. Latch it out of the automatic schedule;
+// an explicit `can poll retry <id>` re-admits only the repaired configured ID.
+static const uint8_t CAN_POLL_CIRCUIT_BREAKER_TEC = 64;
+static const uint32_t MOTOR_NATIVE_STALE_MS = 2000;
 static const uint8_t CAN_RX_BURST_LIMIT = 12;
 static const uint32_t CAN_DEFERRED_TX_ABORT_MS = 12;
 static const uint32_t CAN_TX_ABORT_TIMEOUT_US = 2000;
@@ -358,7 +368,7 @@ static const uint32_t CAN_TX_CALLER_TIMEOUT_MS = 12;
 static const uint8_t CAN_TX_QUEUE_DEPTH = 12;
 static const uint32_t CAN_OUTPUT_PERIOD_US = 10000;
 static const uint32_t CAN_IO_LOOP_BUDGET_US = 5000;
-static const uint8_t CAN_DIAGNOSTIC_LINE_QUEUE_DEPTH = 16;
+static const uint8_t CAN_DIAGNOSTIC_LINE_QUEUE_DEPTH = 64;
 static const size_t CAN_DIAGNOSTIC_LINE_MAX = 384;
 static const uint32_t CAN_DIAGNOSTIC_DEFAULT_CAPTURE_MS = 1000;
 static const uint32_t CAN_DIAGNOSTIC_MAX_CAPTURE_MS = 10000;
@@ -366,6 +376,7 @@ static const uint32_t CAN_DIAGNOSTIC_SNIFF_MAX_MS = 2000;
 static const uint16_t CAN_DIAGNOSTIC_SNIFF_FRAME_LIMIT = 128;
 static const uint32_t RMD_DISCOVERY_FIRST_ID = 0x141;
 static const uint32_t RMD_DISCOVERY_LAST_ID = 0x160;
+static const uint32_t RMD_MULTI_MOTOR_REQUEST_ID = 0x280;
 static const uint32_t RMD_DISCOVERY_REPLY_WAIT_MS = 40;
 static const uint32_t CAN_ERROR_SAMPLE_MS = 250;
 // A persistent wiring/bitrate fault must not turn recovery into a one-second
@@ -421,9 +432,16 @@ volatile int8_t motorNativePendingIndex = -1;
 volatile uint32_t motorNativePendingSinceMs = 0;
 volatile uint32_t motorNativeReplyTimeouts = 0;
 volatile uint32_t motorNativeOutOfOrderResponses = 0;
+volatile int motorNativePendingTxResult = CAN_OK;
+volatile uint32_t motorNativeReplyConfirmedAfterTxError = 0;
 volatile uint32_t motorNativeOfflineSkips = 0;
+volatile uint32_t motorNativeOfflineRetryAttempts = 0;
 volatile uint8_t motorNativeMissStreak[ACTUATOR_COUNT] = {0};
 volatile uint32_t motorNativeNextEligibleMs[ACTUATOR_COUNT] = {0};
+volatile bool motorNativeOfflineLatched[ACTUATOR_COUNT] = {false};
+volatile uint32_t motorNativePollCircuitBreakerTrips = 0;
+volatile uint32_t motorNativeStreamQuiesceAttempts = 0;
+volatile uint32_t motorNativeStreamQuiesceFailures = 0;
 // MCP_CAN_lib returns CAN_SENDMSGTIMEOUT after 2.5 ms while TXREQ can remain
 // loaded. One-shot mode prevents retries only after a first transmit attempt;
 // it does not cancel a frame that is still waiting for an idle bus. Track that
@@ -431,10 +449,13 @@ volatile uint32_t motorNativeNextEligibleMs[ACTUATOR_COUNT] = {0};
 volatile bool canDeferredTxPending = false;
 volatile uint32_t canDeferredTxSinceMs = 0;
 volatile bool canDeferredTxAbortAttempted = false;
-// This switch controls only automatic 0x92 polling. It never arms motion and
-// lets diagnostics prove whether controller errors occur on an otherwise idle
-// bus. Diagnostic transactions pause and restore it explicitly.
-volatile bool motorNativePollingEnabled = true;
+// This switch controls only automatic 0x92 polling. It never arms motion.
+// Boot with polling disabled so the dashboard can first establish exclusive
+// serial ownership, reset the CAN controller to the configured 1 Mbit/s, and
+// then explicitly begin a paced observation session. Diagnostic transactions
+// pause and restore an already-enabled session without racing boot traffic.
+volatile bool motorNativePollingEnabled = false;
+volatile uint32_t canRuntimeBitrateBps = CAN_BUS_BITRATE_BPS;
 
 struct CanTxRequest {
   uint32_t id;
@@ -1023,6 +1044,8 @@ bool abortPendingCanTx(const char *reason);
 bool clearCanRxOverflowFlags();
 bool quiesceMotorNativePolling();
 void restoreMotorNativePolling(bool wasEnabled);
+int reinitializeCanControllerAtBitrate(uint32_t bitrateBps);
+bool changeCanDiagnosticBitrate(uint32_t bitrateBps);
 void IRAM_ATTR onCanInterrupt();
 void printCanBusStatus();
 void printCanRegisterSnapshot();
@@ -1597,13 +1620,26 @@ bool ingestMotorNativeFeedback(uint32_t responseID, const byte *data, byte len) 
   motorNativeReceivedMs[index] = millis();
   motorNativeValid[index] = true;
   if (motorNativePendingIndex == index) {
+    if (motorNativePendingTxResult != CAN_OK) {
+      // A matching reply is definitive proof that a read reached the motor.
+      // On this marginal 8 MHz / 1 Mbps controller, TXBnCTRL can report
+      // TXERR+ABTF even for requests that produce a valid response. Complete
+      // read transactions by reply/timeout instead of poisoning the offline
+      // backoff and recovery state with that false negative.
+      motorNativeReplyConfirmedAfterTxError++;
+      portENTER_CRITICAL(&canStateMux);
+      canConsecutiveFailures = 0;
+      portEXIT_CRITICAL(&canStateMux);
+    }
     motorNativePendingIndex = -1;
     motorNativePendingSinceMs = 0;
+    motorNativePendingTxResult = CAN_OK;
     canDeferredTxPending = false;
     canDeferredTxSinceMs = 0;
     canDeferredTxAbortAttempted = false;
     motorNativeMissStreak[index] = 0;
     motorNativeNextEligibleMs[index] = 0;
+    motorNativeOfflineLatched[index] = false;
   } else if (motorNativePendingIndex >= 0) {
     // Keep valid late feedback, but never let it complete a different motor's
     // transaction. The outstanding request must receive its own reply or time
@@ -1625,11 +1661,12 @@ void recordMotorNativeMiss(uint8_t actuatorIndex, uint32_t now,
     motorNativeReplyTimeouts++;
     motorNativeQueryFailures++;
   }
-  const uint32_t retryDelay =
-    motorNativeMissStreak[actuatorIndex] >= MOTOR_NATIVE_OFFLINE_AFTER_MISSES
-      ? MOTOR_NATIVE_OFFLINE_RETRY_MS
-      : MOTOR_NATIVE_QUERY_BACKOFF_MS;
-  motorNativeNextEligibleMs[actuatorIndex] = now + retryDelay;
+  if (motorNativeMissStreak[actuatorIndex] >= MOTOR_NATIVE_OFFLINE_AFTER_MISSES) {
+    motorNativeOfflineLatched[actuatorIndex] = true;
+    motorNativeNextEligibleMs[actuatorIndex] = now + MOTOR_NATIVE_OFFLINE_RETRY_MS;
+  } else {
+    motorNativeNextEligibleMs[actuatorIndex] = now + MOTOR_NATIVE_QUERY_BACKOFF_MS;
+  }
 }
 
 bool requestMotorNativeFeedback(uint8_t actuatorIndex) {
@@ -1644,11 +1681,12 @@ bool requestMotorNativeFeedback(uint8_t actuatorIndex) {
   byte request[8];
   dropbear::encodeReadMultiTurnAngle(*profile, request);
   const int result = canSendFrameResult(ACTUATOR_IDS[actuatorIndex], request, 8, true);
-  // A SEND_MSG_TIMEOUT can leave the owned mailbox loaded even though the
-  // frame later wins arbitration and receives a valid motor reply. Keep that
-  // transaction pending. A busy mailbox means stale ownership and is aborted
-  // before the scheduler is allowed to probe another node.
-  if (result != CAN_OK && result != CAN_SENDMSGTIMEOUT) {
+  // SEND_MSG_TIMEOUT and a late TXERR/ABTF sample can both be followed by a valid
+  // reply on the assembled 8 MHz / 1 Mbps bus. For read-only requests, keep
+  // the transaction pending and let the matching reply or bounded timeout be
+  // authoritative. A busy mailbox never placed a new request on the wire.
+  if (result != CAN_OK && result != CAN_SENDMSGTIMEOUT &&
+      result != CAN_FAILTX) {
     if (result == CAN_GETTXBFTIMEOUT) {
       abortPendingCanTx("read_mailbox_busy");
     }
@@ -1657,6 +1695,7 @@ bool requestMotorNativeFeedback(uint8_t actuatorIndex) {
   }
   motorNativePendingIndex = static_cast<int8_t>(actuatorIndex);
   motorNativePendingSinceMs = millis();
+  motorNativePendingTxResult = result;
   motorNativeQueries++;
   return true;
 }
@@ -1832,6 +1871,10 @@ bool isReadOnlyCanDiagnosticOpcode(uint8_t opcode) {
   switch (opcode) {
     case 0x30:  // read PID parameters
     case 0x42:  // read acceleration
+    case 0x60:  // read multi-turn encoder position
+    case 0x61:  // read original multi-turn encoder position
+    case 0x62:  // read multi-turn encoder zero offset
+    case 0x70:  // read current motor operating mode
     case 0x90:  // read encoder position
     case 0x92:  // read multi-turn angle
     case 0x94:  // read single-turn angle
@@ -1903,8 +1946,10 @@ bool selectedDiagnosticMotorId(uint32_t requestId) {
   // no longer matches this controller's configured leg map.  Permit read-only
   // diagnostic opcodes across the bounded discovery range on the local bus.
   // Motion still routes exclusively through actuatorBelongsToSelectedLeg().
-  return isLegRole() && requestId >= RMD_DISCOVERY_FIRST_ID &&
-         requestId <= RMD_DISCOVERY_LAST_ID;
+  return isLegRole() &&
+    ((requestId >= RMD_DISCOVERY_FIRST_ID &&
+      requestId <= RMD_DISCOVERY_LAST_ID) ||
+     requestId == RMD_MULTI_MOTOR_REQUEST_ID);
 }
 
 void emitCanDiagnosticCStringNow(const char *line, bool countDrop) {
@@ -2225,6 +2270,34 @@ bool disableCanMotorActiveReplies(uint32_t requestId) {
   return allSent;
 }
 
+bool quiesceSelectedLegAngleStreams() {
+  // Only 0x92 is polled by the live observation scheduler. Normalize that one
+  // active-reply slot on each configured motor before the scheduler starts;
+  // do not issue the eight-command diagnostic suite or scan unconfigured IDs.
+  // B6 DATA[2]=0 changes reporting only and cannot command motion.
+  static const byte disableAngleStream[8] = {0xB6, 0x92, 0x00, 0, 0, 0, 0, 0};
+  const uint8_t *order = selectedMotorTelemetryOrder();
+  uint8_t sentCount = 0;
+  for (uint8_t slot = 0; slot < 6; ++slot) {
+    motorNativeStreamQuiesceAttempts++;
+    const uint32_t requestId = ACTUATOR_IDS[order[slot]];
+    const int result = canSendFrameResult(
+      requestId, disableAngleStream, sizeof(disableAngleStream), false);
+    if (result == CAN_OK) {
+      sentCount++;
+    } else {
+      motorNativeStreamQuiesceFailures++;
+    }
+    vTaskDelay(pdMS_TO_TICKS(8));
+  }
+  emitCanDiagnosticLine("DBC1," + currentCommandAddress() +
+                        ",STREAM_QUIESCE," + String(millis()) +
+                        ",opcode=0x92,sent=" + String(sentCount) +
+                        "/6,failures=" +
+                        String(motorNativeStreamQuiesceFailures));
+  return sentCount == 6;
+}
+
 bool quiesceMotorNativePolling() {
   const bool wasEnabled = motorNativePollingEnabled;
   motorNativePollingEnabled = false;
@@ -2294,9 +2367,16 @@ bool processCanDiagnosticCommand(String command) {
     return true;
   }
   if (normalized == "can poll status") {
+    uint16_t offlineMask = 0;
+    for (uint8_t index = 0; index < ACTUATOR_COUNT; ++index) {
+      if (motorNativeOfflineLatched[index]) offlineMask |= (1U << index);
+    }
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL," +
                           String(millis()) + "," +
-                          String(motorNativePollingEnabled ? "on" : "off"));
+                          String(motorNativePollingEnabled ? "on" : "off") +
+                          ",offline_mask=" + String(offlineMask) +
+                          ",breaker_trips=" + String(motorNativePollCircuitBreakerTrips) +
+                          ",offline_retries=" + String(motorNativeOfflineRetryAttempts));
     return true;
   }
   if (normalized == "can poll off") {
@@ -2306,14 +2386,134 @@ bool processCanDiagnosticCommand(String command) {
     return true;
   }
   if (normalized == "can poll on") {
+    quiesceMotorNativePolling();
+    const bool streamsQuiesced = quiesceSelectedLegAngleStreams();
     motorNativePollingEnabled = true;
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL," +
-                          String(millis()) + ",on");
+                          String(millis()) + ",on,streams=" +
+                          String(streamsQuiesced ? "quiesced" : "degraded"));
+    return true;
+  }
+  if (normalized.startsWith("can poll retry ")) {
+    String idToken = command.substring(String("can poll retry ").length());
+    idToken.trim();
+    uint32_t requestId = 0;
+    if (!parseCanHexToken(idToken, 0x7FF, requestId)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",invalid_retry_id");
+      return true;
+    }
+    const int actuatorIndex = actuatorIndexFromCanId(requestId);
+    if (!actuatorBelongsToSelectedLeg(actuatorIndex)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",retry_id_not_configured_for_leg");
+      return true;
+    }
+    motorNativeMissStreak[actuatorIndex] = 0;
+    motorNativeNextEligibleMs[actuatorIndex] = 0;
+    motorNativeOfflineLatched[actuatorIndex] = false;
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL_RETRY," +
+                          String(millis()) + ",0x" + String(requestId, HEX) +
+                          ",admitted");
+    return true;
+  }
+  if (normalized == "can bitrate status") {
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",BITRATE," +
+                          String(millis()) + "," +
+                          String(canRuntimeBitrateBps) + ",poll=" +
+                          String(motorNativePollingEnabled ? "on" : "off"));
     return true;
   }
   if (!runtimeControlReady || !canInitialized || !isLegRole()) {
     emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
                           String(millis()) + ",can_runtime_not_ready");
+    return true;
+  }
+
+  if (normalized.startsWith("can bitrate ")) {
+    const String bitrateToken = normalized.substring(String("can bitrate ").length());
+    uint32_t requestedBitrate = 0;
+    if (bitrateToken == "1000000" || bitrateToken == "1000k") {
+      requestedBitrate = 1000000UL;
+    } else if (bitrateToken == "500000" || bitrateToken == "500k") {
+      requestedBitrate = 500000UL;
+    } else if (bitrateToken == "250000" || bitrateToken == "250k") {
+      requestedBitrate = 250000UL;
+    } else {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) +
+                            ",bitrate_must_be_250000_500000_or_1000000");
+      return true;
+    }
+    // Runtime bitrate changes are a diagnostic transport operation only. Keep
+    // automatic polling off until an operator restores 1 Mbps and explicitly
+    // enables polling, preventing a forgotten probe from flooding a silent bus.
+    quiesceMotorNativePolling();
+    canDiagnosticScanActive = true;
+    const uint32_t previousBitrate = canRuntimeBitrateBps;
+    const bool changed = changeCanDiagnosticBitrate(requestedBitrate);
+    canDiagnosticScanActive = false;
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",BITRATE," +
+                          String(millis()) + "," +
+                          String(changed ? "ok" : "failed") + ",from=" +
+                          String(previousBitrate) + ",to=" +
+                          String(requestedBitrate) + ",poll=off");
+    return true;
+  }
+
+  if (normalized.startsWith("can mit-zero-probe ")) {
+    String idToken = command.substring(String("can mit-zero-probe ").length());
+    idToken.trim();
+    uint32_t requestId = 0;
+    const uint32_t expectedYawId = isLeft ? ACTUATOR_ID_LEFT_HIP_YAW
+                                          : ACTUATOR_ID_RIGHT_HIP_YAW;
+    if (!parseCanHexToken(idToken, 0x7FF, requestId) ||
+        requestId != expectedYawId) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) +
+                            ",mit_probe_is_limited_to_configured_hip_yaw");
+      return true;
+    }
+    if (canRuntimeBitrateBps != CAN_BUS_BITRATE_BPS || playMode ||
+        portalTorqueTestActive || calibrationOverrideActive ||
+        stopBurstRemaining > 0) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) +
+                            ",mit_probe_requires_idle_stopped_1mbps_runtime");
+      return true;
+    }
+
+    // V3/V4 motion-mode framing uses arbitration ID 0x400 + device ID. This
+    // fixed payload encodes p=0, v=0, kp=0, kd=0 and the midpoint of the
+    // unsigned 12-bit feed-forward torque field. With both gains zero, it is a
+    // bounded zero-output identity probe; callers cannot supply control data.
+    const uint32_t motionRequestId = 0x400U + (requestId - 0x140U);
+    const byte zeroOutputPayload[8] = {
+      0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00
+    };
+    quiesceMotorNativePolling();
+    const uint32_t rxBefore = canDiagnosticRxFrames;
+    armCanDiagnosticSniff(500);
+    const int result = canSendFrameResult(
+      motionRequestId, zeroOutputPayload, sizeof(zeroOutputPayload), false);
+    emitCanDiagnosticLine(canDiagnosticFrameLine(
+      result == CAN_OK ? "TX" : "TX_FAIL", motionRequestId,
+      zeroOutputPayload, sizeof(zeroOutputPayload)));
+    vTaskDelay(pdMS_TO_TICKS(505));
+    canDiagnosticCaptureActive = false;
+    const uint32_t rxObserved = canDiagnosticRxFrames - rxBefore;
+    if (rxObserved > 0) {
+      portENTER_CRITICAL(&canStateMux);
+      canConsecutiveFailures = 0;
+      portEXIT_CRITICAL(&canStateMux);
+    }
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",MIT_ZERO," +
+                          String(millis()) + ",complete,request=0x" +
+                          String(motionRequestId, HEX) + ",motor=0x" +
+                          String(requestId, HEX) + ",tx=" +
+                          String(result == CAN_OK ? "ok" :
+                            (rxObserved > 0 ? "reply_confirmed" : "failed")) +
+                          ",rx=" + String(rxObserved) + ",poll=off");
     return true;
   }
 
@@ -2376,6 +2576,7 @@ bool processCanDiagnosticCommand(String command) {
   if (normalized.startsWith("can probe ")) prefix = "can probe ";
   else if (normalized.startsWith("can info ")) prefix = "can info ";
   else if (normalized.startsWith("can identify ")) prefix = "can identify ";
+  else if (normalized.startsWith("can trace ")) prefix = "can trace ";
   else if (normalized.startsWith("can replies normal ")) prefix = "can replies normal ";
   else if (normalized.startsWith("can monitor ")) prefix = "can monitor ";
   else if (normalized.startsWith("can tx-read ")) prefix = "can tx-read ";
@@ -2435,6 +2636,61 @@ bool processCanDiagnosticCommand(String command) {
     }
     const bool restorePolling = quiesceMotorNativePolling();
     probeCanMotorIdentity(requestId, true);
+    restoreMotorNativePolling(restorePolling);
+    return true;
+  }
+
+  if (prefix == "can trace ") {
+    uint32_t opcode = 0;
+    uint32_t duration = 500;
+    if (!nextCanCommandToken(arguments, cursor, token) ||
+        !parseCanHexToken(token, 0xFF, opcode)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",trace_requires_id_and_read_opcode");
+      return true;
+    }
+    if (nextCanCommandToken(arguments, cursor, token) &&
+        !parseCanDurationToken(token, duration)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",trace_duration_must_be_100_to_10000_ms");
+      return true;
+    }
+    if (nextCanCommandToken(arguments, cursor, token)) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",too_many_arguments");
+      return true;
+    }
+    byte tracePayload[8] = {0};
+    tracePayload[0] = static_cast<byte>(opcode);
+    if (!isReadOnlyCanDiagnosticOpcode(tracePayload[0])) {
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",REJECT," +
+                            String(millis()) + ",unsafe_opcode");
+      return true;
+    }
+    // Do not assume a reply arbitration convention while debugging a node.
+    // Pause the automatic poller, arm the all-ID receive tap first, issue one
+    // allowlisted read, and leave every observed frame visible as DBC1 RX.
+    const bool restorePolling = quiesceMotorNativePolling();
+    const uint32_t rxBefore = canDiagnosticRxFrames;
+    armCanDiagnosticSniff(duration);
+    const bool sent = sendReadOnlyDiagnosticFrame(requestId, tracePayload);
+    vTaskDelay(pdMS_TO_TICKS(duration + 5));
+    canDiagnosticCaptureActive = false;
+    const uint32_t rxObserved = canDiagnosticRxFrames - rxBefore;
+    if (rxObserved > 0 && !sent) {
+      // Matching application traffic is stronger evidence than a late
+      // TXBnCTRL error sample; retain both facts in the diagnostic record.
+      portENTER_CRITICAL(&canStateMux);
+      canConsecutiveFailures = 0;
+      portEXIT_CRITICAL(&canStateMux);
+    }
+    emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",TRACE," +
+                          String(millis()) + ",complete,request=0x" +
+                          String(requestId, HEX) + ",opcode=0x" +
+                          String(opcode, HEX) + ",duration_ms=" +
+                          String(duration) + ",tx=" +
+                          String(sent ? "ok" : (rxObserved > 0 ? "reply_confirmed" : "failed")) +
+                          ",rx=" + String(rxObserved));
     restoreMotorNativePolling(restorePolling);
     return true;
   }
@@ -2510,6 +2766,19 @@ void mcp2515WriteRegistersDirect(uint8_t address, const uint8_t *values,
   SPI.endTransaction();
 }
 
+void mcp2515ReadRegistersDirect(uint8_t address, uint8_t *values,
+                                uint8_t length) {
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(CAN_CS_PIN, LOW);
+  SPI.transfer(MCP_READ);
+  SPI.transfer(address);
+  for (uint8_t index = 0; index < length; ++index) {
+    values[index] = SPI.transfer(0x00);
+  }
+  digitalWrite(CAN_CS_PIN, HIGH);
+  SPI.endTransaction();
+}
+
 void mcp2515BitModifyDirect(uint8_t address, uint8_t mask, uint8_t value) {
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
   digitalWrite(CAN_CS_PIN, LOW);
@@ -2521,30 +2790,121 @@ void mcp2515BitModifyDirect(uint8_t address, uint8_t mask, uint8_t value) {
   SPI.endTransaction();
 }
 
+int mcp2515ReadFrameDirect(uint32_t &id, uint8_t &length, byte data[8]) {
+  // checkReceive() followed by readMsgBuf() performs two independent status
+  // reads and many SPI transactions. Under back-to-back RMD replies that can
+  // select a stale mailbox twice or clear a flag for a different arrival.
+  // Snapshot CANINTF once, drain that exact mailbox in one burst, then clear
+  // only its flag while the sole CAN task still owns the SPI mutex.
+  const uint8_t interruptFlags = mcp2515ReadRegisterDirect(MCP_CANINTF);
+  uint8_t bufferAddress = 0;
+  uint8_t receiveFlag = 0;
+  if ((interruptFlags & MCP_RX0IF) != 0) {
+    bufferAddress = MCP_RXB0SIDH;
+    receiveFlag = MCP_RX0IF;
+  } else if ((interruptFlags & MCP_RX1IF) != 0) {
+    bufferAddress = MCP_RXB1SIDH;
+    receiveFlag = MCP_RX1IF;
+  } else {
+    return CAN_NOMSG;
+  }
+
+  uint8_t frame[13] = {0};
+  const uint8_t control = mcp2515ReadRegisterDirect(bufferAddress - 1);
+  mcp2515ReadRegistersDirect(bufferAddress, frame, sizeof(frame));
+  mcp2515BitModifyDirect(MCP_CANINTF, receiveFlag, 0);
+
+  const bool extended = (frame[1] & 0x08U) != 0;
+  if (extended) {
+    id = (static_cast<uint32_t>(frame[0]) << 21) |
+         (static_cast<uint32_t>(frame[1] & 0xE0U) << 13) |
+         (static_cast<uint32_t>(frame[1] & 0x03U) << 16) |
+         (static_cast<uint32_t>(frame[2]) << 8) |
+         static_cast<uint32_t>(frame[3]);
+    id |= 0x80000000UL;
+  } else {
+    id = (static_cast<uint32_t>(frame[0]) << 3) |
+         static_cast<uint32_t>(frame[1] >> 5);
+  }
+  if ((control & 0x08U) != 0) id |= 0x40000000UL;
+  length = frame[4] & 0x0FU;
+  if (length > 8) length = 8;
+  for (uint8_t index = 0; index < length; ++index) data[index] = frame[5 + index];
+  return CAN_OK;
+}
+
 int configureCanTimingAndNormalMode() {
-  // MCP_CAN_lib 1.5.1 uses CNF2=0xC0 for 8 MHz / 1 Mbit/s, enabling
-  // triple sampling. Microchip documents that mode as a slow/noisy-bus aid;
-  // at this four-TQ bit time the extra samples occur only 0.5 and 1 TQ before
-  // the nominal 75% sample point. Own the complete register tuple and sample
-  // once at 75% (CNF2=0x80). The 8 MHz PS2=1 TQ limitation remains reported
-  // as out-of-spec; production hardware should still migrate to 16 MHz.
+  // Own and verify the complete single-sample tuple so library changes cannot
+  // silently re-enable triple sampling. The 8 MHz PS2=1 TQ limitation remains
+  // out-of-spec; production hardware should still migrate to 16 MHz.
   if (CAN.setMode(MODE_CONFIG) != CAN_OK) return CAN_FAIL;
   mcp2515WriteRegisterDirect(MCP_CNF1, CAN_CNF1_8MHZ_1MBPS);
-  mcp2515WriteRegisterDirect(MCP_CNF2, CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE);
+  mcp2515WriteRegisterDirect(MCP_CNF2, CAN_CNF2_8MHZ_1MBPS_SINGLE);
   mcp2515WriteRegisterDirect(MCP_CNF3, CAN_CNF3_8MHZ_1MBPS);
   const bool verified =
     mcp2515ReadRegisterDirect(MCP_CNF1) == CAN_CNF1_8MHZ_1MBPS &&
-    mcp2515ReadRegisterDirect(MCP_CNF2) == CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE &&
+    mcp2515ReadRegisterDirect(MCP_CNF2) == CAN_CNF2_8MHZ_1MBPS_SINGLE &&
     mcp2515ReadRegisterDirect(MCP_CNF3) == CAN_CNF3_8MHZ_1MBPS;
   if (!verified) return CAN_FAIL;
   return CAN.setMode(MCP_NORMAL);
 }
 
-// MCP_CAN_lib::sendMsg() considers a cleared TXREQ bit successful without
-// examining ABTF, MLOA, or TXERR. That is incorrect in one-shot mode: TXREQ
-// also clears after an arbitration loss or transmit error. Keep the library
-// for controller setup/RX, but own standard-frame transmission here so every
-// caller receives the actual wire outcome. Caller must hold canMutex.
+int reinitializeCanControllerAtBitrate(uint32_t bitrateBps) {
+  int beginResult = CAN_FAILINIT;
+  if (bitrateBps == 1000000UL) {
+    beginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
+  } else if (bitrateBps == 500000UL) {
+    beginResult = CAN.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ);
+  } else if (bitrateBps == 250000UL) {
+    beginResult = CAN.begin(MCP_ANY, CAN_250KBPS, MCP_8MHZ);
+  } else {
+    return CAN_FAILINIT;
+  }
+  if (beginResult != CAN_OK) return beginResult;
+
+  const int modeResult = bitrateBps == 1000000UL
+    ? configureCanTimingAndNormalMode()
+    : CAN.setMode(MCP_NORMAL);
+  if (modeResult != CAN_OK) return modeResult;
+  // A marginal 8 MHz / 1 Mbit/s sample point must not trigger an unbounded
+  // retransmit storm. One-shot confines every scheduled read to one wire
+  // attempt; the offline latch and TEC circuit breaker bound repeated misses.
+  const int oneShotModeResult = CAN.enOneShotTX();
+  if (oneShotModeResult != CAN_OK) return oneShotModeResult;
+
+  canRuntimeBitrateBps = bitrateBps;
+  canInitialized = true;
+  canOneShotEnabled = true;
+  canDeferredTxPending = false;
+  canDeferredTxSinceMs = 0;
+  canDeferredTxAbortAttempted = false;
+  motorNativePendingIndex = -1;
+  motorNativePendingSinceMs = 0;
+  motorNativePendingTxResult = CAN_OK;
+  portENTER_CRITICAL(&canStateMux);
+  canConsecutiveFailures = 0;
+  portEXIT_CRITICAL(&canStateMux);
+  return CAN_OK;
+}
+
+bool changeCanDiagnosticBitrate(uint32_t bitrateBps) {
+  if (!isLegRole() || !runtimeControlReady || canMutex == nullptr) return false;
+  bool changed = false;
+  if (xSemaphoreTake(canMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+    changed = reinitializeCanControllerAtBitrate(bitrateBps) == CAN_OK;
+    xSemaphoreGive(canMutex);
+  } else {
+    canMutexTimeouts++;
+  }
+  sampleCanControllerErrors();
+  return changed;
+}
+
+// Keep the library for controller setup/RX, but own standard-frame
+// transmission here so every caller receives the actual wire outcome. Normal
+// CAN retransmission may correct a transient timing error; a mailbox that does
+// not complete within the bounded deadline is explicitly aborted by the I/O
+// task. Caller must hold canMutex.
 int mcp2515SendStandardFrameDirect(uint32_t id, const byte *data, byte length) {
   if (id > 0x7FFU || data == nullptr || length > 8) return CAN_FAILTX;
 
@@ -2730,6 +3090,13 @@ String canErrorFlagNames(uint8_t flags) {
   return names;
 }
 
+const char *canRuntimeTimingProfile() {
+  if (canRuntimeBitrateBps == 1000000UL) return "out_of_spec_8mhz_1mbps_single";
+  if (canRuntimeBitrateBps == 500000UL) return "library_8mhz_500kbps";
+  if (canRuntimeBitrateBps == 250000UL) return "library_8mhz_250kbps";
+  return "unknown";
+}
+
 void printCanBusStatus() {
   // HardwareObservationManager admits at most 256 bytes per serial record.
   // Keep state, error counts, and timing in separate bounded records rather
@@ -2747,7 +3114,7 @@ void printCanBusStatus() {
            canResultName(lastCanResult), canOneShotEnabled ? 1U : 0U,
            canDeferredTxPending ? 1U : 0U,
            motorNativePollingEnabled ? "on" : "off", canControllerMode,
-           CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "compliant" : "out_of_spec_8mhz_1mbps");
+           canRuntimeTimingProfile());
   emitCanDiagnosticCString(line);
 
   const String flagNames = canErrorFlagNames(canErrorFlags);
@@ -2812,7 +3179,7 @@ bool recoverCanController() {
   bool recovered = false;
   int beginResult = -1;
   int modeResult = -1;
-  int oneShotResult = -1;
+  int oneShotModeResult = -1;
   // MCP_CAN_lib prints during begin()/setMode(). Hold the serial mutex so a
   // recovery cannot splice those messages into a DB3/DBH1 record.
   const bool serialHeld = serialMutex == nullptr ||
@@ -2821,8 +3188,8 @@ bool recoverCanController() {
     beginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
     if (beginResult == CAN_OK) {
       modeResult = configureCanTimingAndNormalMode();
-      if (modeResult == CAN_OK) oneShotResult = CAN.enOneShotTX();
-      recovered = modeResult == CAN_OK && oneShotResult == CAN_OK;
+      if (modeResult == CAN_OK) oneShotModeResult = CAN.enOneShotTX();
+      recovered = modeResult == CAN_OK && oneShotModeResult == CAN_OK;
     }
     canErrorFlags = CAN.getError();
     canTxErrorCount = CAN.errorCountTX();
@@ -2834,6 +3201,7 @@ bool recoverCanController() {
   if (recovered) {
     canInitialized = true;
     canOneShotEnabled = true;
+    canRuntimeBitrateBps = CAN_BUS_BITRATE_BPS;
     portENTER_CRITICAL(&canStateMux);
     canConsecutiveFailures = 0;
     portEXIT_CRITICAL(&canStateMux);
@@ -2842,6 +3210,7 @@ bool recoverCanController() {
     canRxErrorCount = 0;
     motorNativePendingIndex = -1;
     motorNativePendingSinceMs = 0;
+    motorNativePendingTxResult = CAN_OK;
     canDeferredTxPending = false;
     canDeferredTxSinceMs = 0;
     canDeferredTxAbortAttempted = false;
@@ -2854,8 +3223,8 @@ bool recoverCanController() {
     (recovered ? "ok" : "failed") + "," + String(beginResult) + "," +
     String(modeResult) + "," + String(canErrorFlags) + "," +
     String(canTxErrorCount) + "," + String(canRxErrorCount) + "," +
-    "eflg=" + canErrorFlagNames(canErrorFlags) + ",oneshot_result=" +
-    String(canResultName(oneShotResult)) + ",oneshot_enabled=" +
+    "eflg=" + canErrorFlagNames(canErrorFlags) + ",oneshot_mode_result=" +
+    String(canResultName(oneShotModeResult)) + ",oneshot_enabled=" +
     String(canOneShotEnabled ? 1 : 0)
   );
   return recovered;
@@ -2917,6 +3286,7 @@ bool serviceCanTxQueueOne() {
           interruptedRead >= 0) {
         motorNativePendingIndex = -1;
         motorNativePendingSinceMs = 0;
+        motorNativePendingTxResult = CAN_OK;
         recordMotorNativeMiss(static_cast<uint8_t>(interruptedRead), millis(), true);
       }
     }
@@ -3011,8 +3381,8 @@ int canSendFrameResult(uint32_t actuatorID, const byte *data, byte dataLen,
   } else if (deferredRead) {
     // TXREQ is already loaded. Completion is resolved by the matching reply or
     // the transaction timeout instead of queuing another request behind it.
-    // One-shot does not clear TXREQ until a first bus attempt occurs, so the
-    // timeout path must explicitly abort this mailbox if the bus never idles.
+    // Even in one-shot mode a mailbox can wait for an idle bus before its one
+    // attempt, so the hard deferred deadline must explicitly abort TXREQ.
     canDeferredReadSubmissions++;
     canDeferredTxPending = true;
     canDeferredTxSinceMs = now;
@@ -3186,7 +3556,8 @@ bool portalPayloadRequiresMotionUnlock(String payload) {
   lower.toLowerCase();
   if (lower == "play" || lower.startsWith("torque ") ||
       lower.startsWith("impedance ") || lower.startsWith("test_torque ") ||
-      lower.startsWith("calibratedirection ")) return true;
+      lower.startsWith("calibratedirection ") ||
+      lower.startsWith("can mit-zero-probe ")) return true;
   if (isHead) {
     if (lower == "home" || lower == "home_soft" || lower == "home_brute" ||
         lower.startsWith("neck ") || payload.indexOf(':') >= 0) return true;
@@ -3531,26 +3902,22 @@ void canReceiveTask(void *parameter) {
     while (canInitialized && drained < CAN_RX_BURST_LIMIT) {
       bool available = false;
       if (canMutex && xSemaphoreTake(canMutex, pdMS_TO_TICKS(2)) == pdTRUE) {
-        available = CAN.checkReceive() == CAN_MSGAVAIL;
-        if (available) {
-          unsigned long rxId = 0;
-          unsigned char len = 0;
-          byte data[8] = {0};
-          const int result = CAN.readMsgBuf(&rxId, &len, data);
-          xSemaphoreGive(canMutex);
+        uint32_t rxId = 0;
+        uint8_t len = 0;
+        byte data[8] = {0};
+        const int result = mcp2515ReadFrameDirect(rxId, len, data);
+        available = result == CAN_OK;
+        xSemaphoreGive(canMutex);
 
-          if (result == CAN_OK) {
-            canRxFrames++;
-            lastCanRxMs = millis();
-            captureCanDiagnosticFrame(static_cast<uint32_t>(rxId), data, len);
-            if (!ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)) {
-              handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len);
-            }
-          } else {
-            canRxErrors++;
+        if (available) {
+          canRxFrames++;
+          lastCanRxMs = millis();
+          captureCanDiagnosticFrame(rxId, data, len);
+          if (!ingestMotorNativeFeedback(rxId, data, len)) {
+            handleHyperspawnRxFrame(rxId, data, len);
           }
-        } else {
-          xSemaphoreGive(canMutex);
+        } else if (result != CAN_NOMSG) {
+          canRxErrors++;
         }
       }
 
@@ -3573,6 +3940,15 @@ void canReceiveTask(void *parameter) {
       sampleCanControllerErrors();
       lastCanErrorSampleMs = now;
     }
+    if (motorNativePollingEnabled &&
+        (canTxErrorCount >= CAN_POLL_CIRCUIT_BREAKER_TEC ||
+         (canErrorFlags & (MCP_EFLG_TXEP | MCP_EFLG_TXBO)) != 0)) {
+      motorNativePollingEnabled = false;
+      motorNativePollCircuitBreakerTrips++;
+      emitCanDiagnosticLine("DBC1," + currentCommandAddress() + ",POLL_FAULT," +
+                            String(now) + ",off,tec=" + String(canTxErrorCount) +
+                            ",eflg=0x" + String(canErrorFlags, HEX));
+    }
     const bool canRxQuiet = lastCanRxMs == 0 ||
       now - lastCanRxMs >= CAN_RECOVERY_RX_QUIET_MS;
     if ((canErrorFlags & (MCP_EFLG_RX0OVR | MCP_EFLG_RX1OVR)) != 0) {
@@ -3582,8 +3958,11 @@ void canReceiveTask(void *parameter) {
     // TXEP/RXEP are degraded operating states, not reset requests. Repeatedly
     // resetting on those sticky thresholds was discarding good RX state every
     // five seconds. Reinitialize only after bus-off, an invalid mode, or a
-    // proven run of transport failures while RX is quiet.
+    // proven run of transport failures while RX is quiet. A deliberately
+    // selected diagnostic bitrate must not be silently reset to 1 Mbps while
+    // its address sweep is in progress.
     if (!canDiagnosticScanActive &&
+        canRuntimeBitrateBps == CAN_BUS_BITRATE_BPS &&
         (((canErrorFlags & MCP_EFLG_TXBO) != 0 || controllerModeFault) ||
          (canConsecutiveFailures >= CAN_RECOVERY_FAILURE_THRESHOLD && canRxQuiet))) {
       recoverCanController();
@@ -3603,13 +3982,15 @@ void canReceiveTask(void *parameter) {
       const uint8_t timedOutIndex = static_cast<uint8_t>(motorNativePendingIndex);
       motorNativePendingIndex = -1;
       motorNativePendingSinceMs = 0;
+      motorNativePendingTxResult = CAN_OK;
       recordMotorNativeMiss(timedOutIndex, now, true);
     }
 
     const bool controllerDegraded =
       (canErrorFlags & (MCP_EFLG_EWARN | MCP_EFLG_TXWAR | MCP_EFLG_RXWAR |
                         MCP_EFLG_TXEP | MCP_EFLG_RXEP)) != 0;
-    const uint32_t queryInterval = controllerDegraded || canConsecutiveFailures >= 3
+    const uint32_t queryInterval = controllerDegraded || canConsecutiveFailures >= 3 ||
+      canTxErrorCount > 0 || canRxErrorCount > 0
       ? MOTOR_NATIVE_QUERY_BACKOFF_MS
       : MOTOR_NATIVE_QUERY_SLOT_MS;
     if (MOTOR_NATIVE_FEEDBACK_ENABLED && motorNativePollingEnabled &&
@@ -3623,6 +4004,21 @@ void canReceiveTask(void *parameter) {
       for (uint8_t attempt = 0; attempt < 6; ++attempt) {
         const uint8_t candidate = order[motorQuerySlot];
         motorQuerySlot = static_cast<uint8_t>((motorQuerySlot + 1) % 6);
+        if (motorNativeOfflineLatched[candidate]) {
+          const uint32_t retryAt = motorNativeNextEligibleMs[candidate];
+          if (retryAt != 0 && static_cast<int32_t>(now - retryAt) >= 0) {
+            // Admit exactly one scheduled retry. A valid reply clears the
+            // streak in ingestMotorNativeFeedback(); another miss relatches
+            // the node for the full interval instead of creating a fast loop.
+            motorNativeOfflineLatched[candidate] = false;
+            motorNativeMissStreak[candidate] = MOTOR_NATIVE_OFFLINE_AFTER_MISSES - 1;
+            motorNativeNextEligibleMs[candidate] = 0;
+            motorNativeOfflineRetryAttempts++;
+          } else {
+            motorNativeOfflineSkips++;
+            continue;
+          }
+        }
         const uint32_t eligibleAt = motorNativeNextEligibleMs[candidate];
         if (eligibleAt == 0 || static_cast<int32_t>(now - eligibleAt) >= 0) {
           selectedIndex = candidate;
@@ -6204,6 +6600,9 @@ void printHelp() {
   dbPrintln("  can identify <motor_id> | can info <motor_id>");
   dbPrintln("      Read software date, legacy/indexed model, angle codec, and status.");
   dbPrintln("  can probe <motor_id> <read_opcode>");
+  dbPrintln("  can trace <motor_id|0x280> <read_opcode> [100..10000_ms]");
+  dbPrintln("      Pause polling and emit every CAN RX ID after one allowlisted read.");
+  dbPrintln("      0x280 is the documented V4 multi-motor read broadcast; motion remains blocked.");
   dbPrintln("  can tx-read <motor_id> <byte0> ... <byte7>");
   dbPrintln("      Send one allowlisted read frame; hex tokens may include 0x.");
   dbPrintln("  can monitor <motor_id> [100..10000_ms] | can monitor status | can monitor off");
@@ -6223,6 +6622,10 @@ void printHelp() {
   dbPrintln("      Emit the CAN I/O task's cached MCP2515 mode/timing/mailbox registers.");
   dbPrintln("  can poll on | can poll off | can poll status");
   dbPrintln("      Start/stop only automatic 0x92 reads; actuator output remains disarmed.");
+  dbPrintln("  can bitrate <250000|500000|1000000> | can bitrate status");
+  dbPrintln("      Set a temporary diagnostic bitrate; polling stays off until explicitly restored.");
+  dbPrintln("  can mit-zero-probe <configured_hip_yaw_id>");
+  dbPrintln("      Guarded V3/V4 motion-mode identity probe with fixed zero gains/output.");
   dbPrintln("  role | role left | role right | role center | role head");
   dbPrintln("      Select boot-time hardware personality. HEAD_NECK uses an entirely separate STEP/DIR pin graph.");
   dbPrintln("  mode");
@@ -6680,12 +7083,14 @@ String buildDiagnosticsJson() {
   out += "\"can\":{";
   out += "\"status\":\"" + String(canHealthStatus()) + "\",";
   out += "\"initialized\":" + String(canInitialized ? "true" : "false") + ",";
-  out += "\"one_shot_tx\":" + String(canOneShotEnabled ? "true" : "false") + ",";
-  out += "\"bitrate\":" + String(CAN_BUS_BITRATE_BPS) + ",";
+  out += "\"one_shot_tx\":" +
+    String(canOneShotEnabled ? "true" : "false") + ",";
+  out += "\"bitrate\":" + String(canRuntimeBitrateBps) + ",";
+  out += "\"configured_bitrate\":" + String(CAN_BUS_BITRATE_BPS) + ",";
   out += "\"oscillator_hz\":" + String(CAN_CONTROLLER_CLOCK_HZ) + ",";
   out += "\"bit_timing_datasheet_compliant\":" +
-         String(CAN_BIT_TIMING_DATASHEET_COMPLIANT ? "true" : "false") + ",";
-  out += "\"bit_timing_profile\":\"dropbear_8MHz_1Mbps_CNF_00_80_80_single_sample\",";
+         String(canRuntimeBitrateBps == 1000000UL ? "false" : "true") + ",";
+  out += "\"bit_timing_profile\":\"" + String(canRuntimeTimingProfile()) + "\",";
   out += "\"cs_gpio\":" + String(CAN_CS_PIN) + ",\"int_gpio\":" + String((int)CAN0_INT) + ",";
   out += "\"int_level\":" + String(canInitialized ? digitalRead(CAN0_INT) : -1) + ",";
   out += "\"rx_interrupts\":" + String(canRxInterrupts) + ",";
@@ -6753,6 +7158,8 @@ String buildDiagnosticsJson() {
   out += "\"motor_angle_malformed\":" + String(motorNativeMalformedResponses) + ",";
   out += "\"motor_angle_reply_timeouts\":" + String(motorNativeReplyTimeouts) + ",";
   out += "\"motor_angle_out_of_order\":" + String(motorNativeOutOfOrderResponses) + ",";
+  out += "\"motor_angle_reply_confirmed_after_tx_error\":" +
+         String(motorNativeReplyConfirmedAfterTxError) + ",";
   out += "\"motor_angle_offline_skips\":" + String(motorNativeOfflineSkips) + ",";
   out += "\"motor_angle_pending_index\":" + String(motorNativePendingIndex);
   out += "},";
@@ -6937,6 +7344,8 @@ String buildDiagnosticsJson() {
     out += ",";
     out += "\"feedback_age_ms\":" + ageJsonValue(motorNativeReceivedMs[i]) + ",";
     out += "\"query_miss_streak\":" + String(motorNativeMissStreak[i]) + ",";
+    out += "\"query_offline_latched\":" +
+      String(motorNativeOfflineLatched[i] ? "true" : "false") + ",";
     out += "\"query_pending\":" + String(motorNativePendingIndex == i ? "true" : "false") + ",";
     out += "\"control_feedback\":\"" + String(
       motorControlAlignmentFault[i] ? "alignment_fault" :
@@ -8063,14 +8472,14 @@ void setup() {
     const int canBeginResult = CAN.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ);
     const int canModeResult = canBeginResult == CAN_OK
       ? configureCanTimingAndNormalMode() : CAN_FAIL;
-    const int canOneShotResult = canModeResult == CAN_OK
+    const int canOneShotModeResult = canModeResult == CAN_OK
       ? CAN.enOneShotTX() : CAN_FAIL;
     if (canBeginResult != CAN_OK || canModeResult != CAN_OK ||
-        canOneShotResult != CAN_OK) {
+        canOneShotModeResult != CAN_OK) {
       canInitialized = false;
       canOneShotEnabled = false;
       dbPrintf("ERROR: MCP2515 CAN initialization failed: begin=%d mode=%d oneshot=%d.\n",
-               canBeginResult, canModeResult, canOneShotResult);
+               canBeginResult, canModeResult, canOneShotModeResult);
       playMode = false;
     } else {
       canInitialized = true;

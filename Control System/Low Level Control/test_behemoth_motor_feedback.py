@@ -32,8 +32,8 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("holdOpcode", PROTOCOL)
 
     def test_motor_feedback_is_consumed_before_control_route_frames(self):
-        native = SOURCE.index("ingestMotorNativeFeedback(static_cast<uint32_t>(rxId), data, len)")
-        route = SOURCE.index("handleHyperspawnRxFrame(static_cast<uint32_t>(rxId), data, len)", native)
+        native = SOURCE.index("ingestMotorNativeFeedback(rxId, data, len)")
+        route = SOURCE.index("handleHyperspawnRxFrame(rxId, data, len)", native)
         self.assertLess(native, route)
 
     def test_db3_keeps_external_and_raw_motor_fields_then_adds_aligned_motor_fields(self):
@@ -54,7 +54,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.44", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.54", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
@@ -64,12 +64,27 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("can-bus-recovery-v1", SOURCE)
         self.assertIn("can-transaction-scheduler-v1", SOURCE)
         self.assertIn("can-oneshot-tx-v1", SOURCE)
+        self.assertIn("can-atomic-rx-buffer-v1", SOURCE)
+        self.assertIn("can-angle-stream-quiesce-v1", SOURCE)
+        self.assertIn("can-offline-periodic-retry-v1", SOURCE)
         self.assertIn("can-deferred-tx-abort-v1", SOURCE)
         self.assertIn("can-interrupt-rx-v1", SOURCE)
         self.assertIn("can-timing-observability-v1", SOURCE)
         self.assertIn("motor-identity-discovery-v1", SOURCE)
         self.assertIn("motor-runtime-codec-detection-v1", SOURCE)
         self.assertIn("motor-active-reply-normalization-v1", SOURCE)
+        self.assertIn("can-unfiltered-read-trace-v1", SOURCE)
+        self.assertIn("can-runtime-bitrate-diagnostic-v1", SOURCE)
+        self.assertIn("can-v4-read-broadcast-v1", SOURCE)
+        self.assertIn("can-guarded-mit-zero-probe-v1", SOURCE)
+        self.assertIn("can-explicit-observation-poll-v1", SOURCE)
+        self.assertIn("can-offline-latch-v1", SOURCE)
+        self.assertIn("can-poll-circuit-breaker-v1", SOURCE)
+
+    def test_can_polling_is_dashboard_owned_and_paced(self):
+        self.assertIn("MOTOR_NATIVE_QUERY_SLOT_MS = 100", SOURCE)
+        self.assertIn("MOTOR_NATIVE_QUERY_BACKOFF_MS = 250", SOURCE)
+        self.assertIn("motorNativePollingEnabled = false", SOURCE)
 
     def test_can_debug_bridge_is_targeted_read_only_and_raw(self):
         self.assertIn("isReadOnlyCanDiagnosticOpcode(payload[0])", SOURCE)
@@ -84,7 +99,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("can tx-read <motor_id> <byte0> ... <byte7>", SOURCE)
         self.assertIn("can info <motor_id>", SOURCE)
         self.assertIn("can monitor <motor_id>", SOURCE)
-        self.assertIn("captureCanDiagnosticFrame(static_cast<uint32_t>(rxId), data, len)", SOURCE)
+        self.assertIn("captureCanDiagnosticFrame(rxId, data, len)", SOURCE)
         self.assertIn("isExpectedCanDiagnosticReplyId", SOURCE)
         self.assertIn("responseId == requestId + 0x100U", SOURCE)
         for unsafe_opcode in ("case 0x81", "case 0xA1", "case 0xA4", "case 0xC4"):
@@ -95,8 +110,13 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
             self.assertNotIn(unsafe_opcode, opcode_filter)
         self.assertIn('normalized == "can scan"', SOURCE)
         self.assertIn('normalized == "can sniff"', SOURCE)
+        self.assertIn('normalized.startsWith("can trace ")', SOURCE)
+        self.assertIn("armCanDiagnosticSniff(duration)", SOURCE)
+        self.assertIn("CAN_DIAGNOSTIC_LINE_QUEUE_DEPTH = 64", SOURCE)
         self.assertIn("RMD_DISCOVERY_FIRST_ID = 0x141", SOURCE)
         self.assertIn("RMD_DISCOVERY_LAST_ID = 0x160", SOURCE)
+        self.assertIn("RMD_MULTI_MOTOR_REQUEST_ID = 0x280", SOURCE)
+        self.assertIn("requestId == RMD_MULTI_MOTOR_REQUEST_ID", diagnostic_selector)
         self.assertIn("byte payload[8] = {0x9A, 0, 0, 0, 0, 0, 0, 0}", SOURCE)
         self.assertIn("!canDiagnosticScanActive", SOURCE)
         self.assertIn("if (actuatorBelongsToSelectedLeg(directIndex)) return directIndex", SOURCE)
@@ -201,7 +221,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("motorNativePendingIndex", SOURCE)
         self.assertIn("MOTOR_NATIVE_REPLY_TIMEOUT_MS", SOURCE)
         self.assertIn("MOTOR_NATIVE_OFFLINE_AFTER_MISSES", SOURCE)
-        self.assertIn("MOTOR_NATIVE_OFFLINE_RETRY_MS", SOURCE)
+        self.assertIn("motorNativeOfflineLatched", SOURCE)
         self.assertIn("recordMotorNativeMiss", SOURCE)
         scheduler = SOURCE[
             SOURCE.index("void canReceiveTask(void *parameter) {"):
@@ -215,6 +235,9 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
             SOURCE.index("void updateSensorDiagnosticSample")
         ]
         self.assertIn("result != CAN_SENDMSGTIMEOUT", request)
+        self.assertIn("result != CAN_FAILTX", request)
+        self.assertIn("motorNativePendingTxResult = result", request)
+        self.assertIn("motorNativeReplyConfirmedAfterTxError++", SOURCE)
         sender = SOURCE[
             SOURCE.index("int canSendFrameResult"):
             SOURCE.index("bool canSend(uint32_t")
@@ -255,6 +278,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("taskYIELD();", pacing)
         self.assertNotIn("vTaskDelay", pacing)
         self.assertGreaterEqual(SOURCE.count("CAN.enOneShotTX()"), 2)
+        self.assertNotIn("CAN.disOneShotTX()", SOURCE)
         self.assertIn("abortPendingCanTx(\"deferred_read_timeout\")", scheduler)
         self.assertIn("MCP_TXB0CTRL", SOURCE)
         self.assertIn("MCP_TXB1CTRL", SOURCE)
@@ -290,8 +314,49 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("CAN_TX_CALLER_TIMEOUT_MS", sender)
         self.assertIn("xTaskGetCurrentTaskHandle() == canRxTaskHandle", sender)
 
-    def test_missing_nodes_back_off_and_serial_diagnostics_are_bounded(self):
+    def test_receive_drain_owns_one_explicit_mcp2515_mailbox(self):
+        direct = SOURCE[
+            SOURCE.index("int mcp2515ReadFrameDirect"):
+            SOURCE.index("int configureCanTimingAndNormalMode")
+        ]
+        self.assertIn("mcp2515ReadRegisterDirect(MCP_CANINTF)", direct)
+        self.assertIn("MCP_RXB0SIDH", direct)
+        self.assertIn("MCP_RXB1SIDH", direct)
+        self.assertIn("mcp2515ReadRegistersDirect", direct)
+        self.assertIn("mcp2515BitModifyDirect(MCP_CANINTF, receiveFlag, 0)", direct)
+        receive_task = SOURCE[
+            SOURCE.index("void canReceiveTask(void *parameter) {"):
+            SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
+        ]
+        self.assertIn("mcp2515ReadFrameDirect(rxId, len, data)", receive_task)
+        self.assertNotIn("CAN.checkReceive()", receive_task)
+        self.assertNotIn("CAN.readMsgBuf", receive_task)
+
+    def test_poll_start_quiesces_only_angle_active_reply_slots(self):
+        helper = SOURCE[
+            SOURCE.index("bool quiesceSelectedLegAngleStreams() {"):
+            SOURCE.index("bool quiesceMotorNativePolling() {")
+        ]
+        self.assertIn("{0xB6, 0x92, 0x00", helper)
+        self.assertIn("slot < 6", helper)
+        self.assertIn("canSendFrameResult", helper)
+        poll_on = SOURCE[
+            SOURCE.index('if (normalized == "can poll on")'):
+            SOURCE.index('if (normalized.startsWith("can poll retry ")')
+        ]
+        self.assertIn("quiesceSelectedLegAngleStreams()", poll_on)
+        self.assertLess(
+            poll_on.index("quiesceSelectedLegAngleStreams()"),
+            poll_on.index("motorNativePollingEnabled = true"),
+        )
+    def test_missing_nodes_latch_off_and_serial_diagnostics_are_bounded(self):
+        self.assertIn("MOTOR_NATIVE_OFFLINE_AFTER_MISSES = 3", SOURCE)
         self.assertIn("MOTOR_NATIVE_OFFLINE_RETRY_MS = 5000", SOURCE)
+        self.assertIn("motorNativeOfflineLatched[actuatorIndex] = true", SOURCE)
+        self.assertIn("now + MOTOR_NATIVE_OFFLINE_RETRY_MS", SOURCE)
+        self.assertIn("motorNativeOfflineRetryAttempts++", SOURCE)
+        self.assertIn('normalized.startsWith("can poll retry ")', SOURCE)
+        self.assertIn("CAN_POLL_CIRCUIT_BREAKER_TEC = 64", SOURCE)
         request = SOURCE[
             SOURCE.index("bool requestMotorNativeFeedback"):
             SOURCE.index("void updateSensorDiagnosticSample")
@@ -307,14 +372,14 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn('DBC1,%s,TIMING,', bus)
         self.assertNotIn('emitCanDiagnosticLine(', bus)
 
-    def test_8mhz_1mbps_override_disables_library_triple_sampling(self):
+    def test_8mhz_1mbps_profile_uses_single_sampling_after_termination_repair(self):
         timing = SOURCE[
             SOURCE.index("int configureCanTimingAndNormalMode()"):
             SOURCE.index("int mcp2515SendStandardFrameDirect")
         ]
         self.assertIn("CAN.setMode(MODE_CONFIG)", timing)
         self.assertIn("CAN_CNF1_8MHZ_1MBPS = 0x00", SOURCE)
-        self.assertIn("CAN_CNF2_8MHZ_1MBPS_SINGLE_SAMPLE = 0x80", SOURCE)
+        self.assertIn("CAN_CNF2_8MHZ_1MBPS_SINGLE = 0x80", SOURCE)
         self.assertIn("CAN_CNF3_8MHZ_1MBPS = 0x80", SOURCE)
         self.assertIn("mcp2515ReadRegisterDirect(MCP_CNF2)", timing)
         self.assertIn("configureCanTimingAndNormalMode()", SOURCE[SOURCE.index("void setup()") :])
@@ -323,6 +388,36 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
             SOURCE.index("uint8_t encodeCanResultForNotification")
         ]
         self.assertIn("configureCanTimingAndNormalMode()", recovery)
+
+    def test_runtime_bitrate_probe_is_bounded_and_leaves_polling_off(self):
+        self.assertIn("int reinitializeCanControllerAtBitrate", SOURCE)
+        self.assertIn("CAN_1000KBPS", SOURCE)
+        self.assertIn("CAN_500KBPS", SOURCE)
+        self.assertIn("CAN_250KBPS", SOURCE)
+        self.assertIn('normalized.startsWith("can bitrate ")', SOURCE)
+        self.assertIn("bitrate_must_be_250000_500000_or_1000000", SOURCE)
+        bitrate_command = SOURCE[
+            SOURCE.index('if (normalized.startsWith("can bitrate "))'):
+            SOURCE.index('if (normalized == "can scan"', SOURCE.index('if (normalized.startsWith("can bitrate "))'))
+        ]
+        self.assertIn("quiesceMotorNativePolling()", bitrate_command)
+        self.assertNotIn("restoreMotorNativePolling", bitrate_command)
+        scheduler = SOURCE[
+            SOURCE.index("void canReceiveTask(void *parameter) {"):
+            SOURCE.index("void hyperspawnRouteTask(void *parameter) {")
+        ]
+        self.assertIn("canRuntimeBitrateBps == CAN_BUS_BITRATE_BPS", scheduler)
+
+    def test_mit_probe_has_fixed_zero_output_and_yaw_only_guard(self):
+        start = SOURCE.index('if (normalized.startsWith("can mit-zero-probe "))')
+        end = SOURCE.index('if (normalized == "can scan"', start)
+        probe = SOURCE[start:end]
+        self.assertIn("requestId != expectedYawId", probe)
+        self.assertIn("mit_probe_requires_idle_stopped_1mbps_runtime", probe)
+        self.assertIn("0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00", probe)
+        self.assertIn("const uint32_t motionRequestId = 0x400U", probe)
+        self.assertNotIn("nextCanCommandToken", probe)
+        self.assertIn('lower.startsWith("can mit-zero-probe ")', SOURCE)
 
     def test_rtos_transport_has_measured_deadlines_and_nonblocking_diagnostics(self):
         scheduler = SOURCE[

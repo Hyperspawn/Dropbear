@@ -21,10 +21,13 @@ The retry storm was real and was amplified by several firmware defects:
 - the library's 8 MHz / 1 Mbit/s preset enables triple sampling (`CNF2=0xC0`),
   even though Microchip documents triple sampling as a slower-bus noise aid.
 
-Firmware `.41` now owns only TXB0, validates the wire result, performs all
-runtime MCP2515/SPI I/O in one priority-5 CAN task, drains RX between outbound
-frames, uses deadline queues and timing counters, and changes the marginal
-8 MHz preset to single sampling (`CNF1/CNF2/CNF3 = 00/80/80`).
+Firmware `.54` owns only TXB0, validates the wire result, performs all runtime
+MCP2515/SPI I/O in one priority-5 CAN task, drains one explicitly flagged RX
+mailbox at a time, uses deadline queues and timing counters, and changes the
+marginal 8 MHz preset to single sampling
+(`CNF1/CNF2/CNF3 = 00/80/80`). It also normalizes the vendor `0xB6/0x92`
+active-reply slot before polling and retries a latched-offline address only
+once every five seconds so a transiently missed motor can rejoin.
 
 There is also a hardware timing limitation: the current configuration is a
 1 Mbit/s bus with an 8 MHz MCP2515 clock. Both the installed library preset
@@ -46,7 +49,7 @@ retaining the motors' 1 Mbit/s bus rate.
   still set at its deadline. It does not prove the frame failed, and it does
   not remove the frame.
 - In the installed library, `CAN_GETTXBFTIMEOUT` means all three hardware
-  mailboxes were still busy. `.41` instead owns TXB0 exclusively, so a busy
+  mailboxes were still busy. `.54` instead owns TXB0 exclusively, so a busy
   mailbox is an ownership fault and is aborted before another request.
 - One-shot mode limits a message to one actual transmit attempt even after
   arbitration loss or an error frame. Before that first attempt, `TXREQ` can
@@ -78,10 +81,12 @@ cannot starve STOP delivery to the others or create an infinite retry storm.
 ### 3. Receive rollover was already configured
 
 `MCP_CAN_lib` configures `RXB0CTRL.BUKT` in `MCP_ANY` mode, so RXB0 can roll
-over into RXB1. Its `readMsg()` also clears the consumed RX0IF/RX1IF flag.
-The observed RX0 overflow was therefore not caused by missing rollover setup.
-It was consistent with delayed/bunched traffic and insufficient receive
-service latency.
+over into RXB1. Firmware `.54` no longer separates the library's
+`checkReceive()` status read from its `readMsgBuf()` status read: it snapshots
+`CANINTF`, reads that exact RX buffer in one burst, and clears only that
+buffer's flag. This removed ambiguity in mailbox ownership but did not remove
+the physical reply bursts, proving that stale application reads were not the
+root cause.
 
 Decision: use the active-low MCP2515 INT output to wake the sole receive task,
 drain a bounded batch, and immediately continue when INT remains low. A 1 ms
@@ -101,7 +106,7 @@ For the current preset:
 
 The library preset also sets `SAM=1`, so it samples at the nominal 75% point
 and at two preceding half-TQ intervals. Microchip states that three-sample
-majority mode was intended for noisy buses at slower rates. `.41` explicitly
+majority mode was intended for noisy buses at slower rates. `.54` explicitly
 enters configuration mode, writes and verifies `0x00/0x80/0x80`, then enters
 normal mode. This keeps the 75% sample point but samples once.
 
@@ -129,7 +134,8 @@ until the physical modules are changed or measured.
 - STOP is three bounded full-leg attempts; all six addresses are attempted even
   when an earlier address fails.
 - RX is drained before another automatic motor query.
-- Missing-response addresses back off for five seconds after three misses.
+- Missing-response addresses latch after three misses, then receive one
+  isolated retry every five seconds; a valid reply clears the latch.
 - Recovery re-enables one-shot mode and clears application transaction state.
 - RX overflow flags are cleared after draining instead of triggering a reset;
   TXEP/RXEP alone do not trigger a reset loop.
@@ -141,26 +147,39 @@ until the physical modules are changed or measured.
 ## 2026-09-26 live validation
 
 Both ESP32s were compiled from source SHA-256
-`901e854234ab8be7fad1c45afb6daf37092501f30bf93e74ed99a1ba4a8173b6`
+`89ea5e04a36f7f4140d346f716a9f93c48647b99a0dbb3d9c9362fb6ede51f82`
 and flashed with application binary SHA-256
-`8420b1812031743b44d611bcfa77fb255a4496e094ca93799f9ead0df7e7b27f`.
+`50c17e4ca3392ad46f811f2a58010d9eddc95e56b358b4b29e8984786ca590a6`.
 SPIFFS remained at `0x290000` and was not written.
 
-- Both report `behemoth-observation-protocol-2026.09.41` and CNF readback
+- Both report `behemoth-observation-protocol-2026.09.54` and CNF readback
   `00/80/80`.
-- Right A/B: triple-sample `.40` reached TEC 232 in about 13 seconds and only
-  one motor remained fresh. Single-sample `.41` held TEC at 0 for the measured
-  interval and restored fresh mask `0x2F` (five motors; yaw `0x14C` absent).
-- Left `.41`: TEC stayed 0, REC recovered from 91 to 0 in ten seconds, fresh
-  mask was `0x2E` (four motors; configured outer calf `0x141` and yaw `0x149`
-  absent), TX execution was approximately 0.6-1.1 ms, and CAN I/O budget misses
-  remained zero.
-- Right still has a physical/timing asymmetry: TEC remains 0, but REC hovers
-  around 120 and some automatic reads take 7-8 ms. It is observable but must
-  remain motion-denied until the right transceiver/clock/signal integrity is
-  repaired or replaced with compliant 16 MHz hardware.
+- Right: the dashboard reports fresh mask `0x2F` (five motors); only configured
+  yaw `0x14C` is absent. After more than nine minutes of uptime, a dashboard
+  query read `TEC=1, REC=9`, followed by register readback `TEC=0, REC=0`, with
+  no breaker trip. Earlier controlled windows showed REC transiently reaching
+  115 before recovering. Ten RX overflows were cleared and reply counts can
+  exceed request counts, so this remains degraded rather than motion-grade.
+- Left: the dashboard reports fresh mask `0x2E` (four configured motors).
+  Configured outer calf `0x141` and yaw `0x149` remain absent. The periodic
+  retry restored inner calf `0x142` after a transient latch. Dashboard queries
+  read `TEC=0, REC=1`, followed by register readback `TEC=0, REC=0`, with no
+  breaker trip or RX overflow.
+- The dashboard is enabled and running, both serial streams are fresh and
+  complete, and the only reported unobserved joints are `left_outer_calf`,
+  `left_hip_yaw`, and `right_hip_yaw`.
+- Confirmed `0xB6,0x92,0` delivery did not remove right `0x148` reply bursts;
+  a passive two-second sniff was quiet. Atomic RX-buffer ownership also did not
+  remove them. This rules out a continuously enabled active-reply stream and a
+  stale library mailbox as root causes, leaving the out-of-spec timing/ACK path
+  as the limiting condition.
 - No torque, position, enable, or other motion command was sent during these
   tests.
+
+This run does not pass the five-minute motion-readiness gate: the right bus has
+transient receive warnings and cleared overflows, and both yaw controllers are
+still silent at their configured IDs. `.54` is accepted for read-only
+diagnostics and dashboard observation only.
 
 ## Read-only acceptance gate
 

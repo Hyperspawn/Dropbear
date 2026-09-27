@@ -155,16 +155,17 @@ SPIFFS remained at `0x290000` and was not written.
 - Both report `behemoth-observation-protocol-2026.09.54` and CNF readback
   `00/80/80`.
 - Right: the dashboard reports fresh mask `0x2F` (five motors); only configured
-  yaw `0x14C` is absent. After more than nine minutes of uptime, a dashboard
-  query read `TEC=1, REC=9`, followed by register readback `TEC=0, REC=0`, with
-  no breaker trip. Earlier controlled windows showed REC transiently reaching
-  115 before recovering. Ten RX overflows were cleared and reply counts can
-  exceed request counts, so this remains degraded rather than motion-grade.
+  yaw `0x14C` is absent. After about 16 minutes of uptime, register readback was
+  `TEC=0, REC=73`, with no breaker trip. Earlier samples returned to zero, but
+  controlled windows also showed REC transiently reaching 115. Seventy-eight
+  RX overflows were cleared and reply counts exceed request counts, so this
+  remains degraded rather than motion-grade.
 - Left: the dashboard reports fresh mask `0x2E` (four configured motors).
   Configured outer calf `0x141` and yaw `0x149` remain absent. The periodic
-  retry restored inner calf `0x142` after a transient latch. Dashboard queries
-  read `TEC=0, REC=1`, followed by register readback `TEC=0, REC=0`, with no
-  breaker trip or RX overflow.
+  retry restored inner calf `0x142` after a transient latch. After about 7.7
+  minutes, register readback was `TEC=28, REC=45` with no RX overflow. The left
+  poller recorded one TEC circuit-breaker trip during this longer interval;
+  live polling was subsequently on and all four responders were fresh.
 - The dashboard is enabled and running, both serial streams are fresh and
   complete, and the only reported unobserved joints are `left_outer_calf`,
   `left_hip_yaw`, and `right_hip_yaw`.
@@ -177,9 +178,10 @@ SPIFFS remained at `0x290000` and was not written.
   tests.
 
 This run does not pass the five-minute motion-readiness gate: the right bus has
-transient receive warnings and cleared overflows, and both yaw controllers are
-still silent at their configured IDs. `.54` is accepted for read-only
-diagnostics and dashboard observation only.
+transient receive warnings and cleared overflows, the left poller has tripped
+its TEC breaker once, and both yaw controllers are still silent at their
+configured IDs. `.54` is accepted for read-only diagnostics and dashboard
+observation only.
 
 ## Read-only acceptance gate
 

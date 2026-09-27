@@ -54,7 +54,7 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("alignmentFaultMask", SOURCE)
 
     def test_identity_and_diagnostics_name_the_feedback_protocol(self):
-        self.assertIn("behemoth-observation-protocol-2026.09.43", SOURCE)
+        self.assertIn("behemoth-observation-protocol-2026.09.44", SOURCE)
         self.assertIn("motor-profile-v1", SOURCE)
         self.assertIn("motor-angle-rmd-v17-v42-0x92", SOURCE)
         self.assertIn("boot-observability-v1", SOURCE)
@@ -117,6 +117,8 @@ class BehemothMotorFeedbackContract(unittest.TestCase):
         self.assertIn("payload[0] = 0xB5", SOURCE)
         self.assertIn("payload[1] = 0x01", SOURCE)
         self.assertIn("tenDigitDateRevision", SOURCE)
+        self.assertIn("modelCharactersSeen", SOURCE)
+        self.assertIn("An echo is a response", SOURCE)
         self.assertIn('"DBM1," + currentCommandAddress()', SOURCE)
         opcode_filter = SOURCE[
             SOURCE.index("bool isReadOnlyCanDiagnosticOpcode"):

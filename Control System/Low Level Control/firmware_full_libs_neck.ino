@@ -50,7 +50,7 @@
  */
 
 static const char *DROPBEAR_FIRMWARE_VERSION =
-  "behemoth-observation-protocol-2026.09.43";
+  "behemoth-observation-protocol-2026.09.44";
 static const char *DROPBEAR_CAPABILITY_SCHEMA = "DBV1";
 static const char *DROPBEAR_COMMAND_PROTOCOL = "DB1";
 static const char *DROPBEAR_TELEMETRY_PROTOCOL = "DB3";
@@ -2037,27 +2037,34 @@ void captureCanMotorIdentityFrame(uint32_t responseId, const byte *data, byte le
   } else if (data[0] == 0xB5 && data[1] == 0x01 &&
              data[2] >= 1 && data[2] <= 3) {
     const uint8_t part = data[2] - 1;
+    bool modelCharactersSeen = false;
     for (uint8_t index = 0; index < 5; ++index) {
       const byte value = data[3 + index];
+      if (canIdentityModelCharacter(value) && value != ' ') modelCharactersSeen = true;
       canMotorIdentity.indexedModel[part * 5 + index] =
         canIdentityModelCharacter(value) ? static_cast<char>(value) : ' ';
     }
     canMotorIdentity.indexedModel[15] = '\0';
-    canMotorIdentity.indexedModelMask |= static_cast<uint8_t>(1U << part);
+    // Some generations echo unsupported indexed B5 requests with zero data.
+    // An echo is a response, but it is not evidence of a V4.4 model codec.
+    if (modelCharactersSeen) {
+      canMotorIdentity.indexedModelMask |= static_cast<uint8_t>(1U << part);
+    }
   } else if (data[0] == 0xB5) {
+    bool modelCharactersSeen = false;
     for (uint8_t index = 0; index < 7; ++index) {
       const byte value = data[1 + index];
+      if (canIdentityModelCharacter(value) && value != ' ') modelCharactersSeen = true;
       canMotorIdentity.legacyModel[index] =
         canIdentityModelCharacter(value) ? static_cast<char>(value) : ' ';
     }
     canMotorIdentity.legacyModel[7] = '\0';
-    canMotorIdentity.legacyModelSeen = true;
+    canMotorIdentity.legacyModelSeen = modelCharactersSeen;
   } else if (data[0] == 0x92) {
     const bool reservedBytesZero = data[1] == 0 && data[2] == 0 && data[3] == 0;
-    if (responseId == canMotorIdentity.requestId + 0x100U || reservedBytesZero) {
+    if (responseId == canMotorIdentity.requestId + 0x100U) {
       canMotorIdentity.angleSigned32Seen = true;
-    }
-    if (responseId == canMotorIdentity.requestId || !reservedBytesZero) {
+    } else if (responseId == canMotorIdentity.requestId || !reservedBytesZero) {
       canMotorIdentity.angleSigned56Seen = true;
     }
   }

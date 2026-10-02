@@ -11,6 +11,7 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <math.h>
+#include "dropbear_motor_protocol.h"
 
 /*
  * Dropbear ESP32 low-level leg controller
@@ -1242,6 +1243,22 @@ void sendTorqueCommand(unsigned long actuatorID, int16_t torqueValue) {
 void sendStopCommand(unsigned long actuatorID) {
   byte buf[8] = {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   canSend(actuatorID, buf);
+}
+
+// Arm the motor-side 0xB3 communication-loss protection on every actuator of
+// the selected leg. Covers a hung ESP32 or cut CAN link, which the ESP32-side
+// host watchdog cannot. Fire-and-forget; the motor stops on its own if no CAN
+// frame arrives within MOTOR_COMM_LOSS_TIMEOUT_MS.
+static const uint32_t MOTOR_COMM_LOSS_TIMEOUT_MS = 250;
+
+void armMotorCommLossProtection() {
+  uint8_t payload[8];
+  dropbear::encodeCommLossProtection(MOTOR_COMM_LOSS_TIMEOUT_MS, payload);
+  for (uint8_t i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (!actuatorBelongsToSelectedLeg(i)) continue;
+    canSendFrame(ACTUATOR_IDS[i], payload, 8);
+    delay(2);
+  }
 }
 
 void clearHyperspawnCommandState() {
@@ -4612,6 +4629,7 @@ void setup() {
       dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, CS GPIO5.");
 
       primeSensorFilter();
+      armMotorCommLossProtection();
 
       // Wi-Fi/networking lives primarily on core 0. Keep the control path on
       // core 1 so captive-portal traffic does not become sensor/control jitter.

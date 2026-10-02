@@ -24,6 +24,14 @@ class CommLossWiringTests(unittest.TestCase):
         m = re.search(r"MOTOR_COMM_LOSS_TIMEOUT_MS\s*=\s*(\d+)", SOURCE)
         self.assertGreater(int(m.group(1)), 0)
 
+    def test_torque_ramp_applied_before_send_and_reset_on_stop(self):
+        ramp = SOURCE.index("dropbear::slewLimitTorque(rampedTorque[i]")
+        send = SOURCE.index("sendTorqueCommand(ACTUATOR_IDS[i], value);", ramp)
+        self.assertLess(ramp, send)
+        self.assertIn("rampedTorque[i] = 0;", SOURCE)
+        m = re.search(r"TORQUE_SLEW_PER_TICK\s*=\s*(\d+)", SOURCE)
+        self.assertGreater(int(m.group(1)), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

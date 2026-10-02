@@ -173,6 +173,17 @@ inline void encodeCommLossProtection(uint32_t timeoutMs, uint8_t payload[8]) {
   payload[7] = static_cast<uint8_t>((timeoutMs >> 24) & 0xFF);
 }
 
+// Move `current` toward `target` by at most `maxStep` (raw torque units) per
+// call. Used to ramp CAN torque commands so a step in the host target cannot
+// slam a joint. maxStep <= 0 disables limiting.
+inline int16_t slewLimitTorque(int16_t current, int16_t target, int16_t maxStep) {
+  if (maxStep <= 0) return target;
+  const int32_t delta = static_cast<int32_t>(target) - current;
+  if (delta > maxStep) return static_cast<int16_t>(current + maxStep);
+  if (delta < -maxStep) return static_cast<int16_t>(current - maxStep);
+  return target;
+}
+
 }  // namespace dropbear
 
 #endif  // DROPBEAR_MOTOR_PROTOCOL_H

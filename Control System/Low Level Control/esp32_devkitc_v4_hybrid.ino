@@ -1251,6 +1251,11 @@ void sendStopCommand(unsigned long actuatorID) {
 // frame arrives within MOTOR_COMM_LOSS_TIMEOUT_MS.
 static const uint32_t MOTOR_COMM_LOSS_TIMEOUT_MS = 250;
 
+// Per-actuator torque slew limit applied in canOutputTask (10 ms tick): raw
+// units are 0.01 A, so 100 = 1 A per tick = 100 A/s. Tunable; 0 disables.
+static const int16_t TORQUE_SLEW_PER_TICK = 100;
+static int16_t rampedTorque[ACTUATOR_COUNT] = {0};
+
 void armMotorCommLossProtection() {
   uint8_t payload[8];
   dropbear::encodeCommLossProtection(MOTOR_COMM_LOSS_TIMEOUT_MS, payload);
@@ -2115,13 +2120,21 @@ void canOutputTask(void *parameter) {
           }
 
           value = clampTorqueCommand(value);
+          value = dropbear::slewLimitTorque(rampedTorque[i], value, TORQUE_SLEW_PER_TICK);
+          rampedTorque[i] = value;
           sendTorqueCommand(ACTUATOR_IDS[i], value);
         }
-      } else if (stopBurstRemaining > 0) {
-        for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-          sendStopCommand(ACTUATOR_IDS[i]);
+      } else {
+        // Not driving torque: next play-mode entry ramps up from zero.
+        for (int i = 0; i < ACTUATOR_COUNT; ++i) {
+          rampedTorque[i] = 0;
         }
-        --stopBurstRemaining;
+        if (stopBurstRemaining > 0) {
+          for (int i = start; i < ACTUATOR_COUNT; i += 2) {
+            sendStopCommand(ACTUATOR_IDS[i]);
+          }
+          --stopBurstRemaining;
+        }
       }
     }
 

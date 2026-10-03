@@ -160,6 +160,30 @@ inline void encodeStopCommand(const MotorProfile &profile, uint8_t payload[8]) {
   encodeHoldCommand(profile, payload);
 }
 
+// 0xB3 communication-loss protection (RMD-X protocol V3.9 p74-75, V4.2 p78):
+// the timeout in milliseconds is a little-endian uint32 in DATA[4..7];
+// 0 disables the protection. Writing it to DATA[2..3] leaves DATA[4..7] = 0,
+// which silently disables the protection.
+inline void encodeCommLossProtection(uint32_t timeoutMs, uint8_t payload[8]) {
+  for (uint8_t index = 0; index < 8; ++index) payload[index] = 0;
+  payload[0] = 0xB3;
+  payload[4] = static_cast<uint8_t>(timeoutMs & 0xFF);
+  payload[5] = static_cast<uint8_t>((timeoutMs >> 8) & 0xFF);
+  payload[6] = static_cast<uint8_t>((timeoutMs >> 16) & 0xFF);
+  payload[7] = static_cast<uint8_t>((timeoutMs >> 24) & 0xFF);
+}
+
+// Move `current` toward `target` by at most `maxStep` (raw torque units) per
+// call. Used to ramp CAN torque commands so a step in the host target cannot
+// slam a joint. maxStep <= 0 disables limiting.
+inline int16_t slewLimitTorque(int16_t current, int16_t target, int16_t maxStep) {
+  if (maxStep <= 0) return target;
+  const int32_t delta = static_cast<int32_t>(target) - current;
+  if (delta > maxStep) return static_cast<int16_t>(current + maxStep);
+  if (delta < -maxStep) return static_cast<int16_t>(current - maxStep);
+  return target;
+}
+
 }  // namespace dropbear
 
 #endif  // DROPBEAR_MOTOR_PROTOCOL_H

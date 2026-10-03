@@ -11,6 +11,7 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <math.h>
+#include "dropbear_motor_protocol.h"
 
 /*
  * Dropbear ESP32 low-level leg controller
@@ -1244,6 +1245,27 @@ void sendStopCommand(unsigned long actuatorID) {
   canSend(actuatorID, buf);
 }
 
+// Arm the motor-side 0xB3 communication-loss protection on every actuator of
+// the selected leg. Covers a hung ESP32 or cut CAN link, which the ESP32-side
+// host watchdog cannot. Fire-and-forget; the motor stops on its own if no CAN
+// frame arrives within MOTOR_COMM_LOSS_TIMEOUT_MS.
+static const uint32_t MOTOR_COMM_LOSS_TIMEOUT_MS = 250;
+
+// Per-actuator torque slew limit applied in canOutputTask (10 ms tick): raw
+// units are 0.01 A, so 100 = 1 A per tick = 100 A/s. Tunable; 0 disables.
+static const int16_t TORQUE_SLEW_PER_TICK = 100;
+static int16_t rampedTorque[ACTUATOR_COUNT] = {0};
+
+void armMotorCommLossProtection() {
+  uint8_t payload[8];
+  dropbear::encodeCommLossProtection(MOTOR_COMM_LOSS_TIMEOUT_MS, payload);
+  for (uint8_t i = 0; i < ACTUATOR_COUNT; ++i) {
+    if (!actuatorBelongsToSelectedLeg(i)) continue;
+    canSendFrame(ACTUATOR_IDS[i], payload, 8);
+    delay(2);
+  }
+}
+
 void clearHyperspawnCommandState() {
   hyperspawnControlMode = HS_CONTROL_NONE;
   hyperspawnPositionBasePending = hyperspawnPositionExtPending = false;
@@ -2098,13 +2120,21 @@ void canOutputTask(void *parameter) {
           }
 
           value = clampTorqueCommand(value);
+          value = dropbear::slewLimitTorque(rampedTorque[i], value, TORQUE_SLEW_PER_TICK);
+          rampedTorque[i] = value;
           sendTorqueCommand(ACTUATOR_IDS[i], value);
         }
-      } else if (stopBurstRemaining > 0) {
-        for (int i = start; i < ACTUATOR_COUNT; i += 2) {
-          sendStopCommand(ACTUATOR_IDS[i]);
+      } else {
+        // Not driving torque: next play-mode entry ramps up from zero.
+        for (int i = 0; i < ACTUATOR_COUNT; ++i) {
+          rampedTorque[i] = 0;
         }
-        --stopBurstRemaining;
+        if (stopBurstRemaining > 0) {
+          for (int i = start; i < ACTUATOR_COUNT; i += 2) {
+            sendStopCommand(ACTUATOR_IDS[i]);
+          }
+          --stopBurstRemaining;
+        }
       }
     }
 
@@ -4612,6 +4642,7 @@ void setup() {
       dbPrintln("CAN initialized: 1 Mbps, MCP2515 8 MHz, CS GPIO5.");
 
       primeSensorFilter();
+      armMotorCommLossProtection();
 
       // Wi-Fi/networking lives primarily on core 0. Keep the control path on
       // core 1 so captive-portal traffic does not become sensor/control jitter.

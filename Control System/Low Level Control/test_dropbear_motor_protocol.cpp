@@ -100,5 +100,18 @@ int main() {
   assert(payload[0] == 0x81 && payload[1] == 0 && payload[7] == 0);
   dropbear::encodeStopCommand(kX8V17, payload);
   assert(payload[0] == 0x81);
+  dropbear::encodeCommLossProtection(250, payload);
+  assert(payload[0] == 0xB3 && payload[1] == 0 && payload[2] == 0 && payload[3] == 0);
+  assert(payload[4] == 0xFA && payload[5] == 0 && payload[6] == 0 && payload[7] == 0);
+  dropbear::encodeCommLossProtection(0x01020304, payload);
+  assert(payload[4] == 0x04 && payload[5] == 0x03 && payload[6] == 0x02 && payload[7] == 0x01);
+  dropbear::encodeCommLossProtection(0, payload);
+  assert(payload[4] == 0 && payload[7] == 0);
+  assert(dropbear::slewLimitTorque(0, 1000, 100) == 100);
+  assert(dropbear::slewLimitTorque(950, 1000, 100) == 1000);
+  assert(dropbear::slewLimitTorque(0, -1000, 100) == -100);
+  assert(dropbear::slewLimitTorque(-950, 0, 100) == -850);
+  assert(dropbear::slewLimitTorque(0, 5000, 0) == 5000);
+  assert(dropbear::slewLimitTorque(-32000, 32000, 100) == -31900);
   return 0;
 }
